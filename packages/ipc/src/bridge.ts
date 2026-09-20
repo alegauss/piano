@@ -1,8 +1,4 @@
-import type {
-  AppInfoResponse,
-  WindowSetTitleRequest,
-  WindowSetTitleResponse,
-} from './channels'
+import type { AppInfoResponse, WindowSetTitleRequest, WindowSetTitleResponse } from './channels'
 
 /**
  * What the preload puts on `window.piano`, declared once.

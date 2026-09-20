@@ -29,16 +29,16 @@ own tool, named `claim`.
 
 None of these writes anything, so asking is free — and each is a turn you do not spend:
 
-* **`budget`** prices a sentence *before* it exists: the room each field has, in characters
+- **`budget`** prices a sentence _before_ it exists: the room each field has, in characters
   and in the words a sentence is composed towards, plus the rules that are not widths. It
   is the pre-`add` read, and a refusal you never meet costs nothing.
-* **`explain <code>`** says what a gate finding is, what produces it and which doors close
+- **`explain <code>`** says what a gate finding is, what produces it and which doors close
   it. Reach for it on a code you have not met, and never grep the package for one.
-* **`repair`** spends a whole report in one call — every finding whose remedy is a complete
+- **`repair`** spends a whole report in one call — every finding whose remedy is a complete
   command, run in order. Reach for it the moment `lint` reports anything.
-* **`show`**, **`section show`** and **`section find`** read a line and its prose back, so
+- **`show`**, **`section show`** and **`section find`** read a line and its prose back, so
   an edit is composed against what is there and not a remembered version of it.
-* **`list`**, **`deps`**, **`delivered`**, **`unclosed`**, **`gaps`**, **`writes`** and
+- **`list`**, **`deps`**, **`delivered`**, **`unclosed`**, **`gaps`**, **`writes`** and
   **`cost`** answer about the backlog whole: what a block already shipped, what it still
   owes, what this session wrote, and what a surface costs the turn that loads it.
   **`export`** projects a count so no prose has to restate one.
@@ -70,12 +70,12 @@ forgives the standing debt by name.
 
 Two pages sit beside this file, and they are read when a turn needs them and not before:
 
-* **`writing.md`** — the write path whole: every flag on `add`, `status`, `amend`,
+- **`writing.md`** — the write path whole: every flag on `add`, `status`, `amend`,
   `restate`, `ship`, `retire`, `record`, `section`, `non-goal`, `defer`, `resume`, `dismiss`
   and `reopen`, what
   each transaction refuses and how the refusal is answered, the wiring verbs (`init`,
   `adopt`, `install`, `declare`, `engines`, `merge`), and every code the gate reports.
-* **`asking.md`** — the query surface whole: what each read answers and in which units,
+- **`asking.md`** — the query surface whole: what each read answers and in which units,
   what git answers about the ledger, the projections that go stale, and what a project may
   declare in `roadkeep.toml`.
 
@@ -95,17 +95,17 @@ and never matches English. Unscoped, the answer may be another block's, and the 
 order is the headings' own (`list`, whose own empty listing says the same thing on
 stderr). **Ready is not implementable**: the tiers rank by id, so reach for
 `pick --block <label> --designed` when
-you asked to *execute* and not to plan — it sets aside the markers `[markers] undesigned`
+you asked to _execute_ and not to plan — it sets aside the markers `[markers] undesigned`
 names, and says how many. Without it the answer still tells you, in the same sentence that
 names the tier, that the line it chose has its design to write — which is a `section add`,
 not a commit. **A pick you cannot execute is a write, not a workaround**: where what is
-left of a line needs something *present* — a controller on the desk, two consoles to
+left of a line needs something _present_ — a controller on the desk, two consoles to
 measure against each other — the file has a slot for it, and until it is written the same
 line comes back every call, because every tier is a function of the file. `add --requires
 <word>` states it, `amend <id> --requires …` adds it to a line already there, and the word
-is one `[requirements] declared` names — the one table `declare` does *not* open, because a
+is one `[requirements] declared` names — the one table `declare` does _not_ open, because a
 vocabulary is a list of words and an empty one governs nothing, so a project opting in
-declares its own words once — as a list, or as a table saying what each word *is*, which
+declares its own words once — as a list, or as a table saying what each word _is_, which
 is what the refusal then quotes so a caller can weigh it rather than believe it. Then
 `pick` sets those lines aside for a caller that did not
 say it has them, **names** each with what it is missing, and still counts them ready: what
@@ -122,7 +122,7 @@ last caller did not close this line, and decide whether you are about to do the 
 **Two workers in one checkout need `--claim`**, on `brief` as well as on
 `pick`: every tier is a function of the file, so a second caller reading an unchanged
 backlog is handed the line the first one took — most confidently by the in-progress tier,
-a 🛠 line being evidence somebody started. `--claim` answers *and* moves the marker to
+a 🛠 line being evidence somebody started. `--claim` answers _and_ moves the marker to
 in-progress in one transaction, so the next caller is sent elsewhere. `brief --claim` is
 the one to reach for, being the call that starts a task anyway — and over MCP it is its
 own tool, `claim`, so that `brief` and `pick` keep the read-only hint that makes asking
@@ -140,7 +140,7 @@ thing you can recognise your own by; who took it belongs in the commit.
 
 ## One task, one commit
 
-What `ship` wrote goes in the *same* commit as the code, so the docs never describe a
+What `ship` wrote goes in the _same_ commit as the code, so the docs never describe a
 state that did not ship — and a batch of ready tasks is not permission to batch the
 commits.
 
@@ -148,7 +148,7 @@ Which is decidable only if the commit knows what is **its**. A claim carries a s
 `claim <id> --path <p> …` says what this commit owns, declared verbatim and replacing
 whatever was there, and `claim <id>` reads it back beside what **this task's own
 transactions wrote** — the marker, the projections — what the working tree holds that
-another live claim says is *its* own, what no claim names at all, and which declared path
+another live claim says is _its_ own, what no claim names at all, and which declared path
 would stage nothing right now. **Declare only your code**: the governed files are
 supplied, and a scope naming them by hand carries paths that were never the work — the
 analysis `git add -A` cannot make and a second session's work is what it sweeps up.

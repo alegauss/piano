@@ -24,6 +24,9 @@
     },
     {
       "path": "tsconfig.scripts.json"
+    },
+    {
+      "path": "apps/desktop/tsconfig.test.json"
     }
   ]
 }

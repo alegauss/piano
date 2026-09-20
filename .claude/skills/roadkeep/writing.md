@@ -26,10 +26,10 @@ refusals, with the fields arriving as a schema instead of flag names typed from 
 **The CLI takes these spellings too**: `roadkeep next_id` and `--replacement` run as `next-id`
 and `--with`, with a note on stderr naming the CLI's own — so a name remembered from either
 surface works, and a verb this CLI has is never respelled into another act.
-`init`, `adopt` and `install` run *before* a project is governed, or on its wiring, and want
+`init`, `adopt` and `install` run _before_ a project is governed, or on its wiring, and want
 the CLI — `declare` above is the one write on a configured tree, which is why it is served
-and they are not. **It takes two vocabularies**: a *role* writes that file and the `[files]`
-key governing it, and one of the two *opt-in tables* — `criteria`, `non_goals` — opens the
+and they are not. **It takes two vocabularies**: a _role_ writes that file and the `[files]`
+key governing it, and one of the two _opt-in tables_ — `criteria`, `non_goals` — opens the
 list a verb refuses over, empty, which is what opting in means; `govern` is what tunes the
 numbers in it afterwards. Reach for it when a write refuses over an undeclared role or
 table, which is the refusal that now names this command rather than a hand edit. **And it is
@@ -46,13 +46,13 @@ roadkeep answering here is `install.stale`, filed at that file, and `install` is
 it. A project holding its version on purpose says `[install] pinned = true` and the finding
 stops; the check and `engines` still answer, a pin being a decision and not a claim that the
 files agree. **And the write knows which side is newer**: `install` records `[install]
-wired = "<version>"`, so a project whose surfaces came from a *later* engine is refused
+wired = "<version>"`, so a project whose surfaces came from a _later_ engine is refused
 rather than downgraded — the gate says nothing there and `install --check` names the
 direction, `--vendor` being what moves the engine forward instead.
 **`install --vendor` pins the engine itself**, which nothing else here does:
 it copies the highest-versioned roadkeep this machine can reach into `.roadkeep/` and the
 launcher resolves that ahead of any sibling checkout. By version and never by search order,
-so every machine pins the same one; a *working* checkout is skipped unless `ROADKEEP_SRC`
+so every machine pins the same one; a _working_ checkout is skipped unless `ROADKEEP_SRC`
 names it, a tree mid-refactor being the thing a pin exists to stop running; `.git` is
 excluded so the copy is an artefact and not a second repository; and what landed is asked
 its version, a disagreement being a refusal that leaves the tree there to look at. The pin
@@ -98,7 +98,7 @@ developer lives — and `init`, `install`, `uninstall` and `capture filed` still
 how the wiring gets fixed and how a defect in this tool gets filed. The **gate** says so too,
 on the same two conditions: `lint` carries a `gate.behind` note beside its verdict, clean
 verdicts included, because a copy old enough to have its writes refused is old enough that
-its *pass* is that copy's pass. `enforced` is **not** `pinned`: that one is about the
+its _pass_ is that copy's pass. `enforced` is **not** `pinned`: that one is about the
 surfaces vendored into a project against the engine answering, and this one about that
 engine against the registered plugin — two pairs, so two keys.
 
@@ -122,7 +122,7 @@ each numbering their own outline from `I` being one flat set of addresses otherw
 the pointer alone: the heading keeps the number the file wrote, and `anchors` names the
 free address in each namespace. A refusal exits 2 naming the length and the limit and
 writes nothing — **every field it looked at, in one message**, so a call whose `why` and
-whose body are both over is corrected once rather than twice (a body arriving off a *pipe*
+whose body are both over is corrected once rather than twice (a body arriving off a _pipe_
 is the one exception: it stays unread until the line passes, since a pipe does not rewind,
 which is what `add --section "<t>" --section-body-file <path>` is for); the shipped marker
 never reaches the roadmap.
@@ -134,7 +134,7 @@ both files validated before either is written — and an `add` without it answer
 so. Under an outline it opens a block's **first** family too: `add --ref XXXI.1 --section`
 declares `XXXI` in the same write — titled from the block, those words being already written
 one file over — and files the design under it as a child, so a block's first design has the
-shape its fifth has instead of *being* the family heading. What it opens is a container, a
+shape its fifth has instead of _being_ the family heading. What it opens is a container, a
 heading with no prose, which is the one shape `body.empty` does not name; `section amend
 <family> --title` is the correction where the block's words are the wrong ones. Without
 `--section` that is still **two** calls, both named and in order, because a `section add` on
@@ -146,7 +146,7 @@ rather than a family to open.
 **`ship <id> --why "<what now works>"` makes its three edits** (ledger entry, roadmap
 line gone, `§<id>` deleted) plus the dependents' annotations, or none. It **names any
 section whose prose cited what it deleted**: the ship is right and that citation is your
-next edit, in *this* commit, because a shipped entry keeps no pointer and from the next
+next edit, in _this_ commit, because a shipped entry keeps no pointer and from the next
 command on the reference reads exactly like a typo. Under an outline it names one thing
 more: the **parent** left with no subsections, whose prose was written as an introduction
 to children that have now all shipped — `section amend <parent> --body -` is that edit,
@@ -168,7 +168,7 @@ this format. It writes a fourth file, so it lands before the deletion and refuse
 transaction where the role is undeclared, naming `declare decisions`; it reaches the
 closure door too, that one deleting the section as well, and is refused on a `--part`.
 **A decision keeps a body, and the ship names where it goes**: that line is one sentence, and
-what was *weighed* — the alternatives rejected, the consequences accepted — is a paragraph
+what was _weighed_ — the alternatives rejected, the consequences accepted — is a paragraph
 `section add <id> --role decisions --title "…"` writes into that same file, under
 `[limits.decisions] section`, its own word limit. **Where the anchor is an address, the ship
 names it**: `--decides-ref <anchor>` beside `--decides` on a project setting `ref_scheme =
@@ -216,7 +216,7 @@ what to reach for whenever one dep changes: `amend <id> --dep <d>` given at all 
 whole group,
 so a seventh dep means naming all seven, six of them to say nothing changed. Drop by the
 spelling the file shows or the bare id — the `✅` is derived and is not yours to reproduce
-— and one of the two forms per call, never both. A dep renders *into* the line and the
+— and one of the two forms per call, never both. A dep renders _into_ the line and the
 line's ceiling is shared with the `why`, so an addition that does not fit is refused
 **naming the dep** rather than the sentence that did not move.
 **The `symptom` is not one of `amend`'s fields** — it is the falsifiable claim the
@@ -241,7 +241,7 @@ the files say the work is in halves — a ⏳ line or an entry naming one — or
 and the entry describe different work, which is two tasks sharing an id and `renumber`'s
 to fix. **Half of it landing is a third answer, not a full ship with a hedge in the
 sentence**: `ship <id> --part "<which half>"` records the entry as `✅ **<id> (which
-half)**` and *leaves the line open* at ⏳ with its section intact, and the later `ship
+half)**` and _leaves the line open_ at ⏳ with its section intact, and the later `ship
 <id>` completes it. **Pass `ship <id> --part "<which half>" --remainder "<what is left>"`**, because the entry
 records the half that landed and nothing else records the other one: without it the next
 reader recovers the rest by subtracting the ledger from the line, several sessions later,
@@ -250,7 +250,7 @@ prints both halves as fields — the entry says what happened and the line says 
 owed. The symptom is untouched: a task half-delivered is still that symptom's task. The
 later `ship <id>` completes it — replacing that entry in place and dropping the qualifier, which is
 the only thing that keeps "local half" from outliving the local half. That replacement
-states a *different* sentence, so on a ledger written before the tool, where the partial's
+states a _different_ sentence, so on a ledger written before the tool, where the partial's
 bullet **wraps**, it takes `ship <id> --lines <n>` for the same reason `record amend` does, carries
 the same two permissions, and is refused without it; the count is a flag on this verb
 rather than a detour through that one because you asked to finish work, and it is refused
@@ -260,12 +260,12 @@ completion, so work arriving in more halves than that files each delivered step 
 line, and the refusal spells the id that line takes under this project's `[ids]`. **A
 pause is none of those three**: `defer <id> --reason "…"` moves the line to the deferred
 store, keeping the id, the deps, the symptom and the section a departure deletes. The reason
-is *wrapped* around the design carried forward, so what bounds it is the **line** and not the
+is _wrapped_ around the design carried forward, so what bounds it is the **line** and not the
 `why` limit — `budget <id> --defer` is that number before you compose one, and a reason past
 it is refused. Refused too
 where `[files]` declares no `deferred` path, and never scaffolding one on the way past, a
 store invented at the moment one is needed being a format decided by a verb; `init
---deferred` writes the key and the skeleton together on a project being *created*, and
+--deferred` writes the key and the skeleton together on a project being _created_, and
 **`declare deferred` is that same opt-in on one already configured** — the door to reach for
 when any verb refuses over an undeclared role, `[files]` being written once by the command
 that refuses to run twice, so a role declined at scaffold time was otherwise a hand edit to
@@ -290,8 +290,8 @@ and `resume`**, so a refusal about a pause never reads like one about a typo. **
 nobody filed is a fifth thing**: `dismiss --block <x> --symptom "…" --why "…" --premise "…"`
 records what was traced and deliberately not filed, minting an id the way `add` does and
 filing it in the dismissed store. The **premise** is required and is the whole point — the
-claim a later commit breaks — because *checked, fine* is unfalsifiable and gets traced
-again; it is *wrapped* around the reason, so what bounds that sentence is the line and not
+claim a later commit breaks — because _checked, fine_ is unfalsifiable and gets traced
+again; it is _wrapped_ around the reason, so what bounds that sentence is the line and not
 the `why` limit, and an entry that reaches the file without one is `premise.missing`.
 `declare dismissed` opens the store and no scaffold ever writes it, a project having ruled
 nothing out on the day it is created. `reopen <id> [--marker <m>]` files the entry as work
@@ -300,7 +300,7 @@ carrying the subject and the reason. **Its design has to be written in the same 
 `reopen <id> --section "<title>" --section-body-file <path>` writes both halves, because a
 dismissal carries no design by definition, so a reopen without one leaves a pointer the gate
 reports as `ref.unresolved` and the write says which anchor owes it. `show <id>` on a
-dismissed id says where it is and names both doors, rather than answering *never written*
+dismissed id says where it is and names both doors, rather than answering _never written_
 about an entry sitting in the file. Reach for
 `retire`
 only when the work is not coming back. `record add --block <x> --symptom "…" --why "…"` is
@@ -309,7 +309,7 @@ to carry it: never planned is one case, and so is a task that shipped inside ano
 sentence and needs an entry of its own. It is
 also **the revert**: `record add --block <x> --symptom "…" --why "…" --supersedes <id>`
 writes the entry saying the work did not hold
-*and* appends the forward pointer to the entry saying it shipped, in one write — reach for
+_and_ appends the forward pointer to the entry saying it shipped, in one write — reach for
 it there, because `retire` needs a roadmap line the ship already removed and `record drop`
 refuses a non-duplicate, so without it the ledger holds two records of one decision that
 do not name each other. Both entries stay: the ledger is history and both happened. **Two
@@ -349,12 +349,12 @@ back with the reversing entry's sentence, which is the argument a fresh proposal
 against. `reversals --id <id>` exits 1 where that decision was reversed. It refuses
 nothing: re-proposing reverted work is sometimes right, and which is a judgement no tool
 makes. `record drop <id>` is its inverse: refused unless the ledger states that id
-**twice** *and the two say the same thing*, then the later entry goes and the first stays,
+**twice** _and the two say the same thing_, then the later entry goes and the first stays,
 because removing the only record of a decision is deleting history. Two entries that
 differ are two deliveries under one id, not one recorded twice: `record drop <id> --line
 <n>` if you have read both, or `record renumber <id> --line <n> --to <new>` to give one its
 own address — the new id derived, one past the highest in its family, where you pass none.
-To *fix* an entry use `record amend <id> --why "…"` (or `record amend <id> --part "<which
+To _fix_ an entry use `record amend <id> --why "…"` (or `record amend <id> --part "<which
 half>"` on a partial) —
 never drop-and-re-add, which moves the line to the end of its block and shows a reviewer a
 deletion where a word changed. On a ledger written before the tool, where a bullet
@@ -363,7 +363,7 @@ lines it replaces:
 the parse holds only as much of the sentence as fits on the first one, so rewriting that
 line alone leaves the tail of the old sentence under the new one. **The count is two
 permissions, and this is the one worth knowing**: passed with an `n` above one, `--why`
-may be the *whole span* rather than one sentence — its first line is the sentence and
+may be the _whole span_ rather than one sentence — its first line is the sentence and
 every line after it is written back under the bullet verbatim, so the paragraphs survive
 instead of collapsing into one line. It is the same at the `ship` that completes a
 wrapped partial, and it is the reason neither needs a `<br>`. The block is not one of
@@ -376,7 +376,7 @@ positions are reported, and a heading nothing declares is refused. Reach for it 
 — or, where the pointer is an outline anchor, under the section that anchor extends, since
 there the anchor is what states the place. A one-segment anchor **opens a new top level**,
 placed after the last one and at the depth that file writes one at, which is how a block
-declared in the line files gets its first design at all; a *nested* one is written one
+declared in the line files gets its first design at all; a _nested_ one is written one
 level under the section it extends, so it stays inside the subtree its anchor names
 whatever depth that file nests at, and a nested anchor whose parent is missing is still
 refused, that being a typo in an address. A table or list is inserted exactly as written.
@@ -396,7 +396,7 @@ refused naming both. Over MCP there is no pipe, so every write that reads one ta
 **as a string** and refuses `-` by name. **A pipe does not rewind, and a paragraph is the
 expensive argument**: an `add`
 refused for a `why` three words over used to cost the whole rationale a second time, so
-the body is now fetched *below* every refusal the line itself can raise — and where that
+the body is now fetched _below_ every refusal the line itself can raise — and where that
 is not enough, because `section add` reports the anchor, the title and the body together,
 `add --section-body-file <path>` and `section add <a> --title "…" --body-file <path>` name
 the paragraph by **path** and the retry
@@ -440,7 +440,7 @@ the next sentence is its remedy. No write invents a block heading
 — **`block add <x> --title "…"` is the one
 that declares one**, in every governed file already organised by blocks, placed after the
 last block's subtree and spelled at that file's own level and separator. Reach for it the
-moment any write refuses with "no heading declares". A file organised by *nothing* is
+moment any write refuses with "no heading declares". A file organised by _nothing_ is
 skipped, because the level, the separator and the placement are all read off a heading it
 does not have — so a ledger that is plain prose is a project every `ship` refuses;
 `block add <x> --title "…" --organise <role>` is you saying that file is to be organised by
@@ -455,7 +455,7 @@ heading goes only from the files where its whole subtree is blank, and anything 
 under it — an open line, a paused one, a rationale section — is named in a refusal that
 writes nothing, because a heading over work is not an empty heading. The ledger keeps its
 heading either way, history being filed under it — which is why **`block amend <x> --title
-"…"` is the door to a heading's *words***: that refusal makes drop-and-re-add impossible the
+"…"` is the door to a heading's _words_**: that refusal makes drop-and-re-add impossible the
 moment anything is filed, so a title was otherwise write-once. It is narrow — the label is
 the identity and does not move, the subtree is untouched, and each file keeps its own level
 and separator, nobody having asked for a restyle — and it writes every file that declares the
@@ -471,7 +471,7 @@ takes an emptied heading's note the same way — loose prose only, never work. R
 the moment `lint` reports
 `block.repeated` or a write refuses with `RepeatedHeading`. **A sub-heading grouping
 entries inside its own block is not that state** and needs no repair: one label is one
-*region*, a heading inside another's subtree is already owned by it, and the write appends
+_region_, a heading inside another's subtree is already owned by it, and the write appends
 after everything the region holds. Two headings neither of which is inside the other are
 two addresses, wherever they sit and at whatever level. `non-goal add --lead "…" --why
 "…"` writes the one bullet that is not a task line, where `[non_goals]` declares the list
@@ -483,7 +483,7 @@ amend`'s reason: `add` appends, so drop-and-re-add moves a constraint to the end
 a reader takes for the plan's shape. The lead is not one of its fields — it is the
 address — and a bullet carrying no bold head is refused by name, that shape's repair being
 the pair below.
-`non-goal drop <lead>` is the other half, and what a changed *lead* takes: the lead is the
+`non-goal drop <lead>` is the other half, and what a changed _lead_ takes: the lead is the
 address, so a constraint whose lead changes is one dropped and one written. **Call
 `non-goal list` before an `add`** — the list binds what may be proposed, so reading it
 after the line exists is reading it too late; it prints on a project that never opted in,

@@ -1,3 +1,6 @@
+import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
 import { allChannels, windowSetTitle } from '@piano/ipc'
 import type { BrowserWindow } from 'electron'
 
@@ -69,7 +72,11 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     ),
   )
   results.push(
-    check('the bridge is exposed', reachable['piano'] === 'object', `typeof window.piano = ${String(reachable['piano'])}`),
+    check(
+      'the bridge is exposed',
+      reachable['piano'] === 'object',
+      `typeof window.piano = ${String(reachable['piano'])}`,
+    ),
   )
 
   // 3. Every declared channel has a handler behind it.
@@ -78,16 +85,20 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     check(
       'every declared channel is registered',
       missing.length === 0,
-      missing.length === 0 ? `${String(allChannels.length)} channels` : `missing: ${missing.join(', ')}`,
+      missing.length === 0
+        ? `${String(allChannels.length)} channels`
+        : `missing: ${missing.join(', ')}`,
     ),
   )
 
   // 4. A well-formed call answers, and its response satisfies the contract.
-  const info = await webContents.executeJavaScript('window.piano.appInfo()')
+  const info: unknown = await webContents.executeJavaScript('window.piano.appInfo()')
   results.push(
     check(
       'app:info answers with a valid response',
-      typeof info === 'object' && info !== null && typeof (info as { electron?: unknown }).electron === 'string',
+      typeof info === 'object' &&
+        info !== null &&
+        typeof (info as { electron?: unknown }).electron === 'string',
       JSON.stringify(info),
     ),
   )
@@ -148,7 +159,8 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
   results.push(
     check(
       'no token resolves to nothing in either theme',
-      Object.values(themes.dark).every((v) => v !== '') && Object.values(themes.light).every((v) => v !== ''),
+      Object.values(themes.dark).every((v) => v !== '') &&
+        Object.values(themes.light).every((v) => v !== ''),
       `${JSON.stringify(themes.light)}`,
     ),
   )
@@ -171,8 +183,6 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
  * here. So the run leaves two images a person can look at.
  */
 export async function captureThemes(window: BrowserWindow, directory: string): Promise<string[]> {
-  const { writeFile, mkdir } = await import('node:fs/promises')
-  const { join } = await import('node:path')
   await mkdir(directory, { recursive: true })
 
   const written: string[] = []

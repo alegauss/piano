@@ -2,8 +2,7 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI5** (deps: PI1 ✅, PI2 ✅) **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Vitest, ESLint and Prettier running on every push make timing, scheduling and parsing verifiable, which is what nobody can check by hand. → §PI5
-- 📋 **PI6** (deps: PI1 ✅, PI5) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6
+- 📋 **PI6** (deps: PI1 ✅, PI5 ✅) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6
 
 ## Block B — Score JSON format
 
@@ -71,15 +70,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI5
-
-- **CI fails on a type error, a lint error or a failing test** A branch carrying one of
-  each turns the job red, and the same three checks run locally through a single script
-  so the gate is reproducible before pushing.
-- **The audio scheduler is tested against a fake clock** Scheduler tests advance a
-  synthetic time source and assert note ordering and offsets deterministically, with no
-  real timers, no sleeps and no audible output.
 
 ## Done when — PI6
 
@@ -206,6 +196,9 @@
 - **A chord lands as a single event** Every note of a chord is scheduled at an identical
   audio time, asserted exactly rather than within a window, because a spread chord is
   the defect a listener notices first.
+- **The scheduler is tested against a fake clock** Scheduler tests advance a synthetic
+  time source and assert note ordering and offsets deterministically, with no real
+  timers, no sleeps and no audible output.
 
 ## Done when — PI20
 

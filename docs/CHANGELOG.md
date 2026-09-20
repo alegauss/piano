@@ -17,6 +17,10 @@
 - ✅ **PI4** **There is no design system: every screen would invent its own colour, spacing and components** — Tailwind and shadcn components render under a dark and a light theme, and every colour resolves to one token file that the React chrome and the canvas both read.
   checked **shadcn components render correctly under both themes** A demo route shows button, slider, dialog, popover, switch and select, and toggling the theme restyles all of them without a reload or a flash of the wrong colours.
   checked **No component hardcodes a colour** A grep over the renderer finds no hex literal outside the token definition file, and the piano roll canvas reads its note and bar colours from those same tokens.
+- ✅ **PI5** **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Typecheck, lint and 35 tests run from one command, split so the fast half takes under a second and the half that starts Electron or a browser is a gate.
+  checked **CI fails on a type error, a lint error or a failing test** A branch carrying one of each turns the job red, and the same three checks run locally through a single script so the gate is reproducible before pushing.
+  checked **Layout claims are tested in a real browser, not jsdom** A test about a measured size, scroll or focus order runs in headless Chromium through Playwright, because jsdom lays nothing out and would let the test assert a number it invented.
+  checked **The live suite refuses to run against a stale bundle** A global setup compares the built output against the source tree and fails rather than reporting green about code nobody is looking at.
 
 ## Block B — Score JSON format
 

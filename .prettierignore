@@ -1,0 +1,14 @@
+dist/
+node_modules/
+.tsbuild/
+.roadkeep/
+package-lock.json
+*.dev-profile/
+*.smoke-profile/
+*.selfcheck-profile/
+*.test-profile/
+
+# roadkeep owns these: their layout is the tool's, not Prettier's.
+docs/ROADMAP.md
+docs/CHANGELOG.md
+docs/IMPROVEMENTS.md

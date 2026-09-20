@@ -3,17 +3,10 @@
   "compilerOptions": {
     "outDir": "../../.tsbuild/desktop-preload",
     "rootDir": "src/preload",
-    "lib": [
-      "ES2023",
-      "DOM"
-    ],
-    "types": [
-      "node"
-    ]
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"]
   },
-  "include": [
-    "src/preload/**/*.ts"
-  ],
+  "include": ["src/preload/**/*.ts"],
   "references": [
     {
       "path": "../../packages/ipc"

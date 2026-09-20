@@ -57,9 +57,9 @@ failing `--replace` names them too, so the loop of show, read, guess again is on
 `body.too-long` names what each paragraph costs and which is the longest, so the second
 draft is composed once — and a `0` there is a table or a fence, which is prose no cut can
 reach. **And do not count by hand before one is refused either**: every prose argument here
-is a draft this read *measures* — and **one call prices the whole `add --section`
+is a draft this read _measures_ — and **one call prices the whole `add --section`
 transaction**, which `add` validates as one unit and refuses as one: `budget --block <x>
---why "<draft>" --body "<draft>"` answers for the line *and* the body it would write, while
+--why "<draft>" --body "<draft>"` answers for the line _and_ the body it would write, while
 `budget --anchor <a> --body "<draft>"` asks about a section on its own (or `--body-file`, or
 `-` for stdin). Both answer with the overrun and exit 1 where it is over, which is the
 refusal without the write — and a `why` three characters over re-sending the whole rationale
@@ -70,12 +70,12 @@ asking about. Reach for it after the first refusal and instead of the second —
 after a refusal is a guess, and this is the same arithmetic answered before the write.
 `budget --non-goal [--lead "…"]` is the roadmap's other bullet, whose two
 limits are the list's own and not the task line's. **And `budget <id> --ship` prices the
-sentence a *ship* writes**, which is a different number from the line's — the ledger drops
+sentence a _ship_ writes**, which is a different number from the line's — the ledger drops
 the deps and the pointer, so there is more room and a draft written to the line's figure
 throws characters away; `budget <id> --retire --superseded-by <id>` is the same question for
 the other departure, where a
 derived `abandoned:` or `superseded by <id>:` prefix is inside the field and counted; and
-`--defer` is the third, where the reason is *wrapped* around the design the store carries
+`--defer` is the third, where the reason is _wrapped_ around the design the store carries
 forward — so the row that matters is `carried`, naming what the line leaves your sentence,
 the field's own limit measuring the carry and never the reason. One departure per call, and
 each takes the words its own write uses: `--superseded-by` for the retirement's id and
@@ -83,9 +83,9 @@ each takes the words its own write uses: `--superseded-by` for the retirement's 
 **`budget --file <p>` is the fourth
 subject**, and the one that is not about prose at all: what an every-turn file `[budgets]`
 declares costs in lines and bytes and what is left — bare, every declared budget. Read it
-*before* editing one, never `wc` and a subtraction; `lint` is still what refuses.
-**The other tense is `cost`, and it is its own verb**: `budget` says what a write *may*
-spend before a word of it exists, and `cost` what this project's surface *does* spend
+_before_ editing one, never `wc` and a subtraction; `lint` is still what refuses.
+**The other tense is `cost`, and it is its own verb**: `budget` says what a write _may_
+spend before a word of it exists, and `cost` what this project's surface _does_ spend
 already. Three subjects, one per cadence. **`cost --tools`** is what the tool list costs a
 session that connects the server, in characters and by tool, largest first; **named — `cost
 --tools ship` — what each of that one tool's fields spent**, and the module its `help=`
@@ -96,7 +96,7 @@ flag carries that flag's own `help`, edited somewhere else. Nothing refuses it �
 the number is stated so that adding a tool or a
 sentence to a description stops looking free, which is the argument `[budgets]` makes about
 a file that loads every turn. **`cost --brief [<id>]`** is the one about
-a *read*: what the answer that replaces reading the file costs a tool result, per open line and
+a _read_: what the answer that replaces reading the file costs a tool result, per open line and
 widest first, against `[reads] brief`. Declared, that ceiling is the gate's — `read.over` names
 the task whose brief does not fit — and each row says how much of the figure is the **graph**:
 the deps, the ships that settled them and the chains, which grow with the backlog's shape and
@@ -107,16 +107,16 @@ session pays before it calls anything, and the one figure neither of the other t
 **`cost --skill`** is the fourth cadence: what this file costs the turns that load it, beside
 the served schema and with the sections it went to — no ceiling, because none is declared and
 one chosen before this reading would be a number nobody argued for.
-**`cost --deny`** is the fifth, and the one this surface is *for*: what a refused write costs
+**`cost --deny`** is the fifth, and the one this surface is _for_: what a refused write costs
 the session that meets it, beside the notice from the same module that has a ceiling. CLI
 only — over this transport you are handed the denial itself.
 A bare `cost` is refused naming the five: they are five cadences, and privileging one would
 make the others read as narrowings of it. **And `config` is the read about `roadkeep.toml` itself**:
 every table, key, TOML type and default this build accepts, with the sentence its source
-already carries and whether *this* project declared it — `config --table limits` for one,
+already carries and whether _this_ project declared it — `config --table limits` for one,
 `config --table ""` for the top level. **And the boundary of that same question**: what this
-build *fixes* from its own corpus and no project may declare, with the reading it
-follows — so *is this mine to set?* is answered rather than guessed. Reach for it before
+build _fixes_ from its own corpus and no project may declare, with the reading it
+follows — so _is this mine to set?_ is answered rather than guessed. Reach for it before
 writing a key rather than after the refusal, and read the build it names: a key nothing
 declares is a typo, a key this copy predates is an upgrade, and the file cannot tell
 them apart. A key this build knows **one table away** names the third: `declare --move
@@ -174,10 +174,10 @@ What comes back is the distribution and what was elided from it, the sample thos
 percentiles summarise being `weight --block <x> --records` and 95% of the payload. It ranks
 nothing and lands
 on no line — the size field is a non-goal. **`remaining <id>` is that read's mirror**: what
-a task has *left*, run from a query its own design declares — a fenced `roadkeep-remaining`
+a task has _left_, run from a query its own design declares — a fenced `roadkeep-remaining`
 block in the rationale section, one `<pathspec> :: <regex>` per line. **`evidence <id>` is
 that same read with the sign flipped**: a `roadkeep-evidence` block names the sites that
-must *exist* for the task to be done, so what `remaining` counts down `evidence` counts
+must _exist_ for the task to be done, so what `remaining` counts down `evidence` counts
 up — and neither is a verdict, the pattern being your claim and the count the answer.
 Derived for the same
 reason and stored for none: the first commit that closes a site changes the answer, which a
@@ -186,7 +186,7 @@ claim. Reach for it before continuing a migration, which otherwise reads in ever
 exactly like a run of unrelated defects. It is a count and never a verdict — the pattern is
 the author's, so `0` says the pattern stopped matching and whether that is the work being
 done is yours; a glob that names no file is reported apart from a pattern that matches none,
-those being opposite facts that both count zero. A design declaring none is *answered* and
+those being opposite facts that both count zero. A design declaring none is _answered_ and
 not refused, and the gate reports only a block it cannot read (`remaining.format`), never
 sites left, work not being a defect in a file. **`roadkeep brief [<id>]` starts a task in one
 call** — the line, its rationale, deps resolved, the blocker chain, what it unblocks and
@@ -218,7 +218,7 @@ written for. **Every roadmap row of that payload carries its own `readiness`** �
 about, a ✅ the file still holds being done rather than either — so a column that cost one
 `deps` per row is one read, and a ledger or store listing carries no such key, having no
 open line to be ready. `list --startable` is the narrowing the same classification allows:
-the lines whose deps are all satisfied *and* which nothing they require is holding up,
+the lines whose deps are all satisfied _and_ which nothing they require is holding up,
 which is `pick`'s offer as a filter rather than as a choice, refused on any role but the
 roadmap. Terminal-only for `--have`'s reason — a caller over the tool surface already holds
 the rows and narrows them without a second call;
@@ -234,8 +234,8 @@ the prose is, which is what a caller placing a call wants and not the paragraph;
 <id>` walks the graph both ways; `gaps` resolves an id in neither file against the commit
 that removed it, and `unclosed` is that question pointed the other way — an **open**
 line whose work a commit already names, which is what a session that shipped the code
-and forgot the line leaves behind — a commit touching only governed files is *this tool
-writing* and is not counted, so an amended `why` or a corrected rationale never reads as
+and forgot the line leaves behind — a commit touching only governed files is _this tool
+writing_ and is not counted, so an amended `why` or a corrected rationale never reads as
 work that landed; `origin <id> --why` reads it out of history, and `origin §<anchor>`
 answers the other end of a pointer — a rationale address somebody's prose still cites
 after a ship deleted the section, which no file records, so the three answers are the

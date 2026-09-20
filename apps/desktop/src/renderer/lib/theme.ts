@@ -68,7 +68,7 @@ export function setTheme(name: ThemeName): void {
 
 /** Apply whatever was chosen last, before the first paint. */
 export function restoreTheme(): ThemeName {
-  let stored: string | null = null
+  let stored: string | null
   try {
     stored = localStorage.getItem(STORAGE_KEY)
   } catch {

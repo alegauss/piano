@@ -32,8 +32,7 @@ const SKIP = new Set(['node_modules', 'dist', '.git', '.tsbuild', '.roadkeep'])
 const SOURCE = /\.(?:ts|tsx|css|html)$/
 
 /** #abc, #aabbcc, rgb(...), rgba(...), hsl(...), oklch(...) written by hand. */
-const COLOUR_LITERAL =
-  /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\s*\(/
+const COLOUR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\s*\(/
 
 /**
  * Tailwind's own palette names are literals by another spelling: bg-red-500
@@ -78,7 +77,9 @@ for await (const file of sourceFiles(join(repoRoot, governed))) {
       problems.push(`${where}  writes a colour literal; name a token from tokens.css instead`)
     }
     if (TAILWIND_PALETTE.test(code)) {
-      problems.push(`${where}  uses a Tailwind palette colour; name a token from tokens.css instead`)
+      problems.push(
+        `${where}  uses a Tailwind palette colour; name a token from tokens.css instead`,
+      )
     }
   })
 }

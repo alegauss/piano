@@ -2,27 +2,6 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-### §PI5 A gate for the parts that cannot be checked by ear
-
-Most defects in this app are invisible in a screenshot. A note scheduled four
-milliseconds late, a tempo change applied to the wrong bar, a migration that drops the
-fingering field: all of these look fine and sound almost fine. Vitest splits on one
-question, borrowed from roadkeep-gui: does this test start something? Plain files are
-fast and run between edits, in node for the packages and jsdom for renderer logic. Files
-named *.browser.test.tsx run in headless Chromium through Playwright, because jsdom lays
-nothing out and a test about scroll, focus order or a measured height would assert
-numbers it invented. Files named *-live.test.ts spawn a real Electron and are gates,
-with a global setup that refuses to run them against a bundle older than the tree. So
-npm test is fast, npm run test:live starts things, and CI runs both. The audio engine is
-tested against a fake clock rather than real time. ESLint carries the rules that matter
-for Electron specifically, including no Node imports reachable from renderer code.
-Prettier ends formatting debate. CI runs typecheck, lint, tests and the repo-wide guards
-on every push, and a red build blocks the merge. One guard already exists and has to be
-wired in: scripts/check-format-ownership.mjs, which refuses a score type declared
-outside the format package. The one rule worth stating out loud: a bug fixed in the
-format package arrives with the fixture that reproduced it, because fixtures are how
-this project remembers what a valid score is.
-
 ### §PI6 Packaging, signing and what stays out of the bundle
 
 Packaging is left until the foundation is settled but not until the end, because two of
@@ -33,9 +12,11 @@ and have to agree. The second is signing. An unsigned Electron app triggers Smar
 on Windows and Gatekeeper on macOS, and a learner who has to click through a scary
 warning will not come back. electron-builder covers NSIS for Windows, dmg for macOS and
 AppImage for Linux from one configuration, and CI builds all three so a platform is
-never discovered broken months later. Auto-update is deliberately out of scope for this
-line: it is its own set of failures and deserves its own task once there is something
-worth updating.
+never discovered broken months later. CI already carries a package job across the three
+platforms that only runs the build; filling in electron-builder and uploading the
+artifacts is this task's, and the matrix is there waiting. Auto-update is deliberately
+out of scope: it is its own set of failures and deserves its own task once there is
+something worth updating.
 
 ## Block B — Score JSON format
 

@@ -67,7 +67,9 @@ for await (const file of sourceFiles(repoRoot)) {
 
     const declaration = DECLARES_SCORE_TYPE.exec(line)
     if (declaration !== null) {
-      problems.push(`${where}  declares ${String(declaration[1])}; the format lives in ${ownerLabel}`)
+      problems.push(
+        `${where}  declares ${String(declaration[1])}; the format lives in ${ownerLabel}`,
+      )
     }
 
     if (RELATIVE_REACH.test(line) && !line.includes('@piano/score-format')) {

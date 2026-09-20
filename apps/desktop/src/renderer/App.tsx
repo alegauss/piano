@@ -20,13 +20,17 @@ const placeholder: Score = {
 
 export function App() {
   const [info, setInfo] = useState<AppInfoResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // Whether the bridge is there is settled before the first render and never
+  // changes, so it belongs in the initial state rather than in an effect that
+  // would render once with the wrong answer and then correct itself.
+  const [error, setError] = useState<string | null>(() =>
+    readBridge() === null ? 'no bridge: this page is not running inside the app' : null,
+  )
   const [theme, setThemeState] = useState<ThemeName>(getTheme)
 
   useEffect(() => {
     const bridge = readBridge()
     if (bridge === null) {
-      setError('no bridge: this page is not running inside the app')
       return
     }
 

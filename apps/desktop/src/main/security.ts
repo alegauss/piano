@@ -52,7 +52,10 @@ function contentSecurityPolicy(devServerUrl: string | undefined): string {
  * Apply the policy as a response header rather than a meta tag: a header
  * cannot be removed by the document it governs.
  */
-export function applyContentSecurityPolicy(session: Session, devServerUrl: string | undefined): void {
+export function applyContentSecurityPolicy(
+  session: Session,
+  devServerUrl: string | undefined,
+): void {
   const policy = contentSecurityPolicy(devServerUrl)
 
   session.webRequest.onHeadersReceived((details, callback) => {

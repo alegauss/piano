@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../.tsbuild/desktop-test",
+    "rootDir": "src/test",
+    // Test setup reaches both ways: a DOM for the renderer suites and node for
+    // the live ones, which is exactly why it is its own project.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "vitest/globals"],
+    "jsx": "react-jsx"
+  },
+  "include": ["src/test/**/*.ts"],
+  "references": [{ "path": "../../packages/ipc" }]
+}

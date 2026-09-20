@@ -3,6 +3,16 @@ import { CHANNEL_NAMES } from '@piano/ipc/names'
 import { contextBridge, ipcRenderer } from 'electron'
 
 /**
+ * ipcRenderer.invoke is typed as Promise<any>, because it cannot know what is
+ * on the other end. The cast is to the contract's own type, and main parses
+ * every response against that same schema before it leaves, so the shape is
+ * checked by the side that produced it rather than asserted by this one.
+ */
+async function invoke<Result>(channel: string, payload: unknown): Promise<Result> {
+  return (await ipcRenderer.invoke(channel, payload)) as Result
+}
+
+/**
  * The only bridge between the renderer and the system.
  *
  * It forwards named intents and does nothing else: no file access, no module
@@ -16,8 +26,8 @@ import { contextBridge, ipcRenderer } from 'electron'
  * checked by the side that does not trust the caller.
  */
 const bridge: PianoBridge = {
-  appInfo: async () => ipcRenderer.invoke(CHANNEL_NAMES.appInfo, null),
-  setWindowTitle: async (request) => ipcRenderer.invoke(CHANNEL_NAMES.windowSetTitle, request),
+  appInfo: async () => invoke(CHANNEL_NAMES.appInfo, null),
+  setWindowTitle: async (request) => invoke(CHANNEL_NAMES.windowSetTitle, request),
 }
 
 contextBridge.exposeInMainWorld('piano', bridge)

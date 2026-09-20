@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch makes the previous run irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The fast half: no process, no display, no bundle. This is what tells you
+  # within a minute whether the push was sound.
+  check:
+    name: typecheck, lint and fast tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: typecheck
+        run: npm run typecheck
+
+      # eslint, prettier, and the two repo-wide guards: one owner for the score
+      # format, one file that spells a colour.
+      - name: lint
+        run: npm run lint
+
+      - name: test
+        run: npm test
+
+  # The half that starts something: a real Electron and a real browser. It
+  # needs a build on disk, and on Linux it needs a display.
+  live:
+    name: browser and electron
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: install the browser the layout tests run in
+        run: npx playwright install --with-deps chromium
+
+      # The live suite refuses a bundle older than the tree, so this is not
+      # optional: without it the run would stop rather than report green about
+      # code nobody is looking at.
+      - name: build
+        run: npm run build
+
+      - name: live tests
+        run: xvfb-run --auto-servernum npm run test:live
+
+  # Every platform the app claims to run on still packages. Not on every push:
+  # this is slow, and a broken installer is not a thing a branch introduces
+  # quietly.
+  package:
+    name: installers
+    if: github.event_name == 'push'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: build
+        run: npm run build

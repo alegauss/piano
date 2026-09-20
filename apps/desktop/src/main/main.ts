@@ -92,7 +92,9 @@ function armHeadlessRun(window: BrowserWindow): void {
           }
         }
         for (const result of results) {
-          process.stdout.write(`${result.ok ? 'pass' : 'FAIL'}  ${result.name}  (${result.detail})\n`)
+          process.stdout.write(
+            `${result.ok ? 'pass' : 'FAIL'}  ${result.name}  (${result.detail})\n`,
+          )
         }
         const failed = results.filter((result) => !result.ok).length
         process.stdout.write(

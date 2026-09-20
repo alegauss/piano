@@ -26,7 +26,10 @@ const registered = new Set<string>()
 
 function handle<Request extends z.ZodType, Response extends z.ZodType>(
   channel: Channel<string, Request, Response>,
-  handler: (request: z.infer<Request>, event: IpcMainInvokeEvent) => z.infer<Response> | Promise<z.infer<Response>>,
+  handler: (
+    request: z.infer<Request>,
+    event: IpcMainInvokeEvent,
+  ) => z.infer<Response> | Promise<z.infer<Response>>,
 ): void {
   registered.add(channel.channel)
   ipcMain.handle(channel.channel, async (event, raw: unknown) => {
@@ -39,7 +42,9 @@ function handle<Request extends z.ZodType, Response extends z.ZodType>(
 
     const response = channel.response.safeParse(result)
     if (!response.success) {
-      throw new Error(`${channel.channel}: main produced an invalid response: ${formatIssues(response.error)}`)
+      throw new Error(
+        `${channel.channel}: main produced an invalid response: ${formatIssues(response.error)}`,
+      )
     }
     return response.data
   })
@@ -69,5 +74,7 @@ export function registerIpcHandlers(): void {
  * later, in whichever screen happened to call it first.
  */
 export function unregisteredChannels(): string[] {
-  return allChannels.filter((channel) => !registered.has(channel.channel)).map((channel) => channel.channel)
+  return allChannels
+    .filter((channel) => !registered.has(channel.channel))
+    .map((channel) => channel.channel)
 }

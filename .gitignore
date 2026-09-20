@@ -23,7 +23,7 @@ Thumbs.db
 .tsbuild/
 *.tsbuildinfo
 
-# per-run Electron profiles (dev and smoke keep their caches apart)
-.dev-profile/
-.smoke-profile/
-.selfcheck-profile/
+# Per-run Electron profiles: dev, smoke, the self-check and the live tests each
+# get their own so they never fight over one disk cache. A glob rather than a
+# list, because the list is what let .test-profile through.
+*-profile/
