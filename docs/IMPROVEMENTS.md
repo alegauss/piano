@@ -2,19 +2,6 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-### §PI1 Electron with Vite and TypeScript across three processes
-
-The app has three processes and each obeys different rules. Main opens windows, talks to
-disk and later hosts the MCP server; preload is the only bridge and runs privileged; the
-renderer is React and should hold no privilege at all. Vite goes in on the renderer,
-where fast reload earns its keep, while main and preload compile through esbuild in the
-same command. TypeScript strict across all three, with a tsconfig per project and
-references between them, because the expensive mistake here is an object crossing IPC in
-a shape the other side does not expect. The app lives under apps/desktop to leave room
-for the format package and the MCP server, which are born siblings rather than children
-of the app. No electron-forge: packaging comes later through electron-builder, and tying
-the bundler to the packager now would close that choice far too early.
-
 ### §PI2 The format as a sibling package, not a folder inside the app
 
 The score JSON has three consumers: the renderer that draws it, the audio engine that

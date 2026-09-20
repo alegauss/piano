@@ -1,0 +1,26 @@
+{
+  "name": "piano",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A Claude Code First piano: play scores, watch them fall, learn to play them.",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace apps/desktop",
+    "build": "npm run build --workspace apps/desktop",
+    "smoke": "npm run smoke --workspace apps/desktop",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "allowScripts": {
+    "electron": true,
+    "esbuild": true
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@piano/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Electron desktop app: main, preload and renderer.",
+  "main": "dist/main/main.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "electron": "^44.4.3",
+    "esbuild": "^0.25.10",
+    "vite": "^7.1.9"
+  }
+}

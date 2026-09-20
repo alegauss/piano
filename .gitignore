@@ -18,3 +18,7 @@ Thumbs.db
 
 # machine-local Claude Code settings (absolute paths)
 .claude/settings.local.json
+
+# TypeScript project-reference build info
+.tsbuild/
+*.tsbuildinfo
