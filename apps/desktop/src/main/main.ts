@@ -4,7 +4,7 @@ import { app, BrowserWindow, session } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
 import { applyContentSecurityPolicy, confineNavigation, denyPermissions } from './security'
-import { secureWebPreferences } from './window-preferences'
+import { secureWebPreferences, WINDOW_BACKGROUND } from './window-preferences'
 
 /**
  * Set by scripts/dev.mjs. Present means the renderer is served by Vite; absent
@@ -40,7 +40,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: '#0b0d10',
+    backgroundColor: WINDOW_BACKGROUND,
     autoHideMenuBar: true,
     title: 'Piano',
     // The renderer holds no privilege; window-preferences.ts says exactly how,
@@ -82,8 +82,15 @@ function armHeadlessRun(window: BrowserWindow): void {
 
       try {
         // Imported here so the ordinary path never loads the check code.
-        const { runSelfCheck } = await import('./selfcheck')
+        const { runSelfCheck, captureThemes } = await import('./selfcheck')
         const results = await runSelfCheck(window)
+
+        const shotDir = process.env['PIANO_SCREENSHOT_DIR']
+        if (shotDir !== undefined && shotDir !== '') {
+          for (const file of await captureThemes(window, shotDir)) {
+            process.stdout.write(`piano: captured ${file}\n`)
+          }
+        }
         for (const result of results) {
           process.stdout.write(`${result.ok ? 'pass' : 'FAIL'}  ${result.name}  (${result.detail})\n`)
         }

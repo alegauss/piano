@@ -2,32 +2,23 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-### §PI4 Tailwind, shadcn and tokens for both themes
-
-The reference interface is dark, dense and full of small controls: a transport bar, a
-BPM stepper, toggles, a parts panel, a share dialog. Writing those by hand is weeks of
-work that has nothing to do with music. shadcn is the right shape here because the
-components are copied into the repository rather than imported from a package, so a
-slider that needs to become a scrubber can be edited instead of fought. Tailwind carries
-the spacing and colour scale, and every colour is a CSS custom property defined once on
-the root and redefined for the dark theme, never a hex literal in a component. That
-matters more than usual in this app: the piano roll is drawn on a canvas, not in the
-DOM, so note colours, bar lines and key colours have to be read out of the same tokens
-the React chrome uses or the two halves of the screen will slowly stop matching. Dark is
-the default; light is a real theme and not an afterthought.
-
 ### §PI5 A gate for the parts that cannot be checked by ear
 
 Most defects in this app are invisible in a screenshot. A note scheduled four
 milliseconds late, a tempo change applied to the wrong bar, a migration that drops the
-fingering field: all of these look fine and sound almost fine. Vitest runs in two modes
-here, a node environment for the format package and a jsdom or browser environment for
-renderer logic, and the audio engine is tested against a fake clock rather than real
-time so the scheduler can be driven deterministically. ESLint carries the rules that
-matter for Electron specifically, including no Node imports reachable from renderer
-code. Prettier ends formatting debate. CI runs typecheck, lint, tests and the repo-wide
-guards on every push, and a red build blocks the merge. One guard already exists and has
-to be wired in: scripts/check-format-ownership.mjs, which refuses a score type declared
+fingering field: all of these look fine and sound almost fine. Vitest splits on one
+question, borrowed from roadkeep-gui: does this test start something? Plain files are
+fast and run between edits, in node for the packages and jsdom for renderer logic. Files
+named *.browser.test.tsx run in headless Chromium through Playwright, because jsdom lays
+nothing out and a test about scroll, focus order or a measured height would assert
+numbers it invented. Files named *-live.test.ts spawn a real Electron and are gates,
+with a global setup that refuses to run them against a bundle older than the tree. So
+npm test is fast, npm run test:live starts things, and CI runs both. The audio engine is
+tested against a fake clock rather than real time. ESLint carries the rules that matter
+for Electron specifically, including no Node imports reachable from renderer code.
+Prettier ends formatting debate. CI runs typecheck, lint, tests and the repo-wide guards
+on every push, and a red build blocks the merge. One guard already exists and has to be
+wired in: scripts/check-format-ownership.mjs, which refuses a score type declared
 outside the format package. The one rule worth stating out loud: a bug fixed in the
 format package arrives with the fixture that reproduced it, because fixtures are how
 this project remembers what a valid score is.

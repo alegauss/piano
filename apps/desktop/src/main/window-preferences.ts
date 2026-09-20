@@ -12,6 +12,18 @@ import type { BrowserWindowConstructorOptions } from 'electron'
  * these back off a live WebContents, so the object itself is the only honest
  * source — and the live probe in the self-check is what proves it took effect.
  */
+/**
+ * The window's background before the renderer has painted anything.
+ *
+ * The one colour the main process spells out, because it needs a value before
+ * any stylesheet exists and cannot read a custom property. It mirrors
+ * --surface-base in the dark theme — oklch(0.18 0.012 260) converted to sRGB —
+ * and the two are kept in step by hand: a mismatch shows as a flash of the
+ * wrong shade while a window is opening or being resized. Everything else in
+ * this app names a token instead of spelling one.
+ */
+export const WINDOW_BACKGROUND = '#0e1217'
+
 export const secureWebPreferences = {
   preload: join(__dirname, '..', 'preload', 'preload.cjs'),
   /** The renderer gets its own world; the preload's objects are copied, not shared. */

@@ -110,7 +110,50 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     )
   }
 
-  // 6. And a valid one still works after all that, so validation refused the
+  // 6. Both themes are real, and one switch restyles the chrome and the canvas
+  //    together. Asked of the live document, because the claim is about what
+  //    getComputedStyle resolves, not about what the stylesheet says.
+  const themes = (await webContents.executeJavaScript(`(() => {
+    const root = document.documentElement
+    const was = root.dataset.theme
+    const read = () => {
+      const s = getComputedStyle(root)
+      const body = getComputedStyle(document.body)
+      return {
+        chrome: body.backgroundColor,
+        text: body.color,
+        roll: s.getPropertyValue('--roll-background').trim(),
+        note: s.getPropertyValue('--note-part-1').trim(),
+      }
+    }
+    root.dataset.theme = 'dark'
+    const dark = read()
+    root.dataset.theme = 'light'
+    const light = read()
+    root.dataset.theme = was || 'dark'
+    return { dark, light }
+  })()`)) as {
+    dark: Record<string, string>
+    light: Record<string, string>
+  }
+
+  const changed = Object.keys(themes.dark).filter((key) => themes.dark[key] !== themes.light[key])
+  results.push(
+    check(
+      'both themes restyle the chrome and the canvas together',
+      changed.length === Object.keys(themes.dark).length,
+      `changed: ${changed.join(', ') || 'nothing'} (dark roll ${String(themes.dark['roll'])}, light roll ${String(themes.light['roll'])})`,
+    ),
+  )
+  results.push(
+    check(
+      'no token resolves to nothing in either theme',
+      Object.values(themes.dark).every((v) => v !== '') && Object.values(themes.light).every((v) => v !== ''),
+      `${JSON.stringify(themes.light)}`,
+    ),
+  )
+
+  // 7. And a valid one still works after all that, so validation refused the
   //    payload rather than breaking the channel.
   const accepted = (await webContents.executeJavaScript(
     'window.piano.setWindowTitle({ title: "Piano" }).then(r => r.title, e => "rejected: " + e.message)',
@@ -118,4 +161,31 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
   results.push(check('window:set-title accepts a valid payload', accepted === 'Piano', accepted))
 
   return results
+}
+
+/**
+ * Capture the window under both themes.
+ *
+ * "Renders correctly" is a visual claim, and nothing above can make it: a
+ * control that is the right colour and the wrong size passes every assertion
+ * here. So the run leaves two images a person can look at.
+ */
+export async function captureThemes(window: BrowserWindow, directory: string): Promise<string[]> {
+  const { writeFile, mkdir } = await import('node:fs/promises')
+  const { join } = await import('node:path')
+  await mkdir(directory, { recursive: true })
+
+  const written: string[] = []
+  for (const theme of ['dark', 'light'] as const) {
+    await window.webContents.executeJavaScript(
+      `document.documentElement.dataset.theme = ${JSON.stringify(theme)}`,
+    )
+    // One frame for the new custom properties to resolve and paint.
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const image = await window.webContents.capturePage()
+    const file = join(directory, `gallery-${theme}.png`)
+    await writeFile(file, image.toPNG())
+    written.push(file)
+  }
+  return written
 }

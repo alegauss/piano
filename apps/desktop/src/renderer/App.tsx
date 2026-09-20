@@ -1,8 +1,12 @@
 import type { AppInfoResponse } from '@piano/ipc'
 import { describeScore, FORMAT_VERSION, type Score } from '@piano/score-format'
+import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { readBridge } from './bridge'
+import { TokenGallery } from './components/TokenGallery'
+import { Button } from './components/ui/button'
+import { getTheme, setTheme, type ThemeName } from './lib/theme'
 
 /**
  * A stand-in until PI51 can open a real file. It exists so the renderer reads
@@ -17,6 +21,7 @@ const placeholder: Score = {
 export function App() {
   const [info, setInfo] = useState<AppInfoResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [theme, setThemeState] = useState<ThemeName>(getTheme)
 
   useEffect(() => {
     const bridge = readBridge()
@@ -47,32 +52,45 @@ export function App() {
     }
   }, [])
 
+  function toggleTheme() {
+    const next: ThemeName = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    setThemeState(next)
+  }
+
   return (
-    <main className="shell">
-      <h1 className="shell__title">Piano</h1>
-      <p className="shell__tagline">
-        Nothing plays yet. The three processes are wired and every call crosses a typed channel.
-      </p>
-      <p className="shell__score">{describeScore(placeholder)}</p>
-      {error !== null ? <p className="shell__error">{error}</p> : null}
-      <dl className="shell__versions">
-        <div className="shell__row">
-          <dt>Score format</dt>
-          <dd>v{info?.scoreFormatVersion ?? FORMAT_VERSION}</dd>
+    <div className="flex h-full flex-col overflow-auto bg-surface-base">
+      <header className="flex items-center justify-between gap-4 border-b border-border-subtle px-6 py-4">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-text-strong">Piano</h1>
+          <p className="text-sm text-text-muted">{describeScore(placeholder)}</p>
         </div>
-        <div className="shell__row">
-          <dt>Electron</dt>
-          <dd>{info?.electron ?? 'unavailable'}</dd>
-        </div>
-        <div className="shell__row">
-          <dt>Chromium</dt>
-          <dd>{info?.chrome ?? 'unavailable'}</dd>
-        </div>
-        <div className="shell__row">
-          <dt>Node</dt>
-          <dd>{info?.node ?? 'unavailable'}</dd>
-        </div>
-      </dl>
-    </main>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
+        >
+          {theme === 'dark' ? <Sun /> : <Moon />}
+        </Button>
+      </header>
+
+      <main className="flex flex-1 flex-col gap-10 px-6 py-8">
+        {error !== null ? (
+          <p className="rounded-(--radius) border border-danger px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        ) : null}
+
+        <TokenGallery />
+
+        <footer className="mt-auto flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
+          <span>Score format v{info?.scoreFormatVersion ?? FORMAT_VERSION}</span>
+          <span>Electron {info?.electron ?? 'unavailable'}</span>
+          <span>Chromium {info?.chrome ?? 'unavailable'}</span>
+          <span>Node {info?.node ?? 'unavailable'}</span>
+        </footer>
+      </main>
+    </div>
   )
 }

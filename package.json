@@ -14,7 +14,9 @@
     "smoke": "npm run smoke --workspace apps/desktop",
     "typecheck": "tsc -b",
     "check:format-ownership": "node scripts/check-format-ownership.mjs",
-    "selfcheck": "npm run selfcheck --workspace apps/desktop"
+    "selfcheck": "npm run selfcheck --workspace apps/desktop",
+    "check:colour-tokens": "node scripts/check-colour-tokens.mjs",
+    "check": "npm run typecheck && npm run check:format-ownership && npm run check:colour-tokens"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

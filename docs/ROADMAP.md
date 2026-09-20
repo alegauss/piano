@@ -2,7 +2,6 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI4** (deps: PI1 ✅, PI3 ✅) **There is no design system: every screen would invent its own colour, spacing and components** — Tailwind with shadcn and theme tokens gives buttons, sliders, dialogs and popovers ready-made, and the dark theme falls out of the same tokens. → §PI4
 - 📋 **PI5** (deps: PI1 ✅, PI2 ✅) **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Vitest, ESLint and Prettier running on every push make timing, scheduling and parsing verifiable, which is what nobody can check by hand. → §PI5
 - 📋 **PI6** (deps: PI1 ✅, PI5) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6
 
@@ -32,14 +31,14 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
-- 📋 **PI25** (deps: PI4) **There is no keyboard on screen: nothing shows which key a note belongs to or which is sounding** — An 88-key keyboard with correct black and white geometry is the anchor falling notes land on and the surface practice feedback is drawn on. → §PI25
+- 📋 **PI25** (deps: PI4 ✅) **There is no keyboard on screen: nothing shows which key a note belongs to or which is sounding** — An 88-key keyboard with correct black and white geometry is the anchor falling notes land on and the surface practice feedback is drawn on. → §PI25
 - 📋 **PI26** (deps: PI23, PI25) **Notes do not fall: there is nothing between the score and the screen** — A piano roll driven by the audio clock, not by a frame counter, is what makes what is seen and what is heard the same event. → §PI26
 - 📋 **PI27** (deps: PI26) **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — Rendering hundreds of visible notes at 60fps needs culling, a stable draw loop and measurement, not hope. → §PI27
 - 📋 **PI28** (deps: PI26) **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A particle burst and a key flash at the strike, behind an effects toggle, are what make the roll read as impact rather than as scrolling. → §PI28
 - 📋 **PI29** (deps: PI11, PI26) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
-- 📋 **PI30** (deps: PI4, PI23) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
+- 📋 **PI30** (deps: PI4 ✅, PI23) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
 - 📋 **PI31** (deps: PI9, PI26) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
-- 📋 **PI32** (deps: PI4, PI26) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
+- 📋 **PI32** (deps: PI4 ✅, PI26) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
 
 ## Block E — Practice mode and difficulty levels
 
@@ -72,15 +71,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI4
-
-- **shadcn components render correctly under both themes** A demo route shows button,
-  slider, dialog, popover, switch and select, and toggling the theme restyles all of
-  them without a reload or a flash of the wrong colours.
-- **No component hardcodes a colour** A grep over the renderer finds no hex literal
-  outside the token definition file, and the piano roll canvas reads its note and bar
-  colours from those same tokens.
 
 ## Done when — PI5
 
