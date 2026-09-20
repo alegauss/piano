@@ -2,20 +2,6 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-### §PI2 The format as a sibling package, not a folder inside the app
-
-The score JSON has three consumers: the renderer that draws it, the audio engine that
-schedules it, and the MCP server that validates what Claude Code has just written. If
-each carries its own copy of the types, the day the format gains a field there will be
-one version that accepts a file and another that rejects it, and the symptom will
-surface as music that does not play rather than as a type error. So
-packages/score-format exists from the start, before the first note: types, validator,
-migrations and fixtures in one place, publishable even if it is never published. npm
-workspaces are enough, with no Nx and no Turborepo, because this is three packages and
-not thirty. The rule that stays is simple: nothing under apps/ defines the format, it
-only consumes it. Breaking the package must break the build of both the app and the MCP
-server in the same run, and that is what CI has to prove.
-
 ### §PI3 Isolation and a typed IPC contract
 
 Electron opens a wide door between the page and the operating system by default, and
@@ -53,9 +39,11 @@ here, a node environment for the format package and a jsdom or browser environme
 renderer logic, and the audio engine is tested against a fake clock rather than real
 time so the scheduler can be driven deterministically. ESLint carries the rules that
 matter for Electron specifically, including no Node imports reachable from renderer
-code. Prettier ends formatting debate. CI runs typecheck, lint and tests on every push,
-and a red build blocks the merge. The one rule worth stating out loud: a bug fixed in
-the format package arrives with the fixture that reproduced it, because fixtures are how
+code. Prettier ends formatting debate. CI runs typecheck, lint, tests and the repo-wide
+guards on every push, and a red build blocks the merge. One guard already exists and has
+to be wired in: scripts/check-format-ownership.mjs, which refuses a score type declared
+outside the format package. The one rule worth stating out loud: a bug fixed in the
+format package arrives with the fixture that reproduced it, because fixtures are how
 this project remembers what a valid score is.
 
 ### §PI6 Packaging, signing and what stays out of the bundle

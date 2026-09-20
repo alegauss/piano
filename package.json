@@ -5,13 +5,15 @@
   "description": "A Claude Code First piano: play scores, watch them fall, learn to play them.",
   "license": "MIT",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspace apps/desktop",
     "build": "npm run build --workspace apps/desktop",
     "smoke": "npm run smoke --workspace apps/desktop",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "check:format-ownership": "node scripts/check-format-ownership.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

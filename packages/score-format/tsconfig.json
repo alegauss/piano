@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Declarations land in dist/ and package.json points "types" at them, so a
+    // consumer resolves this package through the project reference rather than
+    // pulling its source into its own program and fighting rootDir.
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2023"],
+    // No node, no DOM: the format runs in the main process, in the renderer and
+    // in the MCP server, so anything platform-specific here is a bug.
+    "types": []
+  },
+  "include": ["src/**/*.ts"]
+}

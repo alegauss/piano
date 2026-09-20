@@ -10,6 +10,7 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
+    "@piano/score-format": "*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

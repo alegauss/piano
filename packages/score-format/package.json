@@ -1,0 +1,22 @@
+{
+  "name": "@piano/score-format",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The score JSON format: types, validator, migrations and fixtures, in one place.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

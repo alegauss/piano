@@ -2,21 +2,20 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI2** (deps: PI1 ✅) **The score format has to run inside the app and inside the MCP server, with no duplicated code** — A monorepo with workspaces and one shared format package stops the validator and the app from drifting apart, which is this design's most expensive defect. → §PI2
-- 📋 **PI3** (deps: PI1 ✅, PI2) **The renderer can reach Node and the file system, and IPC messages carry no type** — Context isolation on, Node integration off and a typed IPC contract in the preload close that surface before it grows. → §PI3
+- 📋 **PI3** (deps: PI1 ✅, PI2 ✅) **The renderer can reach Node and the file system, and IPC messages carry no type** — Context isolation on, Node integration off and a typed IPC contract in the preload close that surface before it grows. → §PI3
 - 📋 **PI4** (deps: PI1 ✅, PI3) **There is no design system: every screen would invent its own colour, spacing and components** — Tailwind with shadcn and theme tokens gives buttons, sliders, dialogs and popovers ready-made, and the dark theme falls out of the same tokens. → §PI4
-- 📋 **PI5** (deps: PI1 ✅, PI2) **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Vitest, ESLint and Prettier running on every push make timing, scheduling and parsing verifiable, which is what nobody can check by hand. → §PI5
+- 📋 **PI5** (deps: PI1 ✅, PI2 ✅) **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Vitest, ESLint and Prettier running on every push make timing, scheduling and parsing verifiable, which is what nobody can check by hand. → §PI5
 - 📋 **PI6** (deps: PI1 ✅, PI5) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6
 
 ## Block B — Score JSON format
 
-- 📋 **PI7** (deps: PI2) **There is no time model: nothing says where a note starts, and seconds break the moment tempo changes** — Ticks on a PPQ grid plus a tempo map keep positions exact under tempo change, looping and slow practice, which wall-clock seconds cannot. → §PI7
+- 📋 **PI7** (deps: PI2 ✅) **There is no time model: nothing says where a note starts, and seconds break the moment tempo changes** — Ticks on a PPQ grid plus a tempo map keep positions exact under tempo change, looping and slow practice, which wall-clock seconds cannot. → §PI7
 - 📋 **PI8** (deps: PI7) **There is no note model: pitch, length, dynamics, hand and fingering have nowhere to live** — One note object carrying MIDI pitch, optional spelling, tick length, velocity, voice, hand and finger serves playback, drawing and teaching at once. → §PI8
 - 📋 **PI9** (deps: PI8) **A score is one flat list of notes, so the parts panel has nothing to mute, solo or colour** — Grouping notes into named parts with their own colour and role is what lets a listener silence the left hand or follow a single voice. → §PI9
 - 📋 **PI10** (deps: PI8) **Sustain pedal, dynamics and articulation are unrepresented, so playback sounds mechanical** — Timed pedal events plus dynamic and articulation marks that shape velocity and length are the difference between music and a metronome. → §PI10
 - 📋 **PI11** (deps: PI7) **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — Named ranges give the loop selector, the practice tools and Claude Code one vocabulary for talking about part of a piece. → §PI11
 - 📋 **PI12** (deps: PI8, PI9) **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Difficulty arrangements as views over one note source, with overrides instead of copies, keep three levels from drifting into three different pieces. → §PI12
-- 📋 **PI13** (deps: PI2) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
+- 📋 **PI13** (deps: PI2 ✅) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
 - 📋 **PI14** (deps: PI12, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
 - 📋 **PI15** (deps: PI14) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
 - 📋 **PI16** (deps: PI15) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
@@ -58,7 +57,7 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI43** (deps: PI2, PI15) **Claude Code cannot reach the app: there is no way to send a score or start playback** — An MCP server exposing score and transport tools is the whole premise of this being a Claude Code plugin rather than a player. → §PI43
+- 📋 **PI43** (deps: PI2 ✅, PI15) **Claude Code cannot reach the app: there is no way to send a score or start playback** — An MCP server exposing score and transport tools is the whole premise of this being a Claude Code plugin rather than a player. → §PI43
 - 📋 **PI44** (deps: PI3, PI43) **The MCP server and the app are separate processes with no way to find each other** — A discovery and handshake step is what makes a tool call reach the window the user is looking at, rather than a second silent instance. → §PI44
 - 📋 **PI45** (deps: PI43) **There is no plugin: the tools only work for someone who wires an MCP server by hand** — A packaged Claude Code plugin with commands is what makes installation a single step and the whole premise reachable by anyone. → §PI45
 - 📋 **PI46** (deps: PI15, PI45) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
@@ -74,15 +73,6 @@
 - 📋 **PI53** (deps: PI3) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI2
-
-- **App and MCP server import the same format package** No score type is declared
-  outside packages/score-format, and both consumers resolve it through the workspace
-  rather than a relative path into another app.
-- **A breaking format change fails both builds in one run** Removing a field from the
-  package makes the desktop app and the MCP server fail typecheck in the same CI job,
-  rather than one of them failing months later at runtime.
 
 ## Done when — PI3
 

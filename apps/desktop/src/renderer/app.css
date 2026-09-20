@@ -43,6 +43,15 @@ body {
   color: #98a2b3;
 }
 
+.shell__score {
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid #1f2937;
+  border-radius: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.9375rem;
+}
+
 .shell__versions {
   display: flex;
   flex-direction: column;
