@@ -1,0 +1,29 @@
+{
+  "name": "@piano/ipc",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The IPC contract: one declaration of every channel, its request and its response.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./names": {
+      "types": "./dist/names.d.ts",
+      "default": "./src/names.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "dependencies": {
+    "zod": "^4.1.12"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

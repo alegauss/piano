@@ -3,10 +3,26 @@
   "compilerOptions": {
     "outDir": "../../.tsbuild/desktop-renderer",
     "rootDir": "src/renderer",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "jsx": "react-jsx",
-    "types": ["vite/client"]
+    "types": [
+      "vite/client"
+    ]
   },
-  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.tsx"],
-  "references": [{ "path": "../../packages/score-format" }]
+  "include": [
+    "src/renderer/**/*.ts",
+    "src/renderer/**/*.tsx"
+  ],
+  "references": [
+    {
+      "path": "../../packages/score-format"
+    },
+    {
+      "path": "../../packages/ipc"
+    }
+  ]
 }

@@ -26,3 +26,4 @@ Thumbs.db
 # per-run Electron profiles (dev and smoke keep their caches apart)
 .dev-profile/
 .smoke-profile/
+.selfcheck-profile/

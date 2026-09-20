@@ -2,8 +2,7 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 🛠 **PI3** (deps: PI1 ✅, PI2 ✅) **The renderer can reach Node and the file system, and IPC messages carry no type** — Context isolation on, Node integration off and a typed IPC contract in the preload close that surface before it grows. → §PI3
-- 📋 **PI4** (deps: PI1 ✅, PI3) **There is no design system: every screen would invent its own colour, spacing and components** — Tailwind with shadcn and theme tokens gives buttons, sliders, dialogs and popovers ready-made, and the dark theme falls out of the same tokens. → §PI4
+- 📋 **PI4** (deps: PI1 ✅, PI3 ✅) **There is no design system: every screen would invent its own colour, spacing and components** — Tailwind with shadcn and theme tokens gives buttons, sliders, dialogs and popovers ready-made, and the dark theme falls out of the same tokens. → §PI4
 - 📋 **PI5** (deps: PI1 ✅, PI2 ✅) **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Vitest, ESLint and Prettier running on every push make timing, scheduling and parsing verifiable, which is what nobody can check by hand. → §PI5
 - 📋 **PI6** (deps: PI1 ✅, PI5) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6
 
@@ -44,7 +43,7 @@
 
 ## Block E — Practice mode and difficulty levels
 
-- 📋 **PI33** (deps: PI3) **A MIDI keyboard plugged into the machine is invisible: nothing receives a single note** — Web MIDI with device discovery and hot-plug is what turns a real piano into the input device this whole block depends on. → §PI33
+- 📋 **PI33** (deps: PI3 ✅) **A MIDI keyboard plugged into the machine is invisible: nothing receives a single note** — Web MIDI with device discovery and hot-plug is what turns a real piano into the input device this whole block depends on. → §PI33
 - 📋 **PI34** (deps: PI25) **Without a MIDI keyboard there is no way to play at all, so most people cannot try the app** — A computer keyboard mapping with octave shift makes practice reachable on any laptop, and makes the practice code testable without hardware. → §PI34
 - 📋 **PI35** (deps: PI33) **Input and output latency are unknown, so a player who is in time gets graded late** — Measuring output latency and MIDI input delay once, then subtracting them, is what makes any grading fair on a given machine. → §PI35
 - 📋 **PI36** (deps: PI23, PI33) **Playback runs away from a beginner, who cannot keep up and has nothing to practise against** — A wait mode that holds the score until the right keys are pressed lets a learner set the pace instead of chasing one. → §PI36
@@ -58,7 +57,7 @@
 ## Block F — Claude Code First: MCP and plugin
 
 - 📋 **PI43** (deps: PI2 ✅, PI15) **Claude Code cannot reach the app: there is no way to send a score or start playback** — An MCP server exposing score and transport tools is the whole premise of this being a Claude Code plugin rather than a player. → §PI43
-- 📋 **PI44** (deps: PI3, PI43) **The MCP server and the app are separate processes with no way to find each other** — A discovery and handshake step is what makes a tool call reach the window the user is looking at, rather than a second silent instance. → §PI44
+- 📋 **PI44** (deps: PI3 ✅, PI43) **The MCP server and the app are separate processes with no way to find each other** — A discovery and handshake step is what makes a tool call reach the window the user is looking at, rather than a second silent instance. → §PI44
 - 📋 **PI45** (deps: PI43) **There is no plugin: the tools only work for someone who wires an MCP server by hand** — A packaged Claude Code plugin with commands is what makes installation a single step and the whole premise reachable by anyone. → §PI45
 - 📋 **PI46** (deps: PI15, PI45) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
 - 📋 **PI47** (deps: PI15, PI43) **A rejected score comes back as a validation dump the model cannot act on** — Errors written for a repair loop, naming the field, the value and the fix, let the model correct its own output without a human. → §PI47
@@ -68,20 +67,11 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI51** (deps: PI3, PI15) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
+- 📋 **PI51** (deps: PI3 ✅, PI15) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
 - 📋 **PI52** (deps: PI13, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
-- 📋 **PI53** (deps: PI3) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
+- 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI3
-
-- **The renderer cannot reach require, process or fs** All three evaluate to undefined
-  in a production build, and a test reads the BrowserWindow options back to assert
-  contextIsolation on, sandbox on and nodeIntegration off.
-- **Every IPC channel has a shared type and validates on arrival** Each handler in main
-  parses its payload before use; a test sends a malformed payload on every channel and
-  gets a rejected promise carrying a readable error, not a thrown exception.
 
 ## Done when — PI4
 

@@ -1,12 +1,29 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/score-format" },
-    { "path": "apps/mcp-server" },
-    { "path": "apps/desktop/tsconfig.main.json" },
-    { "path": "apps/desktop/tsconfig.preload.json" },
-    { "path": "apps/desktop/tsconfig.renderer.json" },
-    { "path": "apps/desktop/tsconfig.node.json" },
-    { "path": "tsconfig.scripts.json" }
+    {
+      "path": "packages/score-format"
+    },
+    {
+      "path": "packages/ipc"
+    },
+    {
+      "path": "apps/mcp-server"
+    },
+    {
+      "path": "apps/desktop/tsconfig.main.json"
+    },
+    {
+      "path": "apps/desktop/tsconfig.preload.json"
+    },
+    {
+      "path": "apps/desktop/tsconfig.renderer.json"
+    },
+    {
+      "path": "apps/desktop/tsconfig.node.json"
+    },
+    {
+      "path": "tsconfig.scripts.json"
+    }
   ]
 }

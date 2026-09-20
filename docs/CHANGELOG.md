@@ -11,6 +11,9 @@
 - ✅ **PI56** **npm run dev opens two identical windows, and an edit to main spawns another instead of replacing it** — npm run dev opens one window and an edit to main replaces that process rather than adding a second, with dev and smoke runs on separate Electron profiles.
   checked **One edit to a main-process file restarts exactly one process** The main Electron process, the one with no --type= switch, is replaced one for one; a rebuild that touches both esbuild contexts still produces a single restart.
   checked **A dev run and a smoke run never share a profile directory** Each passes its own userData path, so neither fills the log with cache access-denied errors nor disturbs the installed app's profile.
+- ✅ **PI3** **The renderer can reach Node and the file system, and IPC messages carry no type** — The renderer reaches nothing but a named bridge, and every IPC channel is declared once and parsed on arrival in main, proven by a self-check inside a live Electron.
+  checked **The renderer cannot reach require, process or fs** All three evaluate to undefined in a production build, and a test reads the BrowserWindow options back to assert contextIsolation on, sandbox on and nodeIntegration off.
+  checked **Every IPC channel has a shared type and validates on arrival** Each handler in main parses its payload before use; a test sends a malformed payload on every channel and gets a rejected promise carrying a readable error, not a thrown exception.
 
 ## Block B — Score JSON format
 

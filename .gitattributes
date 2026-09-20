@@ -1,0 +1,17 @@
+# One line ending in the repository, whatever the checkout platform does.
+# Without this, a tool that writes a file in text mode on Windows commits CRLF
+# while the editor beside it commits LF, and the diff is the whole file.
+* text=auto eol=lf
+
+# Binary assets: never translated, never diffed as text.
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.woff binary
+*.woff2 binary
+*.wav binary
+*.ogg binary
+*.flac binary
+*.mid binary
+*.midi binary

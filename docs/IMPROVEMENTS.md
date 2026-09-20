@@ -2,20 +2,6 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-### §PI3 Isolation and a typed IPC contract
-
-Electron opens a wide door between the page and the operating system by default, and
-this app will load JSON a model wrote and files the user dragged in. So contextIsolation
-on, nodeIntegration off, sandbox on, and a Content Security Policy that allows no remote
-script. Everything the renderer needs from the system passes through a narrow API
-exposed in preload via contextBridge, named by intent rather than by capability:
-openScore, listLibrary, transportState. Each channel gets a type in the shared package,
-and its payload is validated on arrival in main, because preload is the trust boundary
-and the renderer is not. Validating at the border is also what turns a malformed score
-into an error message instead of an exception in the main process. The cost is writing
-the contract twice at the start; the return is that no new screen can quietly reopen
-that door without a reviewer seeing it.
-
 ### §PI4 Tailwind, shadcn and tokens for both themes
 
 The reference interface is dark, dense and full of small controls: a transport bar, a

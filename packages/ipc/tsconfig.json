@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2023"],
+    // No node and no DOM: this contract is read by main, by preload and by the
+    // renderer, so anything platform-specific here would bind all three.
+    "types": []
+  },
+  "include": ["src/**/*.ts"]
+}

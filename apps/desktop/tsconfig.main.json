@@ -3,8 +3,19 @@
   "compilerOptions": {
     "outDir": "../../.tsbuild/desktop-main",
     "rootDir": "src/main",
-    "lib": ["ES2023"],
-    "types": ["node"]
+    "lib": [
+      "ES2023"
+    ],
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/main/**/*.ts"]
+  "include": [
+    "src/main/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../../packages/ipc"
+    }
+  ]
 }
