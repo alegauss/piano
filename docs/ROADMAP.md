@@ -2,7 +2,7 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI3** (deps: PI1 ✅, PI2 ✅) **The renderer can reach Node and the file system, and IPC messages carry no type** — Context isolation on, Node integration off and a typed IPC contract in the preload close that surface before it grows. → §PI3
+- 🛠 **PI3** (deps: PI1 ✅, PI2 ✅) **The renderer can reach Node and the file system, and IPC messages carry no type** — Context isolation on, Node integration off and a typed IPC contract in the preload close that surface before it grows. → §PI3
 - 📋 **PI4** (deps: PI1 ✅, PI3) **There is no design system: every screen would invent its own colour, spacing and components** — Tailwind with shadcn and theme tokens gives buttons, sliders, dialogs and popovers ready-made, and the dark theme falls out of the same tokens. → §PI4
 - 📋 **PI5** (deps: PI1 ✅, PI2 ✅) **Nothing checks the code: with no tests, no lint and no gate, a regression only shows up while playing** — Vitest, ESLint and Prettier running on every push make timing, scheduling and parsing verifiable, which is what nobody can check by hand. → §PI5
 - 📋 **PI6** (deps: PI1 ✅, PI5) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6

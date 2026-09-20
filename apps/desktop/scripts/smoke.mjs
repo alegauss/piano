@@ -1,7 +1,11 @@
 import { spawn } from 'node:child_process'
+import { join } from 'node:path'
 
 import { electronEnv, electronPath } from './electron.mjs'
 import { appDir } from './esbuild.options.mjs'
+
+/** Its own profile, so a smoke run and a dev run never fight over one cache. */
+const smokeUserDataDir = join(appDir, '.smoke-profile')
 
 const EXPECTED = 'piano: renderer loaded'
 
@@ -12,7 +16,7 @@ const EXPECTED = 'piano: renderer loaded'
  */
 const electron = spawn(electronPath, ['.'], {
   cwd: appDir,
-  env: electronEnv({ PIANO_SMOKE: '1' }),
+  env: electronEnv({ PIANO_SMOKE: '1', PIANO_USER_DATA_DIR: smokeUserDataDir }),
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 

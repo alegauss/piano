@@ -22,3 +22,7 @@ Thumbs.db
 # TypeScript project-reference build info
 .tsbuild/
 *.tsbuildinfo
+
+# per-run Electron profiles (dev and smoke keep their caches apart)
+.dev-profile/
+.smoke-profile/

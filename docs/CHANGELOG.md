@@ -8,6 +8,9 @@
 - ✅ **PI2** **The score format has to run inside the app and inside the MCP server, with no duplicated code** — The score format lives in one package that the desktop app and the MCP server both import, and a guard plus one typecheck prove neither keeps a second copy.
   checked **App and MCP server import the same format package** No score type is declared outside packages/score-format, and both consumers resolve it through the workspace rather than a relative path into another app.
   checked **A breaking format change fails both builds in one run** Removing a field from the package makes the desktop app and the MCP server fail typecheck in the same CI job, rather than one of them failing months later at runtime.
+- ✅ **PI56** **npm run dev opens two identical windows, and an edit to main spawns another instead of replacing it** — npm run dev opens one window and an edit to main replaces that process rather than adding a second, with dev and smoke runs on separate Electron profiles.
+  checked **One edit to a main-process file restarts exactly one process** The main Electron process, the one with no --type= switch, is replaced one for one; a rebuild that touches both esbuild contexts still produces a single restart.
+  checked **A dev run and a smoke run never share a profile directory** Each passes its own userData path, so neither fills the log with cache access-denied errors nor disturbs the installed app's profile.
 
 ## Block B — Score JSON format
 

@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { context } from 'esbuild'
@@ -10,13 +11,27 @@ import { appDir, esbuildOptions } from './esbuild.options.mjs'
 
 const viteConfigFile = fileURLToPath(new URL('../vite.config.mts', import.meta.url))
 
+/**
+ * A profile of its own, so a dev run never shares a cache directory with the
+ * installed app or with a smoke run. Two Electron processes over one userData
+ * directory is what produces the "Unable to move the cache: access denied"
+ * wall of errors, and the second process loses.
+ */
+const devUserDataDir = join(appDir, '.dev-profile')
+
+/** How long to wait for a burst of rebuilds to settle before restarting once. */
+const RESTART_DEBOUNCE_MS = 50
+
 /** @type {import('node:child_process').ChildProcess | null} */
 let electron = null
 /** True while a rebuild is deliberately killing electron, so its exit is not the user quitting. */
 let restarting = false
-/** The first esbuild pass must not restart anything: there is nothing running yet. */
-let started = false
 let shuttingDown = false
+
+/** Restarts run one at a time, chained: a second request waits rather than racing. */
+let restartChain = Promise.resolve()
+/** @type {NodeJS.Timeout | null} */
+let restartTimer = null
 
 const server = await createServer({ configFile: viteConfigFile })
 await server.listen()
@@ -26,23 +41,53 @@ if (devServerUrl === undefined) {
   throw new Error('dev: vite started but reported no local url')
 }
 
-/** Rebuilding main or preload means restarting electron; the renderer hot-reloads itself. */
-const restartPlugin = {
-  name: 'piano-restart-electron',
-  /** @param {import('esbuild').PluginBuild} build */
-  setup(build) {
-    build.onEnd((result) => {
-      if (result.errors.length > 0 || !started || shuttingDown) {
-        return
-      }
-      void restartElectron()
+/**
+ * Rebuilding main or preload restarts electron; the renderer reloads itself.
+ *
+ * One instance of this plugin per context, each ignoring its own first build:
+ * ctx.watch() resolves when watching begins, not when the first build ends, so
+ * without that the opening build lands as though it were a change.
+ *
+ * @returns {import('esbuild').Plugin}
+ */
+function restartPlugin() {
+  let first = true
+  return {
+    name: 'piano-restart-electron',
+    setup(build) {
+      build.onEnd((result) => {
+        if (first) {
+          first = false
+          return
+        }
+        if (result.errors.length > 0 || shuttingDown) {
+          return
+        }
+        scheduleRestart()
+      })
+    },
+  }
+}
+
+/**
+ * Coalesce a burst into a single restart. Main and preload are two contexts
+ * that nearly always rebuild together, and one edit must not mean two windows.
+ */
+function scheduleRestart() {
+  if (restartTimer !== null) {
+    return
+  }
+  restartTimer = setTimeout(() => {
+    restartTimer = null
+    restartChain = restartChain.then(restartElectron).catch((error) => {
+      process.stderr.write(`dev: restart failed: ${String(error)}\n`)
     })
-  },
+  }, RESTART_DEBOUNCE_MS)
 }
 
 const contexts = await Promise.all(
   esbuildOptions(true).map((options) =>
-    context({ ...options, plugins: [...(options.plugins ?? []), restartPlugin] }),
+    context({ ...options, plugins: [...(options.plugins ?? []), restartPlugin()] }),
   ),
 )
 
@@ -52,10 +97,14 @@ function startElectron() {
   electron = spawn(electronPath, ['.'], {
     cwd: appDir,
     stdio: 'inherit',
-    env: electronEnv({ VITE_DEV_SERVER_URL: devServerUrl }),
+    env: electronEnv({
+      VITE_DEV_SERVER_URL: devServerUrl,
+      PIANO_USER_DATA_DIR: devUserDataDir,
+    }),
   })
 
-  electron.on('exit', (code) => {
+  const child = electron
+  child.on('exit', (code) => {
     if (restarting || shuttingDown) {
       return
     }
@@ -65,16 +114,25 @@ function startElectron() {
 }
 
 async function restartElectron() {
-  if (electron === null) {
+  if (shuttingDown) {
+    return
+  }
+  const running = electron
+  if (running === null || running.exitCode !== null) {
     startElectron()
     return
   }
   restarting = true
-  const exited = once(electron, 'exit')
-  electron.kill()
-  await exited
-  restarting = false
-  startElectron()
+  try {
+    const exited = once(running, 'exit')
+    running.kill()
+    await exited
+  } finally {
+    restarting = false
+  }
+  if (!shuttingDown) {
+    startElectron()
+  }
 }
 
 /** @param {number} code */
@@ -83,6 +141,10 @@ async function shutdown(code) {
     return
   }
   shuttingDown = true
+  if (restartTimer !== null) {
+    clearTimeout(restartTimer)
+    restartTimer = null
+  }
   if (electron !== null && electron.exitCode === null) {
     electron.kill()
   }
@@ -98,7 +160,6 @@ process.on('SIGTERM', () => {
   void shutdown(0)
 })
 
-started = true
 startElectron()
 
 process.stdout.write(`piano: dev server on ${devServerUrl}\n`)

@@ -16,6 +16,17 @@ const isSmokeRun = process.env['PIANO_SMOKE'] === '1'
 
 const SMOKE_TIMEOUT_MS = 60_000
 
+/**
+ * A dev run and a smoke run each pass their own profile directory. Two Electron
+ * processes sharing one userData directory fight over the disk cache, and the
+ * loser fills the log with "Unable to move the cache: access denied" while
+ * behaving oddly in ways nobody connects back to the cause.
+ */
+const userDataDir = process.env['PIANO_USER_DATA_DIR']
+if (userDataDir !== undefined && userDataDir !== '') {
+  app.setPath('userData', userDataDir)
+}
+
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
