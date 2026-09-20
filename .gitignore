@@ -1,0 +1,17 @@
+# roadkeep's vendored engine — restored by `roadkeep install --vendor`
+.roadkeep/
+
+# dependencies and build output
+node_modules/
+dist/
+out/
+release/
+
+# local environment
+.env
+.env.local
+*.log
+
+# os
+.DS_Store
+Thumbs.db
