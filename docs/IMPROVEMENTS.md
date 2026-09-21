@@ -34,30 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI73 A stave on screen, drawn by VexFlow
-
-VexFlow is the dependency, because engraving is a large, solved, unglamorous problem:
-glyphs, stems, beams, accidental placement and horizontal spacing are weeks of work
-nobody will thank us for. It renders in the browser with no node imports, so it sits
-inside the renderer sandbox, and the adapter written against it stays small.
-
-SheetMusic.tsx is a read-only panel in the main row, carrying an aria-label the way
-PartsPanel does, so a browser test can find it by accessible name. It takes the notes
-already filtered through visibleNotes(notes, view), so hiding a part in PartsPanel hides
-it here too without a second filter.
-
-The adapter maps hand to clef — right to treble, left to bass — spelling to the written
-accidental, metadata.key to the key signature, and timing.timeSignatures to the meter,
-one VexFlow stave per bar per clef, laid out in systems that wrap to the panel width.
-PI72 supplies the figures and the rests.
-
-Scope this to a static engraving of the open piece. No control reaching it, no highlight
-while it plays, no theming: each of those is a different kind of work and gets its own
-line after this one. The test is a browser test, rendering a two-bar score and asserting
-the staves, the clefs and the note count, because jsdom would pass against a stylesheet
-that never loaded. It stops short of the non-goal "Staff notation editor": this view
-reads a score and never edits one, so no rivalry with MuseScore starts here.
-
 ### §PI74 The button, and where the choice is kept
 
 There is no tab system here, and this should not be the task that introduces one. The

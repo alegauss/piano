@@ -16,11 +16,10 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI73** (deps: PI72 ✅) **The piece has no written form: the falling roll is the only way to read what comes next** — A player who reads staff notation gets nothing from this app, and no code here engraves a stave. → §PI73
-- 📋 **PI74** (deps: PI73) **Nothing on screen reaches the sheet view: the roll owns the centre of the window** — The stave is unreachable until a control switches to it, and this app has no tabs, only the full-screen flag. → §PI74
+- 📋 **PI74** (deps: PI73 ✅) **Nothing on screen reaches the sheet view: the roll owns the centre of the window** — The stave is unreachable until a control switches to it, and this app has no tabs, only the full-screen flag. → §PI74
 - 📋 **PI75** (deps: PI74) **The stave stands still while the piece plays, so the reader loses their place by the second bar** — A written page is useless mid-piece unless the sounding bar is marked and the page turns itself. → §PI75
-- 📋 **PI76** (deps: PI73) **VexFlow draws black on white, unreadable in the dark theme and outside the app's colour system** — The renderer refuses colour literals, so the staves need tokens of their own before they can sit in either theme. → §PI76
-- 📋 **PI77** (deps: PI73) **The view infers clefs, accidentals and rests, then shows the guess as if it were the score** — The format carries no clefs, no key changes and no rests, so a reader is misled unless the page says what was inferred. → §PI77
+- 📋 **PI76** (deps: PI73 ✅) **VexFlow draws black on white, unreadable in the dark theme and outside the app's colour system** — The renderer refuses colour literals, so the staves need tokens of their own before they can sit in either theme. → §PI76
+- 📋 **PI77** (deps: PI73 ✅) **The view infers clefs, accidentals and rests, then shows the guess as if it were the score** — The format carries no clefs, no key changes and no rests, so a reader is misled unless the page says what was inferred. → §PI77
 
 ## Done when — Block A
 
