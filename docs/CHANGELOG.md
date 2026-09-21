@@ -51,6 +51,9 @@
 - ✅ **PI14** **The format has no version, so a file written today stops opening the moment a field changes** — Every score declares a version that a migration chain walks forward, and a field the format does not define is an error naming the nearest real one.
   checked **A version 1 fixture opens in the current app** Frozen files from every historical version load through the migration chain, and each resolves to the same score the current writer would produce from the same music.
   checked **An unknown key outside extensions is an error** The validator rejects a misspelled field by name rather than ignoring it, while the same key placed under extensions survives a round trip untouched.
+- ✅ **PI15** **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — One zod schema produces the types, the runtime validator and the published JSON Schema, and a bad score is refused at the door naming the path and the value.
+  checked **The generated JSON Schema matches the zod schema** CI regenerates it and fails when the checked-in file differs, so the document a model reads is never behind the validator the app actually runs.
+  checked **Errors name the path, the value and the expectation** Each malformed fixture produces a message a model can act on: a JSON pointer to the field, the value that arrived and what was required instead.
 
 ## Block C — Audio engine and transport
 

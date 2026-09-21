@@ -22,21 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI15 One source of truth for the schema and the validator
-
-Validation has two audiences and they need identical rules. A human or a model writing a
-score wants a JSON Schema to read and check against; the app wants a runtime validator
-that returns typed data and refuses bad input at the border. Maintaining both by hand
-guarantees they drift. So the format is defined once as a zod schema inside the shared
-package, TypeScript types are inferred from it, and the JSON Schema is generated from it
-as a build artifact that CI regenerates and fails on when it is stale. Error messages
-carry the JSON path, the value received and what was expected, because the main consumer
-of those messages is a model trying to repair its own output, and a message reading
-invalid input teaches it nothing. Validation runs at three points: when a file is opened
-from disk, when the MCP server receives a score, and throughout the tests. The same code
-runs at all three, so a file the tool accepts is a file the app opens, with no third
-behaviour hiding between them.
-
 ### §PI16 Fixtures that say what a valid score is
 
 The format will be refactored, and the only thing standing between that refactor and a

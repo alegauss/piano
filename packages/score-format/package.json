@@ -14,9 +14,14 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "schema"
   ],
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "schema": "vite-node scripts/generate-schema.mts"
+  },
+  "dependencies": {
+    "zod": "^4.1.12"
   }
 }

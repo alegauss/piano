@@ -101,8 +101,9 @@ export default tseslint.config(
      * TypeScript project and asking one to place it is an error, not a finding.
      */
     files: [
-      'scripts/**/*.mjs',
-      'apps/*/scripts/**/*.mjs',
+      'scripts/**/*.{mjs,mts}',
+      'apps/*/scripts/**/*.{mjs,mts}',
+      'packages/*/scripts/**/*.{mjs,mts}',
       'build/**/*.mjs',
       '**/*.config.{js,mjs,ts,mts}',
       'eslint.config.mjs',

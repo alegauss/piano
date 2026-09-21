@@ -12,3 +12,6 @@ package-lock.json
 docs/ROADMAP.md
 docs/CHANGELOG.md
 docs/IMPROVEMENTS.md
+
+# Generated from the zod schema; npm run schema owns its formatting.
+packages/score-format/schema/

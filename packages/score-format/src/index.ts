@@ -108,6 +108,29 @@ export {
 } from './migrate'
 
 export {
+  formatProblems,
+  MAX_REPORTED_PROBLEMS,
+  parseScore,
+  type ParseResult,
+  type ScoreProblem,
+} from './parse'
+
+export {
+  arrangementSchema,
+  CURRENT_FORMAT_VERSION,
+  expressionSchema,
+  metadataSchema,
+  noteSchema,
+  partSchema,
+  scoreSchema,
+  sectionSchema,
+  timingSchema,
+  type ScoreInput,
+} from './schema'
+
+export { buildSchemaDocument, renderSchemaDocument } from './schema-document'
+
+export {
   barAtTick,
   barRangeToTicks,
   DEFAULT_MICROSECONDS_PER_QUARTER,

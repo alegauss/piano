@@ -6,9 +6,8 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI15** (deps: PI14 ✅) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
-- 📋 **PI16** (deps: PI15) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
-- 📋 **PI17** (deps: PI15) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
+- 📋 **PI16** (deps: PI15 ✅) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
+- 📋 **PI17** (deps: PI15 ✅) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
 
 ## Block C — Audio engine and transport
 
@@ -46,31 +45,22 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI43** (deps: PI2 ✅, PI15) **Claude Code cannot reach the app: there is no way to send a score or start playback** — An MCP server exposing score and transport tools is the whole premise of this being a Claude Code plugin rather than a player. → §PI43
+- 📋 **PI43** (deps: PI2 ✅, PI15 ✅) **Claude Code cannot reach the app: there is no way to send a score or start playback** — An MCP server exposing score and transport tools is the whole premise of this being a Claude Code plugin rather than a player. → §PI43
 - 📋 **PI44** (deps: PI3 ✅, PI43) **The MCP server and the app are separate processes with no way to find each other** — A discovery and handshake step is what makes a tool call reach the window the user is looking at, rather than a second silent instance. → §PI44
 - 📋 **PI45** (deps: PI43) **There is no plugin: the tools only work for someone who wires an MCP server by hand** — A packaged Claude Code plugin with commands is what makes installation a single step and the whole premise reachable by anyone. → §PI45
-- 📋 **PI46** (deps: PI15, PI45) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
-- 📋 **PI47** (deps: PI15, PI43) **A rejected score comes back as a validation dump the model cannot act on** — Errors written for a repair loop, naming the field, the value and the fix, let the model correct its own output without a human. → §PI47
+- 📋 **PI46** (deps: PI15 ✅, PI45) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
+- 📋 **PI47** (deps: PI15 ✅, PI43) **A rejected score comes back as a validation dump the model cannot act on** — Errors written for a repair loop, naming the field, the value and the fix, let the model correct its own output without a human. → §PI47
 - 📋 **PI48** (deps: PI6 ✅, PI44) **Asking to play a piece fails whenever the app is closed, which is most of the time** — Launching or focusing the app from a tool call is what makes the request work from a chat window with nothing already open. → §PI48
 - 📋 **PI49** (deps: PI44) **A local port that accepts scores and plays them is an open door on the machine** — Binding to loopback, requiring a token and allowlisting paths keep a convenience channel from becoming a way in. → §PI49
 - 📋 **PI50** (deps: PI26, PI46, PI48) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 
 ## Block G — Score library and distribution
 
-- 📋 **PI51** (deps: PI3 ✅, PI15) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
+- 📋 **PI51** (deps: PI3 ✅, PI15 ✅) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
 - 📋 **PI52** (deps: PI13 ✅, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI15
-
-- **The generated JSON Schema matches the zod schema** CI regenerates it and fails when
-  the checked-in file differs, so the document a model reads is never behind the
-  validator the app actually runs.
-- **Errors name the path, the value and the expectation** Each malformed fixture
-  produces a message a model can act on: a JSON pointer to the field, the value that
-  arrived and what was required instead.
 
 ## Done when — PI16
 
