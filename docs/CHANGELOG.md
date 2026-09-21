@@ -85,6 +85,8 @@
 
 - ✅ **PI25** **There is no keyboard on screen: nothing shows which key a note belongs to or which is sounding** — An 88-key keyboard lays black keys out as a real one does, sizes itself to the window, and shows a state per key from outside (design recorded in `apps/desktop/src/renderer/lib/keyboard-geometry.ts`).
   checked **Black key offsets match a real keyboard** A rendered octave matches reference geometry: black keys narrower, shorter and correctly offset, with the C D E group spaced differently from F G A B.
+- ✅ **PI26** **Notes do not fall: there is nothing between the score and the screen** — Notes fall onto the keyboard from the audio clock, each in its own key's column, and the keys they strike light up (design recorded in `apps/desktop/src/renderer/lib/roll.ts`).
+  checked **The roll and the sound never disagree** Across a minute of playback the note drawn at the strike line is the note being sounded, measured against the audio clock rather than trusting the frame loop.
 
 ## Block E — Practice mode and difficulty levels
 

@@ -58,23 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI26 Falling notes anchored to the audio clock
-
-This is the view in the reference image: notes descending a dark field and striking a
-keyboard along the bottom. The geometry is simple and the timing is not. Vertical
-position is a function of a note tick and the current playback position, so the renderer
-needs a position it can trust on every frame. It reads the audio clock instead of
-accumulating frame deltas, because the second approach drifts, and a roll forty
-milliseconds ahead of the sound feels wrong long before anyone can say why. Each frame
-asks the transport for the current tick, converts the visible time window into a tick
-range, and draws every note inside it at a height derived from how far in the future it
-is. The lead time, meaning how many seconds of music are visible at once, is a setting:
-a beginner wants more warning, and the right value changes with tempo. Each note's
-column is keyRect(pitch, width) from lib/keyboard-geometry, the function the keyboard is
-laid out by, and a test puts a drawn note's edges on its key's. Notes come from the
-resolved arrangement, so difficulty level and muted parts are already applied and the
-renderer never reasons about either.
-
 ### §PI27 Sixty frames a second when the music is dense
 
 The worst moment for the renderer is the best moment in the music: a dense passage with
@@ -125,15 +108,16 @@ between attempts.
 The reference image puts the entire control surface on one row, and that density is
 right: restart, pause, loop, elapsed and total time, an effects toggle, transpose, a BPM
 stepper, a theme switch, zoom and full screen, with a scrubber over the whole piece just
-below. Two things make this more than assembling buttons. The first is that every
-control has to be honest about a transport that is an independent state machine:
-pressing pause must reflect what actually happened rather than optimistically flipping
-an icon, and scrubbing has to seek without the position snapping back when the next
-clock reading arrives. The second is keyboard shortcuts, because a learner has their
-hands on a piano and not on a mouse: space to start and stop, and single keys for
-slower, faster, loop and restart. The bar collapses gracefully in a narrow window, and
-full screen hides everything except the roll and the keyboard, which is the mode someone
-actually plays in.
+below. Zoom is the roll's lead time, the seconds of music on screen: PianoRoll takes it
+as a prop and clamps it, and this bar is where a player finally changes it. Two things
+make this more than assembling buttons. The first is that every control has to be honest
+about a transport that is an independent state machine: pressing pause must reflect what
+actually happened rather than optimistically flipping an icon, and scrubbing has to seek
+without the position snapping back when the next clock reading arrives. The second is
+keyboard shortcuts, because a learner has their hands on a piano and not on a mouse:
+space to start and stop, and single keys for slower, faster, loop and restart. The bar
+collapses gracefully in a narrow window, and full screen hides everything except the
+roll and the keyboard, which is the mode someone actually plays in.
 
 ### §PI31 Taking the recording apart
 

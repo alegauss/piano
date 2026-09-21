@@ -1,10 +1,10 @@
 import type { AppInfoResponse } from '@piano/ipc'
-import { describeScore, FORMAT_VERSION, type Score } from '@piano/score-format'
+import { describeScore, FORMAT_VERSION, notesOf, timingOf, type Score } from '@piano/score-format'
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { readBridge } from './bridge'
-import { PianoKeyboard } from './components/PianoKeyboard'
+import { PianoRoll } from './components/PianoRoll'
 import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { Button } from './components/ui/button'
@@ -15,10 +15,20 @@ import { getTheme, setTheme, type ThemeName } from './lib/theme'
  * A stand-in until PI51 can open a real file. It exists so the renderer reads
  * the score format from the shared package rather than describing a score its
  * own way, which is the drift PI2 exists to prevent.
+ *
+ * It carries a few notes so the roll has something to draw before there is
+ * anything to open: a C major arpeggio over two bars. Nothing plays it yet —
+ * the controls arrive with PI30 — so it stands at the start of the piece.
  */
 const placeholder: Score = {
   formatVersion: FORMAT_VERSION,
   metadata: { title: 'Nothing loaded', composer: 'no composer yet' },
+  notes: [60, 64, 67, 72, 76, 79, 84, 88].map((pitch, index) => ({
+    pitch,
+    start: index * 240,
+    duration: 220,
+    velocity: 72,
+  })),
 }
 
 export function App() {
@@ -99,7 +109,7 @@ export function App() {
 
         <TokenGallery />
 
-        <PianoKeyboard />
+        <PianoRoll timing={timingOf(placeholder)} notes={notesOf(placeholder)} className="h-96" />
 
         <footer className="mt-auto flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
           <SoundStatus state={soundState} />

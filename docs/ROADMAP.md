@@ -13,13 +13,12 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
-- 📋 **PI26** (deps: PI23 ✅, PI25 ✅) **Notes do not fall: there is nothing between the score and the screen** — A piano roll driven by the audio clock, not by a frame counter, is what makes what is seen and what is heard the same event. → §PI26
-- 📋 **PI27** (deps: PI26) **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — Rendering hundreds of visible notes at 60fps needs culling, a stable draw loop and measurement, not hope. → §PI27
-- 📋 **PI28** (deps: PI26) **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A particle burst and a key flash at the strike, behind an effects toggle, are what make the roll read as impact rather than as scrolling. → §PI28
-- 📋 **PI29** (deps: PI11 ✅, PI26) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
+- 📋 **PI27** (deps: PI26 ✅) **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — Rendering hundreds of visible notes at 60fps needs culling, a stable draw loop and measurement, not hope. → §PI27
+- 📋 **PI28** (deps: PI26 ✅) **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A particle burst and a key flash at the strike, behind an effects toggle, are what make the roll read as impact rather than as scrolling. → §PI28
+- 📋 **PI29** (deps: PI11 ✅, PI26 ✅) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
 - 📋 **PI30** (deps: PI4 ✅, PI23 ✅) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
-- 📋 **PI31** (deps: PI9 ✅, PI26) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
-- 📋 **PI32** (deps: PI4 ✅, PI26) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
+- 📋 **PI31** (deps: PI9 ✅, PI26 ✅) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
+- 📋 **PI32** (deps: PI4 ✅, PI26 ✅) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
 
 ## Block E — Practice mode and difficulty levels
 
@@ -43,7 +42,7 @@
 - 📋 **PI47** (deps: PI15 ✅, PI43) **A rejected score comes back as a validation dump the model cannot act on** — Errors written for a repair loop, naming the field, the value and the fix, let the model correct its own output without a human. → §PI47
 - 📋 **PI48** (deps: PI6 ✅, PI44) **Asking to play a piece fails whenever the app is closed, which is most of the time** — Launching or focusing the app from a tool call is what makes the request work from a chat window with nothing already open. → §PI48
 - 📋 **PI49** (deps: PI44) **A local port that accepts scores and plays them is an open door on the machine** — Binding to loopback, requiring a token and allowlisting paths keep a convenience channel from becoming a way in. → §PI49
-- 📋 **PI50** (deps: PI26, PI46, PI48) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
+- 📋 **PI50** (deps: PI26 ✅, PI46, PI48) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 
 ## Block G — Score library and distribution
 
@@ -53,15 +52,6 @@
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI26
-
-- **The roll and the sound never disagree** Across a minute of playback the note drawn
-  at the strike line is the note being sounded, measured against the audio clock rather
-  than trusting the frame loop.
-- **Lead time is adjustable and rescales with tempo** Changing how many seconds are
-  visible redraws the same score at a new scale, and slowing the tempo keeps the visible
-  bar count consistent with that setting.
 
 ## Done when — PI27
 
