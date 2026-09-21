@@ -143,6 +143,9 @@
 - ✅ **PI43** **Claude Code cannot reach the app: there is no way to send a score or start playback** — The tools say what somebody asks for — validate, save, list, play, seek, practise — and the library is the only thing it touches (design recorded in `apps/mcp-server/src/tools.ts`).
   checked **Every tool is usable from a cold read of its description** In a scripted evaluation a model with no other context calls each tool correctly on the first attempt, and no tool needs the source read to be understood.
   checked **The server validates with the same code as the app** A score the MCP tool accepts opens in the app, and one either rejects is rejected by both, asserted across the whole malformed fixture set.
+- ✅ **PI44** **The MCP server and the app are separate processes with no way to find each other** — A tool call finds the most recently focused live window from its presence file and plays it there, and a version mismatch says which side to update.
+  checked **A tool call reaches the window the user is looking at** With two windows open, playback starts in the most recently focused one, and a stale handshake file left by a crash is detected rather than connected to.
+  checked **A version mismatch fails with a readable message** An older plugin meeting a newer app reports what is incompatible and what to update, instead of connecting and then behaving strangely.
 
 ## Block G — Score library and distribution
 

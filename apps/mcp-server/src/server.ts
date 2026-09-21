@@ -1,3 +1,4 @@
+import { PRESENCE_DIRECTORY } from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -6,7 +7,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import { createLibrary, type Files, type Library } from './library'
-import { noWindow, type Link } from './link'
+import { createLink, noWindow, type Link } from './link'
 import { toolsFor, type Tool } from './tools'
 
 /**
@@ -72,9 +73,48 @@ function register(server: McpServer, one: Tool): void {
   )
 }
 
+/** Where running apps leave word of themselves, unless a caller says otherwise. */
+export function defaultPresenceDirectory(): string {
+  const named = process.env['PIANO_PRESENCE_DIR']
+  return named !== undefined && named.trim() !== '' ? named : join(homedir(), ...PRESENCE_DIRECTORY)
+}
+
+/**
+ * Whether a process is running. Signal zero checks without sending anything;
+ * a refusal for lack of permission still means somebody is there.
+ */
+export function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (cause: unknown) {
+    return (cause as { code?: string }).code === 'EPERM'
+  }
+}
+
+/** The link to the running app, over loopback, as Node reaches it. */
+export function nodeLink(directory: string = defaultPresenceDirectory()): Link {
+  return createLink({
+    directory,
+    list: (dir) => readdir(dir),
+    read: (path) => readFile(path, 'utf8'),
+    alive: processAlive,
+    post: async (url, request) => {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: request.headers,
+        body: request.body,
+        // A window that takes this long is not going to answer.
+        signal: AbortSignal.timeout(10_000),
+      })
+      return { status: response.status, text: await response.text() }
+    },
+  })
+}
+
 /** Start talking over stdin and stdout, which is how Claude Code starts one. */
 export async function start(root: string = defaultLibraryRoot()): Promise<McpServer> {
-  const server = createServer({ library: createLibrary(root, nodeFiles) })
+  const server = createServer({ library: createLibrary(root, nodeFiles), link: nodeLink() })
   await server.connect(new StdioServerTransport())
   return server
 }

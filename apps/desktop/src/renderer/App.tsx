@@ -14,7 +14,7 @@ import {
   type Note,
   type Score,
 } from '@piano/score-format'
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
@@ -32,6 +32,7 @@ import {
   type PartsView,
 } from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
+import { runCommand, type Controls } from './lib/commands'
 import { createDrill } from './lib/drill'
 import { createGrader } from './lib/grader'
 import { createProgress, fingerprintOf, scoreKey } from './lib/progress'
@@ -232,6 +233,41 @@ export function App() {
     progress.use({ score: scoreId, fingerprint, level, sections })
   }, [progress, scoreId, fingerprint, level, sections])
   useEffect(() => progress.close, [progress])
+
+  // Claude Code reaches the piano through main, and each command lands on the
+  // controls a person uses, so a sentence and a key press cannot disagree.
+  // Read through a ref, so the subscription is made once and still sees the
+  // level and the chooser as they stand now.
+  const controls = useRef<Controls | null>(null)
+  useEffect(() => {
+    controls.current = {
+      transport,
+      timing,
+      sections,
+      title: placeholder.metadata.title,
+      level: () => level,
+      chooseLevel,
+      drill,
+      wake: () => {
+        void piano.resume()
+      },
+    }
+  })
+  useEffect(() => {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    return bridge.onLinkCommand(({ id, command }) => {
+      const current = controls.current
+      const result =
+        current === null
+          ? { ok: false, text: 'The piano window is still starting. Ask again in a moment.' }
+          : runCommand(command, current)
+      void bridge.answerLinkCommand({ id, result })
+    })
+  }, [])
+
   // Told the lag rather than asked for it: the calibrator and the grader both
   // outlive this view.
   useEffect(() => {

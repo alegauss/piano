@@ -2,9 +2,17 @@ import { describeScore, FORMAT_VERSION, isSupportedVersion, type Score } from '@
 
 export { createLibrary, libraryId, safeName, SCORE_SUFFIX } from './library'
 export type { Files, Library, LibraryEntry, Saved } from './library'
-export { noWindow } from './link'
-export type { Command, DrillAsk, Link, LinkResult, PassageAsk } from './link'
-export { createServer, defaultLibraryRoot, nodeFiles, start } from './server'
+export { createLink, NO_WINDOW, noWindow, windowsIn } from './link'
+export type { Command, DrillAsk, Link, LinkDeps, LinkResult, PassageAsk } from './link'
+export {
+  createServer,
+  defaultLibraryRoot,
+  defaultPresenceDirectory,
+  nodeFiles,
+  nodeLink,
+  processAlive,
+  start,
+} from './server'
 export { tool, toolsFor } from './tools'
 export type { Tool, ToolResult } from './tools'
 
@@ -12,9 +20,8 @@ export type { Tool, ToolResult } from './tools'
  * The MCP server Claude Code talks to.
  *
  * The tool surface is here — validate a score, save one, play, seek, set the
- * level, practise a passage — and the handshake that finds the running app is
- * the task after this one: the transport tools go through a link, and the link
- * says plainly that no window is listening yet.
+ * level, practise a passage — and so is the link that finds the window the
+ * person is looking at and speaks to it, saying plainly when none is open.
  *
  * Everything it knows about the score format it reads from the shared package,
  * exactly as the desktop app does, so a file the app would refuse is never one

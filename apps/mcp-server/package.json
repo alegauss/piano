@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@piano/ipc": "*",
     "@piano/score-format": "*",
     "zod": "^4.1.12"
   }

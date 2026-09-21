@@ -20,6 +20,8 @@ function bridge(overrides: Partial<PianoBridge> = {}): PianoBridge {
     setWindowTitle: () => Promise.reject(new Error('not used')),
     packManifest: () => Promise.resolve({ installed: true, manifest: { any: 'manifest' } }),
     packFile: () => Promise.resolve({ bytes: new Uint8Array([1, 2, 3]) }),
+    onLinkCommand: () => () => {},
+    answerLinkCommand: () => Promise.resolve(null),
     ...overrides,
   }
 }

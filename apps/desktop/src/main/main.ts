@@ -1,8 +1,12 @@
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { PRESENCE_DIRECTORY, PUSH_NAMES } from '@piano/ipc'
 import { app, BrowserWindow, session } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
+import { startLinkHost, type LinkHost } from './link-host'
+import { createRelay } from './link-relay'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
 import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
 
@@ -33,6 +37,48 @@ if (userDataDir !== undefined && userDataDir !== '') {
 
 let mainWindow: BrowserWindow | null = null
 
+/**
+ * Where Claude Code's requests are relayed: to the window, which is where
+ * playback lives, and back again with what it made of them.
+ */
+const relay = createRelay((message) => {
+  const window = mainWindow
+  if (window === null || window.isDestroyed()) {
+    return false
+  }
+  window.webContents.send(PUSH_NAMES.linkCommand, message)
+  return true
+})
+
+let linkHost: LinkHost | null = null
+
+/** Where running apps leave word of themselves for the MCP server. */
+function presenceDirectory(): string {
+  const named = process.env['PIANO_PRESENCE_DIR']
+  return named !== undefined && named !== '' ? named : join(homedir(), ...PRESENCE_DIRECTORY)
+}
+
+/**
+ * Listen for Claude Code. Not in a headless run: a smoke run that advertised
+ * itself would be a window a tool call could find and nobody could see.
+ */
+async function listenForClaude(): Promise<void> {
+  if (isSmokeRun || isSelfCheckRun) {
+    return
+  }
+  try {
+    linkHost = await startLinkHost({
+      directory: presenceDirectory(),
+      pid: process.pid,
+      app: app.getVersion(),
+      send: relay.relay,
+    })
+  } catch (error: unknown) {
+    // The piano works without Claude Code; it should say so, not refuse to start.
+    process.stderr.write(`piano: not listening for Claude Code: ${String(error)}\n`)
+  }
+}
+
 function createWindow(): void {
   const icon = windowIcon()
   mainWindow = new BrowserWindow({
@@ -61,6 +107,12 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+
+  // The window somebody last looked at is the one a tool call reaches, so
+  // being focused is news the MCP server has to be able to read.
+  mainWindow.on('focus', () => {
+    void linkHost?.focused()
   })
 
   if (isSmokeRun || isSelfCheckRun) {
@@ -123,9 +175,10 @@ app
   .then(() => {
     applyContentSecurityPolicy(session.defaultSession, devServerUrl)
     applyPermissions(session.defaultSession)
-    registerIpcHandlers()
+    registerIpcHandlers({ answerLink: relay.answer })
 
     createWindow()
+    void listenForClaude()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -137,6 +190,13 @@ app
     process.stderr.write(`piano: failed to start: ${String(error)}\n`)
     app.exit(1)
   })
+
+// The presence file goes with the app, so the next tool call is told there is
+// no window rather than being sent to one that is gone.
+app.on('will-quit', () => {
+  void linkHost?.close()
+  linkHost = null
+})
 
 app.on('window-all-closed', () => {
   // macOS keeps the app alive with no windows; everywhere else this is the exit.

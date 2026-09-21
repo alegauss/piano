@@ -1,5 +1,7 @@
 import type {
   AppInfoResponse,
+  LinkAnswerRequest,
+  LinkCommandPush,
   PackFileRequest,
   PackFileResponse,
   PackManifestResponse,
@@ -25,4 +27,11 @@ export type PianoBridge = {
   readonly packManifest: () => Promise<PackManifestResponse>
   /** One recording the installed pack's manifest names. */
   readonly packFile: (request: PackFileRequest) => Promise<PackFileResponse>
+  /**
+   * Be told when Claude Code asks this window to do something. Returns the
+   * way to stop being told, since a view that subscribes also unmounts.
+   */
+  readonly onLinkCommand: (listener: (push: LinkCommandPush) => void) => () => void
+  /** Say what became of a command, by the id it arrived with. */
+  readonly answerLinkCommand: (answer: LinkAnswerRequest) => Promise<null>
 }

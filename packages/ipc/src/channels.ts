@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { linkResultSchema, type Command } from './link'
 import { CHANNEL_NAMES } from './names'
 
 /**
@@ -87,8 +88,22 @@ export const packFile = {
   }),
 } as const satisfies Channel<'pack:file', z.ZodType, z.ZodType>
 
+/**
+ * The window's answer to a command main pushed it, matched by the id it came
+ * with. The result is checked here like any other request: it is the renderer
+ * talking, and main passes it straight on to the MCP server.
+ */
+export const linkAnswer = {
+  channel: CHANNEL_NAMES.linkAnswer,
+  request: z.object({
+    id: z.string().min(1),
+    result: linkResultSchema,
+  }),
+  response: z.null(),
+} as const satisfies Channel<'link:answer', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
-export const allChannels = [appInfo, windowSetTitle, packManifest, packFile] as const
+export const allChannels = [appInfo, windowSetTitle, packManifest, packFile, linkAnswer] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
 export type AppInfoResponse = z.infer<typeof appInfo.response>
@@ -97,6 +112,13 @@ export type WindowSetTitleResponse = z.infer<typeof windowSetTitle.response>
 export type PackManifestResponse = z.infer<typeof packManifest.response>
 export type PackFileRequest = z.infer<typeof packFile.request>
 export type PackFileResponse = z.infer<typeof packFile.response>
+export type LinkAnswerRequest = z.infer<typeof linkAnswer.request>
+
+/** What main pushes the window: a command, and the id its answer must carry. */
+export type LinkCommandPush = {
+  readonly id: string
+  readonly command: Command
+}
 
 /**
  * A validation failure, in words the next reader can act on.

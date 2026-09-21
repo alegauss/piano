@@ -1,6 +1,6 @@
-import type { PianoBridge } from '@piano/ipc'
-import { CHANNEL_NAMES } from '@piano/ipc/names'
-import { contextBridge, ipcRenderer } from 'electron'
+import type { LinkCommandPush, PianoBridge } from '@piano/ipc'
+import { CHANNEL_NAMES, PUSH_NAMES } from '@piano/ipc/names'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 
 /**
  * ipcRenderer.invoke is typed as Promise<any>, because it cannot know what is
@@ -30,6 +30,18 @@ const bridge: PianoBridge = {
   setWindowTitle: async (request) => invoke(CHANNEL_NAMES.windowSetTitle, request),
   packManifest: async () => invoke(CHANNEL_NAMES.packManifest, null),
   packFile: async (request) => invoke(CHANNEL_NAMES.packFile, request),
+  // The event itself stays on this side: it carries the sender, which is a
+  // handle on main the renderer has no business holding.
+  onLinkCommand: (listener) => {
+    const forward = (_event: IpcRendererEvent, push: LinkCommandPush) => {
+      listener(push)
+    }
+    ipcRenderer.on(PUSH_NAMES.linkCommand, forward)
+    return () => {
+      ipcRenderer.removeListener(PUSH_NAMES.linkCommand, forward)
+    }
+  },
+  answerLinkCommand: async (answer) => invoke(CHANNEL_NAMES.linkAnswer, answer),
 }
 
 contextBridge.exposeInMainWorld('piano', bridge)

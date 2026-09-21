@@ -25,6 +25,7 @@ export default defineConfig({
       'packages/sample-pack/vitest.config.ts',
       'apps/mcp-server/vitest.config.ts',
       'apps/desktop/vitest.config.ts',
+      'apps/desktop/vitest.main.config.ts',
       'apps/desktop/vitest.browser.config.ts',
       'apps/desktop/vitest.live.config.ts',
     ],

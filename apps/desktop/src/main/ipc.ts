@@ -2,10 +2,12 @@ import {
   allChannels,
   appInfo,
   formatIssues,
+  linkAnswer,
   packFile,
   packManifest,
   windowSetTitle,
   type Channel,
+  type LinkResult,
 } from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
@@ -60,7 +62,10 @@ function handle<Request extends z.ZodType, Response extends z.ZodType>(
   })
 }
 
-export function registerIpcHandlers(): void {
+export function registerIpcHandlers(options: {
+  /** Where the window's answer to a Claude Code command goes. */
+  readonly answerLink: (id: string, result: LinkResult) => void
+}): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
     chrome: process.versions.chrome,
@@ -80,6 +85,11 @@ export function registerIpcHandlers(): void {
   handle(packManifest, () => readPackManifest(packDirectory()))
 
   handle(packFile, async ({ path }) => ({ bytes: await readPackFile(packDirectory(), path) }))
+
+  handle(linkAnswer, ({ id, result }) => {
+    options.answerLink(id, result)
+    return null
+  })
 }
 
 /**

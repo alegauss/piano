@@ -14,6 +14,18 @@ export const CHANNEL_NAMES = {
   windowSetTitle: 'window:set-title',
   packManifest: 'pack:manifest',
   packFile: 'pack:file',
+  linkAnswer: 'link:answer',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
+
+/**
+ * Messages main sends the renderer without being asked.
+ *
+ * Apart from the channels because they run the other way: a channel is the
+ * renderer asking and main answering, and a push is main telling. There is
+ * one, and it carries a command from Claude Code to the window.
+ */
+export const PUSH_NAMES = {
+  linkCommand: 'link:command',
+} as const
