@@ -1,0 +1,78 @@
+/*
+ * The engraved page's ink, in whichever theme is on.
+ *
+ * VexFlow draws black on white and writes its colours as presentation
+ * attributes on every path. A stylesheet rule beats a presentation attribute,
+ * so the page is themed here rather than by handing colours to the library as
+ * it builds each element: the stave is SVG, and SVG can read a token. Passing
+ * resolved colours in is the detour the piano roll needs because a canvas
+ * cannot see a stylesheet at all, and repeating it here would mean the stave
+ * only followed the theme when React happened to redraw it.
+ *
+ * Every rule picks a token and none spells a colour, which is the rule for
+ * this whole folder.
+ *
+ * The order matters: the stave's own lines first, then the groups nested
+ * inside it, which are more specific by one class and so win.
+ */
+
+.vf-stave path {
+  fill: var(--sheet-stave-line);
+  stroke: var(--sheet-stave-line);
+}
+
+.vf-stave .vf-stavebarline path {
+  fill: var(--sheet-bar-line);
+  stroke: var(--sheet-bar-line);
+}
+
+/* Clefs, key signatures and meters are read like notes, so they are ink. */
+.vf-stave .vf-clef path,
+.vf-stave .vf-keysignature path,
+.vf-stave .vf-timesignature path,
+.vf-stavenote path,
+.vf-notehead path,
+.vf-stem path,
+.vf-flag path {
+  fill: var(--sheet-ink);
+  stroke: var(--sheet-ink);
+}
+
+/*
+ * What playback makes of a figure, named by the token that colours it: the
+ * page carries the token's name and the stylesheet resolves it, so one map
+ * from meaning to colour serves the roll and the stave both.
+ *
+ * An attribute rather than a fill written onto the glyph. Removing an
+ * attribute puts the figure back to the ink above, where removing a fill would
+ * take these rules off with it and leave the note whatever VexFlow drew.
+ */
+.vf-stavenote[data-ink='--accent'],
+.vf-stavenote[data-ink='--accent'] path {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.vf-stavenote[data-ink='--judge-correct'],
+.vf-stavenote[data-ink='--judge-correct'] path {
+  fill: var(--judge-correct);
+  stroke: var(--judge-correct);
+}
+
+.vf-stavenote[data-ink='--judge-late'],
+.vf-stavenote[data-ink='--judge-late'] path {
+  fill: var(--judge-late);
+  stroke: var(--judge-late);
+}
+
+.vf-stavenote[data-ink='--judge-wrong'],
+.vf-stavenote[data-ink='--judge-wrong'] path {
+  fill: var(--judge-wrong);
+  stroke: var(--judge-wrong);
+}
+
+.vf-stavenote[data-ink='--judge-expected'],
+.vf-stavenote[data-ink='--judge-expected'] path {
+  fill: var(--judge-expected);
+  stroke: var(--judge-expected);
+}

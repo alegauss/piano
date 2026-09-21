@@ -1,10 +1,12 @@
 import { render } from '@testing-library/react'
 import { resolveTiming, type Note } from '@piano/score-format'
 import { Profiler } from 'react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { FakeTime, Listener } from '../audio/test-doubles'
 import { Transport } from '../audio/transport'
+import { APART_CONTRAST, contrastOf, OBJECT_CONTRAST, TEXT_CONTRAST, toRgb } from '../lib/contrast'
+import { setTheme, type ThemeName } from '../lib/theme'
 import { SheetMusic } from './SheetMusic'
 
 /**
@@ -162,12 +164,9 @@ describe('SheetMusic, following the playhead', () => {
     )
     await drawn()
 
-    // The accent as the stylesheet resolves it, which is what the page paints
-    // with; matching the attribute against anything else would pass on
-    // VexFlow's own fills, which every glyph already carries.
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
-    expect(accent).not.toBe('')
-    const marked = () => container.querySelectorAll(`[fill="${accent}"]`).length
+    // The page says what a figure has become of and the stylesheet decides
+    // what that looks like, so the mark is what this counts.
+    const marked = () => container.querySelectorAll('.vf-stavenote[data-ink="--accent"]').length
 
     expect(marked()).toBeGreaterThan(0)
 
@@ -243,5 +242,83 @@ describe('SheetMusic, following the playhead', () => {
     expect(container.querySelector('svg')).toBe(svg)
     // And the mark did move, so the loop was running throughout.
     expect(container.querySelector('[data-testid="sheet-band"]')).not.toBeNull()
+  })
+})
+
+const THEMES: readonly ThemeName[] = ['dark', 'light']
+
+/** A token as the document resolves it, which is what the page is measured against. */
+function token(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+describe.each(THEMES)('SheetMusic, engraved for the %s theme', (theme) => {
+  beforeEach(() => {
+    setTheme(theme)
+  })
+
+  afterEach(() => {
+    setTheme('dark')
+  })
+
+  it('draws its ink and its stave lines in this theme’s tokens', async () => {
+    const { svg } = await mount(TWO_BARS)
+    const line = svg?.querySelector('.vf-stave > path')
+    // Not a marked one: the transport sits at tick 0 here, so the figure on
+    // the downbeat is sounding and carries the accent instead of the ink.
+    const head = svg?.querySelector('.vf-stavenote:not([data-ink]) path')
+    expect(line).not.toBeNull()
+    expect(head).not.toBeNull()
+
+    // What the browser resolves, not what VexFlow wrote: the library fills
+    // black, and the stylesheet is what overrules it. Compared through toRgb
+    // because a computed colour and a token are the same colour spelled two
+    // ways.
+    expect(toRgb(getComputedStyle(line as Element).stroke)).toEqual(
+      toRgb(token('--sheet-stave-line')),
+    )
+    expect(toRgb(getComputedStyle(head as Element).fill)).toEqual(toRgb(token('--sheet-ink')))
+  })
+
+  it('keeps the stave lines under the ink rather than beside it', async () => {
+    const { svg } = await mount(TWO_BARS)
+    const ink = getComputedStyle(
+      svg?.querySelector('.vf-stavenote:not([data-ink]) path') as Element,
+    ).fill
+    const line = getComputedStyle(svg?.querySelector('.vf-stave > path') as Element).stroke
+    // The two are different colours, whichever way round the theme puts them.
+    expect(ink).not.toBe(line)
+    expect(contrastOf(token('--sheet-ink'), token('--surface-raised'))).toBeGreaterThanOrEqual(
+      TEXT_CONTRAST,
+    )
+    expect(
+      contrastOf(token('--sheet-stave-line'), token('--surface-raised')),
+    ).toBeGreaterThanOrEqual(OBJECT_CONTRAST)
+    expect(contrastOf(token('--sheet-ink'), token('--sheet-stave-line'))).toBeGreaterThan(
+      APART_CONTRAST,
+    )
+  })
+
+  it('marks a sounding note in this theme’s accent, from the token alone', async () => {
+    const { transport } = driven(TWO_BARS)
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <SheetMusic timing={timing} notes={TWO_BARS} position={() => transport.position()} />
+      </div>,
+    )
+    await drawn()
+    const marked = container.querySelector('.vf-stavenote[data-ink="--accent"] path')
+    expect(marked).not.toBeNull()
+    expect(toRgb(getComputedStyle(marked as Element).fill)).toEqual(toRgb(token('--accent')))
+  })
+})
+
+describe('the music font', () => {
+  it('comes from the bundle, so the page draws glyphs with no network', async () => {
+    await mount(TWO_BARS)
+    await document.fonts.ready
+    // VexFlow would otherwise fetch Bravura from a CDN, and this renderer is
+    // sandboxed and has to work offline.
+    expect(document.fonts.check('40px Bravura')).toBe(true)
   })
 })

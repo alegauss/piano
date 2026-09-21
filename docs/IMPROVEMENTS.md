@@ -34,33 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI76 Ink for a theme that is not paper
-
-check-colour-tokens.mjs refuses any colour literal and any palette class under
-src/renderer outside styles/tokens.css, and the canvas code already reads its colours
-through useCanvasPalette and CANVAS_TOKENS. The stave has to join that system rather
-than sit beside it.
-
-So declare tokens for what the engraving draws — stave lines, note heads and stems, bar
-lines, the highlight band — in tokens.css for both themes, and hand them to VexFlow as
-explicit styles as the adapter builds each element. Nothing in SheetMusic.tsx should
-name a colour. PI75 paints a sounding note by setting fill on its glyph and restores it
-with removeAttribute, so an engraving styled by attribute needs a restore that puts the
-token back.
-
-Reading matters more than fidelity here. Engraving convention wants black on paper and a
-dark theme cannot have it, so invert the relationship instead of the colours: stave
-lines a step dimmer than the note heads, the way the roll's grid sits under its notes,
-so the notes stay the thing the eye lands on.
-
-The music font VexFlow ships must come from the bundle, not from a CDN: the renderer is
-sandboxed and the app has to work offline. Check what the Vite build emits and that a
-packaged build draws glyphs rather than fallback boxes.
-
-The test is a browser test asserting the computed colour of a stave line and a note head
-in both themes against the token values, since jsdom cannot see a stylesheet and would
-pass on anything.
-
 ### §PI77 Saying which part of the page is a guess
 
 Engraving reads as fact, which is the problem: a stave drawn from inference looks
@@ -88,25 +61,24 @@ A test asserts the sentence for a score with no key, mixed hands and a short bar
 ### §PI78 Loading the engraver when somebody asks for it
 
 Measured across PI73 and PI74: the renderer bundle was 595 kB before the sheet view and
-is 1,728 kB after it. VexFlow carries Bravura, and a music font is most of that. Nothing
-was done wrong; the whole of it simply arrives in the first chunk.
+is 1,728 kB after it. There are two causes and both are fixable.
 
-This is about start-up rather than download. The app is installed from disk and ships a
-sample bank of several hundred megabytes, so a megabyte on disk is nothing. What it
-costs is parse and compile on every launch, paid by everyone, including a player who
-only ever watches the roll.
+The fonts are the first. The vexflow entry embeds six of them as base64, some 774 kB,
+where the app uses Bravura and Academico: Gonville, Petaluma and Petaluma Script are 391
+kB nothing asks for. Importing vexflow/core with vexflow/bravura takes only what is used
+— and must not bring back Font.HOST_URL, since PI76 settled that the fonts come from the
+bundle and this renderer is sandboxed.
+
+The second is that all of it loads at startup. That is parse and compile on every
+launch, paid by a player who only ever watches the roll, rather than a download: the app
+installs from disk and ships a sample bank of several hundred megabytes.
 
 The seam is already in the right place. SheetMusic.tsx is the only importer of
-sheet-draw.ts, which is the only importer of vexflow, so a lazy import of the component
-alone moves the library out of the first chunk: React.lazy with a Suspense fallback
-around the branch in App.tsx that chooses between PianoRoll and SheetMusic. The fallback
-is a line of text in the panel, not a spinner.
+sheet-draw.ts, which is the only importer of vexflow, so React.lazy with a Suspense
+fallback around App.tsx's branch between PianoRoll and SheetMusic moves the library out
+of the first chunk. The fallback is a line of text, not a spinner.
 
-Confirm it rather than assume it: the build prints the chunk sizes, so the claim is that
-the entry chunk drops by about a megabyte and a second chunk appears. A test asserting a
-byte count would be a test about esbuild, so do not write one.
-
-Watch two existing tests. SheetMusic.browser.test.tsx mounts the component directly and
-is unaffected. App.browser.test.tsx presses the button and expects the panel at once, so
-it needs to await the lazy load; findByLabelText rather than queryByLabelText is the
-change.
+Confirm rather than assume: the build prints the chunk sizes, and the claim is that the
+entry chunk drops by about a megabyte. A byte count in a test would be a test about
+esbuild, so do not write one. App.browser.test.tsx presses the button and expects the
+panel at once, so it needs findByLabelText instead.

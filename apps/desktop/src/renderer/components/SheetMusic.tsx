@@ -7,7 +7,6 @@ import { planSheet } from '../lib/sheet'
 import { drawSheet } from '../lib/sheet-draw'
 import { bandFor, colouring, systemFor, type Band } from '../lib/sheet-follow'
 import type { CanvasToken } from '../lib/theme'
-import { useCanvasPalette } from '../lib/useCanvasPalette'
 
 /**
  * The piece as it would be written down, following the playhead.
@@ -60,7 +59,6 @@ export function SheetMusic({
   const page = useRef<HTMLDivElement | null>(null)
   const band = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(0)
-  const palette = useCanvasPalette()
 
   // The panel's width is read from the element it is given rather than
   // guessed, and only when it changes: the plan wraps to it, so a resize is
@@ -87,11 +85,12 @@ export function SheetMusic({
     [timing, notes, musicKey, width],
   )
 
-  // Read through a ref so that a new score or a theme change does not tear
-  // down and rebuild the loop mid-flight.
-  const read = useRef({ timing, plan, position, tempoScale, feedback, palette })
+  // Read through a ref so that a new score does not tear down and rebuild the
+  // loop mid-flight. The theme is not in here: the page is coloured by
+  // styles/sheet.css, which follows data-theme without being told.
+  const read = useRef({ timing, plan, position, tempoScale, feedback })
   useEffect(() => {
-    read.current = { timing, plan, position, tempoScale, feedback, palette }
+    read.current = { timing, plan, position, tempoScale, feedback }
   })
 
   useEffect(() => {
@@ -103,8 +102,8 @@ export function SheetMusic({
     const scroller = frame.current
 
     let running = true
-    /** What each glyph is painted now, so a frame writes only what changed. */
-    const painted = new Map<string, CanvasToken>()
+    /** What each glyph is marked now, so a frame writes only what changed. */
+    const marked = new Map<string, CanvasToken>()
     /** The last bar the band was put on, and the last system scrolled to. */
     let shownBar: number | null = null
     let shownSystem: number | null = null
@@ -131,9 +130,9 @@ export function SheetMusic({
       }
 
       const judged = current.feedback()
-      repaint(
+      remark(
         drawn.glyphs,
-        painted,
+        marked,
         colouring(current.plan, {
           position: at,
           look: (note) =>
@@ -145,7 +144,6 @@ export function SheetMusic({
                   tempoScale: current.tempoScale(),
                 }),
         }),
-        current.palette,
       )
     }
 
@@ -169,7 +167,7 @@ export function SheetMusic({
             ref={band}
             aria-hidden
             data-testid="sheet-band"
-            className="pointer-events-none absolute top-0 left-0 hidden rounded-(--radius) bg-accent/10"
+            className="pointer-events-none absolute top-0 left-0 hidden rounded-(--radius) bg-sheet-band"
           />
           <div ref={page} className="relative" />
         </>
@@ -218,48 +216,45 @@ function turn(scroller: HTMLElement | null, top: number): void {
 }
 
 /**
- * Bring the page's colours to what the frame wants, writing only the
- * differences. `painted` is what is on the page now, and this leaves it so.
+ * Bring the page's marks to what the frame wants, writing only the
+ * differences. `marked` is what the page carries now, and this leaves it so.
  */
-function repaint(
+function remark(
   glyphs: ReadonlyMap<string, SVGElement>,
-  painted: Map<string, CanvasToken>,
+  marked: Map<string, CanvasToken>,
   wanted: ReadonlyMap<string, CanvasToken>,
-  palette: Readonly<Record<CanvasToken, string>>,
 ): void {
   for (const [id, token] of wanted) {
-    if (painted.get(id) !== token) {
-      paint(glyphs.get(id), palette[token])
-      painted.set(id, token)
+    if (marked.get(id) !== token) {
+      mark(glyphs.get(id), token)
+      marked.set(id, token)
     }
   }
   // Copied, because the loop deletes from the very map it is walking.
-  for (const id of [...painted.keys()]) {
+  for (const id of [...marked.keys()]) {
     if (!wanted.has(id)) {
-      paint(glyphs.get(id), null)
-      painted.delete(id)
+      mark(glyphs.get(id), null)
+      marked.delete(id)
     }
   }
 }
 
 /**
- * Paint one glyph, or put it back to the colour it was engraved in.
+ * Say what a glyph has become of, or take the word back.
  *
- * The fill is set on the group and on every path under it: VexFlow fills each
- * notehead, stem and flag itself, so a fill on the group alone is inherited by
- * nothing.
+ * The token's name, not its colour: styles/sheet.css has a rule per token, so
+ * this writes what the figure means and the stylesheet decides what that looks
+ * like in the theme that is on. Writing a resolved colour here would be this
+ * component naming one, and it would also have to be rewritten on every theme
+ * change — and taking it off again would strip the engraving's own ink with it.
  */
-function paint(glyph: SVGElement | undefined, colour: string | null): void {
+function mark(glyph: SVGElement | undefined, token: CanvasToken | null): void {
   if (glyph === undefined) {
     return
   }
-  for (const node of [glyph, ...glyph.querySelectorAll('path')]) {
-    if (colour === null) {
-      node.removeAttribute('fill')
-      node.removeAttribute('stroke')
-    } else {
-      node.setAttribute('fill', colour)
-      node.setAttribute('stroke', colour)
-    }
+  if (token === null) {
+    delete glyph.dataset['ink']
+  } else {
+    glyph.dataset['ink'] = token
   }
 }

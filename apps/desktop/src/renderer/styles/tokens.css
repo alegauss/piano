@@ -76,6 +76,23 @@
   --judge-wrong: oklch(0.65 0.19 25);
   --judge-late: oklch(0.93 0.15 75);
 
+  /*
+   * The engraved page. Read by CSS rather than by a canvas, since the stave is
+   * SVG: the detour through getComputedStyle exists for the roll, which has no
+   * other way to see a token, and a stave has.
+   *
+   * Engraving convention is black ink on paper, and a dark theme cannot have
+   * it. So the relationship is what is kept rather than the colours: ink well
+   * clear of the page, bar lines under the ink, stave lines dimmer again, the
+   * way the roll's grid sits under its notes. The eye lands on the notes in
+   * either theme.
+   */
+  --sheet-ink: oklch(0.93 0.008 260);
+  --sheet-bar-line: oklch(0.66 0.012 260);
+  --sheet-stave-line: oklch(0.55 0.012 260);
+  /* The sounding bar, behind the notes: a wash lighter than the page it is on. */
+  --sheet-band: oklch(0.3 0.05 230);
+
   --radius: 0.5rem;
 }
 
@@ -119,6 +136,11 @@
   --judge-correct: oklch(0.45 0.15 155);
   --judge-wrong: oklch(0.4 0.2 25);
   --judge-late: oklch(0.62 0.15 75);
+
+  --sheet-ink: oklch(0.22 0.012 260);
+  --sheet-bar-line: oklch(0.42 0.012 260);
+  --sheet-stave-line: oklch(0.58 0.012 260);
+  --sheet-band: oklch(0.92 0.045 230);
 }
 
 /*
@@ -147,5 +169,7 @@
   --color-judge-correct: var(--judge-correct);
   --color-judge-wrong: var(--judge-wrong);
   --color-judge-late: var(--judge-late);
+  --color-sheet-ink: var(--sheet-ink);
+  --color-sheet-band: var(--sheet-band);
   --radius-token: var(--radius);
 }

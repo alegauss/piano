@@ -16,7 +16,6 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI76** (deps: PI73 ✅) **VexFlow draws black on white, unreadable in the dark theme and outside the app's colour system** — The renderer refuses colour literals, so the staves need tokens of their own before they can sit in either theme. → §PI76
 - 📋 **PI77** (deps: PI73 ✅) **The view infers clefs, accidentals and rests, then shows the guess as if it were the score** — The format carries no clefs, no key changes and no rests, so a reader is misled unless the page says what was inferred. → §PI77
 - 📋 **PI78** (deps: PI74 ✅) **Every launch loads the engraver and its music font, even for a player who never opens the stave** — The sheet view took the renderer bundle from 595 kB to 1.7 MB, and everyone pays that parse cost at every start. → §PI78
 
