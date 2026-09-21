@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createServer, type Server } from 'node:http'
-import { mkdtemp, readdir, readFile, rm, writeFile, mkdir } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, rm, stat, writeFile, mkdir } from 'node:fs/promises'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -204,14 +204,28 @@ describe('the download', () => {
     // Nothing half-made where the app looks.
     expect(await readdir(directory)).toEqual(['sample-pack.partial'])
 
+    // The cut stops every file still arriving, so whether the other one got
+    // there whole first depends on how busy the machine is; either way it is
+    // not fetched from the start again.
+    const high = join(directory, 'sample-pack.partial', 'samples', 'high.ogg')
+    const highBefore = await stat(high).then(
+      (found) => found.size,
+      () => 0,
+    )
+
     server.asked.length = 0
     const second = await downloader.download(() => {})
     expect(second.installed).toBe(true)
     const resumed = server.asked.find((one) => one.path === 'samples/low.ogg')
     expect(resumed?.range).toMatch(/^bytes=\d+-$/)
     expect(Number(/bytes=(\d+)-/.exec(resumed?.range ?? '')?.[1])).toBeGreaterThan(0)
-    // A file that had already arrived whole is not fetched again.
-    expect(server.asked.some((one) => one.path === 'samples/high.ogg')).toBe(false)
+    const again = server.asked.find((one) => one.path === 'samples/high.ogg')
+    if (highBefore === 200_000) {
+      // A file that had already arrived whole is not fetched again.
+      expect(again).toBeUndefined()
+    } else if (highBefore > 0) {
+      expect(again?.range).toBe(`bytes=${String(highBefore)}-`)
+    }
     expect(sha(await readFile(join(installedIn(), 'samples', 'low.ogg')))).toBe(
       sha(pack.files.get('samples/low.ogg') ?? Buffer.alloc(0)),
     )
