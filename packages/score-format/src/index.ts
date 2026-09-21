@@ -3,6 +3,7 @@ export {
   FORMAT_VERSION,
   isSupportedVersion,
   notesOf,
+  scoreArrangements,
   scoreParts,
   timingOf,
   validateScoreNotes,
@@ -69,6 +70,19 @@ export {
   type Section,
   type TickRange,
 } from './section'
+
+export {
+  arrangementForLevel,
+  arrangementsOf,
+  AS_WRITTEN,
+  LEVELS,
+  resolveArrangement,
+  validateArrangements,
+  type Arrangement,
+  type Level,
+  type NoteOverride,
+  type ResolvedArrangement,
+} from './arrangement'
 
 export {
   barAtTick,

@@ -6,9 +6,8 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI12** (deps: PI8 ✅, PI9 ✅) **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Difficulty arrangements as views over one note source, with overrides instead of copies, keep three levels from drifting into three different pieces. → §PI12
 - 📋 **PI13** (deps: PI2 ✅) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
-- 📋 **PI14** (deps: PI12, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
+- 📋 **PI14** (deps: PI12 ✅, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
 - 📋 **PI15** (deps: PI14) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
 - 📋 **PI16** (deps: PI15) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
 - 📋 **PI17** (deps: PI15) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
@@ -42,8 +41,8 @@
 - 📋 **PI36** (deps: PI23, PI33) **Playback runs away from a beginner, who cannot keep up and has nothing to practise against** — A wait mode that holds the score until the right keys are pressed lets a learner set the pace instead of chasing one. → §PI36
 - 📋 **PI37** (deps: PI35, PI36) **Nothing says how the attempt went: wrong notes, late notes and missed notes all pass unremarked** — Grading against a timing window, with a report naming the bars that failed, is what turns playing along into practising. → §PI37
 - 📋 **PI38** (deps: PI32, PI37) **The player gets no feedback: nothing on screen says which note was right, wrong or late** — Colouring the key and the note the instant it is judged puts feedback where the eye already is, rather than in a side panel. → §PI38
-- 📋 **PI39** (deps: PI12) **Beginner, intermediate and advanced are only words: nothing says what changes between them** — Level presets fixing tempo, hands, voices and ornaments make the three levels a promise the app can keep for any score. → §PI39
-- 📋 **PI40** (deps: PI12, PI16) **Only scores hand-authored with three arrangements are playable at beginner level** — Reducing a full score to a simpler arrangement automatically keeps every piece usable at every level without three times the authoring. → §PI40
+- 📋 **PI39** (deps: PI12 ✅) **Beginner, intermediate and advanced are only words: nothing says what changes between them** — Level presets fixing tempo, hands, voices and ornaments make the three levels a promise the app can keep for any score. → §PI39
+- 📋 **PI40** (deps: PI12 ✅, PI16) **Only scores hand-authored with three arrangements are playable at beginner level** — Reducing a full score to a simpler arrangement automatically keeps every piece usable at every level without three times the authoring. → §PI40
 - 📋 **PI41** (deps: PI11 ✅, PI39) **A hard bar can only be practised by replaying the whole piece and waiting for it to arrive** — Looping a passage, raising the tempo gradually and splitting the hands are the three things practice actually consists of. → §PI41
 - 📋 **PI42** (deps: PI11 ✅, PI37) **Every session starts from nothing: no record of what was played, what improved or what still fails** — Progress stored per score and per section lets the app point at the bar that keeps failing instead of the user having to remember. → §PI42
 
@@ -64,16 +63,7 @@
 - 📋 **PI52** (deps: PI13, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
-- 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI12
-
-- **One note source produces three levels without copying notes** The fixture declares
-  one note list and three arrangements; resolving each yields a different playable note
-  list, and no note appears twice anywhere in the file.
-- **Fixing a wrong note corrects every level at once** Editing one note in the source
-  changes what all three arrangements resolve to, asserted by a test that follows the
-  shared note id into each resolved output.
+- 📋 **PI55** (deps: PI12 ✅, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 
 ## Done when — PI13
 

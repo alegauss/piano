@@ -12,6 +12,7 @@
  * play rather than an error anybody can read.
  */
 
+import { arrangementsOf, validateArrangements, type Arrangement } from './arrangement'
 import { validateExpression, type Expression } from './expression'
 import { validateNotes, type Note } from './note'
 import { partsOf, validateParts, type Part } from './part'
@@ -61,6 +62,17 @@ export type Score = {
    * all say "the chorus" and mean the same ticks.
    */
   readonly sections?: readonly Section[]
+  /**
+   * What beginner, intermediate and advanced mean for this piece, as views
+   * over the notes above rather than as copies of them. A score declaring none
+   * plays as written at advanced.
+   */
+  readonly arrangements?: readonly Arrangement[]
+}
+
+/** The levels a score offers, with "as written" supplied where it offers none. */
+export function scoreArrangements(score: Score): readonly Arrangement[] {
+  return arrangementsOf(score)
 }
 
 /** The parts a score plays with, with the implicit one supplied where needed. */
@@ -88,6 +100,7 @@ export function validateScoreNotes(score: Score): string[] {
     ...validateParts(scoreParts(score), notes),
     ...validateExpression(score.expression),
     ...validateSections(score.sections ?? []),
+    ...validateArrangements(score.arrangements ?? [], notes, scoreParts(score)),
   ]
 }
 

@@ -22,22 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI12 Difficulty as views over one source, never three files
-
-The obvious implementation is three copies of the piece, and it is wrong: the first
-correction to a wrong note has to be made three times, and within a month the beginner
-version is a different piece. Instead a score carries one authoritative note set and a
-list of arrangements, each with a level of beginner, intermediate or advanced, and each
-defined as a transformation over that source: which parts and voices are included, a
-tempo multiplier, a set of note ids to drop, and a short list of per-note overrides for
-the places where a reduction needs a note the original does not contain. Overrides are
-the escape hatch that keeps the format honest, because some simplifications genuinely
-change the music and pretending otherwise produces unplayable beginner parts. An
-arrangement is resolved to a concrete note list once, at load, so the audio engine and
-the renderer never learn that levels exist. A score declaring no arrangements is valid
-and plays as written at advanced, which keeps the format usable for listening without
-anyone authoring a curriculum.
-
 ### §PI13 Metadata a library and a licence check can both read
 
 Every score opens with a metadata object: title, composer, arranger, a key signature

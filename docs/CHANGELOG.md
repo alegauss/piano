@@ -42,6 +42,9 @@
 - ✅ **PI11** **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — A passage has a stable id that resolves to a tick range, and a bar range resolves through the time signature map to exactly the same ticks.
   checked **A section id resolves to a tick range and can be looped** Selecting a named section sets the loop points exactly at its start and end ticks, and passing the same id to the transport produces the same range.
   checked **A bar range resolves through the time signature map** Asking for bars 12 to 20 in a score with a mid-piece meter change returns the tick range a human counting bar lines on the roll would point at.
+- ✅ **PI12** **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Three levels resolve from one note set as filters and overrides, so correcting a wrong note in the source corrects every level without a per-level edit.
+  checked **One note source produces three levels without copying notes** The fixture declares one note list and three arrangements; resolving each yields a different playable note list, and no note appears twice anywhere in the file.
+  checked **Fixing a wrong note corrects every level at once** Editing one note in the source changes what all three arrangements resolve to, asserted by a test that follows the shared note id into each resolved output.
 
 ## Block C — Audio engine and transport
 
