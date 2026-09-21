@@ -22,21 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI13 Metadata a library and a licence check can both read
-
-Every score opens with a metadata object: title, composer, arranger, a key signature
-hint, an overall difficulty from one to ten, free-form tags, an estimated duration, and
-a provenance block naming where the notes came from and under what licence. Provenance
-exists for a reason beyond tidiness. The roadmap says outright that copyrighted scores
-are not shipped, and a rule with nothing checking it is a rule the third contributor
-breaks. So a bundled score must name a public-domain source, and the packaging step can
-refuse a build where one is missing. Difficulty is stored as both a number and a level
-word, because the library filters on the word while sorting inside a level wants the
-number. A generator field records which tool and which version wrote the file, so when a
-class of bad scores surfaces months later it is possible to find out which run produced
-them. Everything except the title is optional, and a score carrying only a title and a
-list of notes is valid, because the cost of entry has to stay near zero.
-
 ### §PI14 A version, a migration chain and somewhere safe to experiment
 
 A format used by a model writing files on demand will change, and files written last

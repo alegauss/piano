@@ -8,7 +8,6 @@ export {
   timingOf,
   validateScoreNotes,
   type Score,
-  type ScoreMetadata,
 } from './score'
 
 export {
@@ -83,6 +82,19 @@ export {
   type NoteOverride,
   type ResolvedArrangement,
 } from './arrangement'
+
+export {
+  bundlingProblems,
+  compareForLibrary,
+  isPublicDomainLicence,
+  matchesFilter,
+  PUBLIC_DOMAIN_LICENCES,
+  validateMetadata,
+  type Licence,
+  type LibraryFilter,
+  type Provenance,
+  type ScoreMetadata,
+} from './metadata'
 
 export {
   barAtTick,

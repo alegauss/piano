@@ -45,6 +45,9 @@
 - ✅ **PI12** **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Three levels resolve from one note set as filters and overrides, so correcting a wrong note in the source corrects every level without a per-level edit.
   checked **One note source produces three levels without copying notes** The fixture declares one note list and three arrangements; resolving each yields a different playable note list, and no note appears twice anywhere in the file.
   checked **Fixing a wrong note corrects every level at once** Editing one note in the source changes what all three arrangements resolve to, asserted by a test that follows the shared note id into each resolved output.
+- ✅ **PI13** **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Every score carries title, composer, level, tags and provenance, so a library can search and sort it and a packaging check can refuse an unlicensed one.
+  checked **A bundled score names a public-domain source and licence** The packaging step refuses a build where any score under the bundled library has an empty provenance block, and the failure names the offending file.
+  checked **The library filters on difficulty, composer and tags** Metadata read from the file populates the list view, and filtering by level word and by tag returns exactly the expected subset of a fixture library.
 
 ## Block C — Audio engine and transport
 

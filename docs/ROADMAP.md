@@ -6,8 +6,7 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI13** (deps: PI2 ✅) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
-- 📋 **PI14** (deps: PI12 ✅, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
+- 📋 **PI14** (deps: PI12 ✅, PI13 ✅) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
 - 📋 **PI15** (deps: PI14) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
 - 📋 **PI16** (deps: PI15) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
 - 📋 **PI17** (deps: PI15) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
@@ -60,19 +59,10 @@
 ## Block G — Score library and distribution
 
 - 📋 **PI51** (deps: PI3 ✅, PI15) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
-- 📋 **PI52** (deps: PI13, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
+- 📋 **PI52** (deps: PI13 ✅, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
-- 📋 **PI55** (deps: PI12 ✅, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI13
-
-- **A bundled score names a public-domain source and licence** The packaging step
-  refuses a build where any score under the bundled library has an empty provenance
-  block, and the failure names the offending file.
-- **The library filters on difficulty, composer and tags** Metadata read from the file
-  populates the list view, and filtering by level word and by tag returns exactly the
-  expected subset of a fixture library.
+- 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 
 ## Done when — PI14
 

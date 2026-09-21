@@ -14,6 +14,7 @@
 
 import { arrangementsOf, validateArrangements, type Arrangement } from './arrangement'
 import { validateExpression, type Expression } from './expression'
+import { validateMetadata, type ScoreMetadata } from './metadata'
 import { validateNotes, type Note } from './note'
 import { partsOf, validateParts, type Part } from './part'
 import { validateSections, type Section } from './section'
@@ -24,12 +25,6 @@ import { resolveTiming, type ResolvedTiming, type Timing } from './time'
  * it, so that a file written against version 1 still opens years later.
  */
 export const FORMAT_VERSION = 1
-
-export type ScoreMetadata = {
-  /** What the piece is called: the one field a score may not omit. */
-  readonly title: string
-  readonly composer?: string
-}
 
 export type Score = {
   readonly formatVersion: number
@@ -101,6 +96,7 @@ export function validateScoreNotes(score: Score): string[] {
     ...validateExpression(score.expression),
     ...validateSections(score.sections ?? []),
     ...validateArrangements(score.arrangements ?? [], notes, scoreParts(score)),
+    ...validateMetadata(score.metadata),
   ]
 }
 
