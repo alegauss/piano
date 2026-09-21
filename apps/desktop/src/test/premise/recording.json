@@ -1,0 +1,70 @@
+{
+  "request": "The opening of Ode to Joy by Beethoven for a beginner: the melody in the right hand in C major and 4/4, over a simple left-hand bass",
+  "recordedWith": "Written by Claude for this request, following /piano:compose and the piano-score skill, and kept so the chain runs without a model. npm run premise:record replaces it with the score a live run saves.",
+  "score": {
+    "formatVersion": 1,
+    "metadata": {
+      "id": "ode-to-joy",
+      "title": "Ode to Joy",
+      "composer": "Ludwig van Beethoven",
+      "key": "C major",
+      "level": "beginner",
+      "difficulty": 1,
+      "tags": ["classical", "melody"],
+      "provenance": {
+        "source": "The theme of the finale of Symphony No. 9 (1824), arranged for two hands",
+        "licence": "public-domain"
+      }
+    },
+    "timing": {
+      "ticksPerQuarter": 480,
+      "tempo": [{ "tick": 0, "microsecondsPerQuarter": 500000 }],
+      "timeSignatures": [{ "tick": 0, "numerator": 4, "denominator": 4 }]
+    },
+    "notes": [
+      { "pitch": 64, "start": 0, "duration": 440, "velocity": 76, "hand": "right" },
+      { "pitch": 64, "start": 480, "duration": 440, "velocity": 74, "hand": "right" },
+      { "pitch": 65, "start": 960, "duration": 440, "velocity": 76, "hand": "right" },
+      { "pitch": 67, "start": 1440, "duration": 440, "velocity": 80, "hand": "right" },
+      { "pitch": 67, "start": 1920, "duration": 440, "velocity": 78, "hand": "right" },
+      { "pitch": 65, "start": 2400, "duration": 440, "velocity": 74, "hand": "right" },
+      { "pitch": 64, "start": 2880, "duration": 440, "velocity": 72, "hand": "right" },
+      { "pitch": 62, "start": 3360, "duration": 440, "velocity": 70, "hand": "right" },
+      { "pitch": 60, "start": 3840, "duration": 440, "velocity": 72, "hand": "right" },
+      { "pitch": 60, "start": 4320, "duration": 440, "velocity": 72, "hand": "right" },
+      { "pitch": 62, "start": 4800, "duration": 440, "velocity": 74, "hand": "right" },
+      { "pitch": 64, "start": 5280, "duration": 440, "velocity": 78, "hand": "right" },
+      { "pitch": 64, "start": 5760, "duration": 680, "velocity": 80, "hand": "right" },
+      { "pitch": 62, "start": 6480, "duration": 220, "velocity": 70, "hand": "right" },
+      { "pitch": 62, "start": 6720, "duration": 920, "velocity": 72, "hand": "right" },
+      { "pitch": 64, "start": 7680, "duration": 440, "velocity": 76, "hand": "right" },
+      { "pitch": 64, "start": 8160, "duration": 440, "velocity": 74, "hand": "right" },
+      { "pitch": 65, "start": 8640, "duration": 440, "velocity": 76, "hand": "right" },
+      { "pitch": 67, "start": 9120, "duration": 440, "velocity": 80, "hand": "right" },
+      { "pitch": 67, "start": 9600, "duration": 440, "velocity": 78, "hand": "right" },
+      { "pitch": 65, "start": 10080, "duration": 440, "velocity": 74, "hand": "right" },
+      { "pitch": 64, "start": 10560, "duration": 440, "velocity": 72, "hand": "right" },
+      { "pitch": 62, "start": 11040, "duration": 440, "velocity": 70, "hand": "right" },
+      { "pitch": 60, "start": 11520, "duration": 440, "velocity": 72, "hand": "right" },
+      { "pitch": 60, "start": 12000, "duration": 440, "velocity": 72, "hand": "right" },
+      { "pitch": 62, "start": 12480, "duration": 440, "velocity": 74, "hand": "right" },
+      { "pitch": 64, "start": 12960, "duration": 440, "velocity": 76, "hand": "right" },
+      { "pitch": 62, "start": 13440, "duration": 680, "velocity": 76, "hand": "right" },
+      { "pitch": 60, "start": 14160, "duration": 220, "velocity": 68, "hand": "right" },
+      { "pitch": 60, "start": 14400, "duration": 920, "velocity": 70, "hand": "right" },
+      { "pitch": 48, "start": 0, "duration": 1880, "velocity": 56, "hand": "left" },
+      { "pitch": 43, "start": 1920, "duration": 1880, "velocity": 54, "hand": "left" },
+      { "pitch": 48, "start": 3840, "duration": 1880, "velocity": 56, "hand": "left" },
+      { "pitch": 43, "start": 5760, "duration": 1880, "velocity": 54, "hand": "left" },
+      { "pitch": 48, "start": 7680, "duration": 1880, "velocity": 56, "hand": "left" },
+      { "pitch": 43, "start": 9600, "duration": 1880, "velocity": 54, "hand": "left" },
+      { "pitch": 48, "start": 11520, "duration": 1880, "velocity": 56, "hand": "left" },
+      { "pitch": 43, "start": 13440, "duration": 920, "velocity": 54, "hand": "left" },
+      { "pitch": 48, "start": 14400, "duration": 920, "velocity": 56, "hand": "left" }
+    ],
+    "sections": [
+      { "id": "phrase-a", "label": "First phrase", "startTick": 0, "endTick": 7680 },
+      { "id": "phrase-b", "label": "Second phrase", "startTick": 7680, "endTick": 15360 }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 /**
- * Five projects, split on one question: does this test start something?
+ * The projects split on one question: does this test start something?
  *
  * A test that spawns an Electron process or a browser costs seconds where the
  * rest cost milliseconds. Paying for both on every run is how a suite stops
@@ -28,6 +28,7 @@ export default defineConfig({
       'apps/desktop/vitest.main.config.ts',
       'apps/desktop/vitest.browser.config.ts',
       'apps/desktop/vitest.live.config.ts',
+      'apps/desktop/vitest.premise.config.ts',
     ],
   },
 })

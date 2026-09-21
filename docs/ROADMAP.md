@@ -18,7 +18,6 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI50** (deps: PI26 ✅, PI46 ✅, PI48 ✅, PI51 ✅) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 - 📋 **PI65** (deps: PI46 ✅) **validate_score passes a score with the left hand above the right, a chord no hand can reach, or a bar half full** — The arithmetic half of the skill's list, returned as warnings beside a valid result, is what a model acts on when it would skip rereading. → §PI65
 
 ## Block G — Score library and distribution
@@ -30,15 +29,6 @@
 - 📋 **PI58** (deps: PI17 ✅, PI51 ✅) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 - 📋 **PI63** (deps: PI51 ✅) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
 - 📋 **PI66** (deps: PI51 ✅) **Double-clicking a score in the file manager never reaches the piano: no file type is registered** — A .score.json cannot be registered without claiming every .json, so the extension a score is saved under has to be settled before packaging can claim it. → §PI66
-
-## Done when — PI50
-
-- **One run goes from a request to an audible piece** The end-to-end test asks for a
-  named public-domain piece and asserts the expected pitches sound at the expected times
-  in an offline render.
-- **The chain is gated in CI without a live model** A recorded model response is the
-  default path so every push is checked, with a live run available on demand for when
-  the prompt itself changes.
 
 ## Done when — PI52
 

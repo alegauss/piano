@@ -161,6 +161,9 @@
 - ✅ **PI49** **A local port that accepts scores and plays them is an open door on the machine** — The link answers on loopback only and its token file is readable by its owner alone; ids from any caller land inside the library, never on a device name, and a record cannot start another program.
   checked **The endpoint is unreachable from another machine or user** It binds loopback only, and a request without the current session token is refused, tested from a second account on the same machine.
   checked **A score cannot be written outside the library directory** A save tool handed a path that escapes the library is refused by name, including through relative traversal and through a symlink.
+- ✅ **PI50** **Nothing proves the premise: no single run goes from a request to a piece actually playing** — A recorded model score goes through the plugin's server into the built app, which opens and plays it; its opening is heard note by note, in CI (design recorded in `apps/desktop/src/test/premise.ts`).
+  checked **One run goes from a request to an audible piece** The end-to-end test asks for a named public-domain piece and asserts the expected pitches sound at the expected times in an offline render.
+  checked **The chain is gated in CI without a live model** A recorded model response is the default path so every push is checked, with a live run available on demand for when the prompt itself changes.
 
 ## Block G — Score library and distribution
 

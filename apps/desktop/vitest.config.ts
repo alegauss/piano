@@ -19,7 +19,13 @@ export default defineConfig({
     // `*.browser.test.tsx` also ends in `.test.tsx`, so without this the fast
     // project silently runs the browser suite in jsdom and fails on the first
     // thing jsdom does not implement. The split is the whole methodology.
-    exclude: ['**/node_modules/**', '**/dist/**', '**/*.browser.test.*', '**/*-live.test.*'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/*.browser.test.*',
+      '**/*-live.test.*',
+      '**/*.premise.test.*',
+    ],
     setupFiles: ['./src/test/setup.ts'],
   },
 })

@@ -93,21 +93,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI50 The one test that proves the premise
-
-Every other task on this roadmap can pass while the product still does not work, because
-what is promised is a chain: a sentence becomes a score, the score validates, the app
-opens it, the piano plays and the notes fall. So one test walks that whole chain. It
-runs the plugin command against a known public-domain piece, takes the score the model
-produced, validates it with the real validator, loads it into a headless instance of the
-app, renders the opening bars offline and asserts the expected pitches sound at the
-expected times. Model output is the one part that cannot be asserted exactly, so the
-assertion is on properties that must hold: it validates, the key and meter are right,
-the note count is in a sane range, and it plays. Kept in CI with a recorded model
-response as the default and a live run available on demand, this is the test that fails
-the day the premise breaks. It waits for PI51: until then the window plays only its
-placeholder and refuses a library id, so no run can end in the piece that was asked for.
-
 ### §PI65 Warnings for music that validates
 
 The skill lists the mistakes that pass validation and still make a bad score, and asks
