@@ -97,6 +97,17 @@ export {
 } from './metadata'
 
 export {
+  KNOWN_SCORE_KEYS,
+  migrate,
+  MIGRATIONS,
+  unknownKeyProblems,
+  unknownKeys,
+  type Extensions,
+  type Migration,
+  type MigrationResult,
+} from './migrate'
+
+export {
   barAtTick,
   barRangeToTicks,
   DEFAULT_MICROSECONDS_PER_QUARTER,

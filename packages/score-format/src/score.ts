@@ -15,16 +15,12 @@
 import { arrangementsOf, validateArrangements, type Arrangement } from './arrangement'
 import { validateExpression, type Expression } from './expression'
 import { validateMetadata, type ScoreMetadata } from './metadata'
+import type { Extensions } from './migrate'
+import { FORMAT_VERSION } from './version'
 import { validateNotes, type Note } from './note'
 import { partsOf, validateParts, type Part } from './part'
 import { validateSections, type Section } from './section'
 import { resolveTiming, type ResolvedTiming, type Timing } from './time'
-
-/**
- * Bumped only by a breaking change. PI14 adds the migration chain that reads
- * it, so that a file written against version 1 still opens years later.
- */
-export const FORMAT_VERSION = 1
 
 export type Score = {
   readonly formatVersion: number
@@ -63,6 +59,11 @@ export type Score = {
    * plays as written at advanced.
    */
   readonly arrangements?: readonly Arrangement[]
+  /**
+   * The reserved namespace: anything the format does not define, kept across a
+   * round trip instead of dropped. Unknown keys outside it are an error.
+   */
+  readonly extensions?: Extensions
 }
 
 /** The levels a score offers, with "as written" supplied where it offers none. */
@@ -122,3 +123,5 @@ export function describeScore(score: Score): string {
 export function isSupportedVersion(score: Score): boolean {
   return score.formatVersion === FORMAT_VERSION
 }
+
+export { FORMAT_VERSION }

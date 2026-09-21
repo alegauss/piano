@@ -22,22 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI14 A version, a migration chain and somewhere safe to experiment
-
-A format used by a model writing files on demand will change, and files written last
-month have to keep opening. So the first key in every score is formatVersion, an
-integer, and the loader owns an ordered chain of migration functions from one version to
-the next. Loading walks that chain, so a version 1 file opens in a version 5 app by
-running four small, individually tested transformations rather than one branching reader
-nobody dares touch. Migrations run one way by design; writing is always at the current
-version. Alongside it, a reserved extensions object namespaced by owner gives anyone
-somewhere to put a field without proposing a format change, and the validator preserves
-unknown keys under it across a round trip instead of dropping them. Unknown keys outside
-extensions are an error rather than a warning, because silently ignoring a misspelled
-field is how a model learns to emit something that does nothing. The version is bumped
-only for a breaking change; additive optional fields do not need one, and the chain
-records that decision.
-
 ### §PI15 One source of truth for the schema and the validator
 
 Validation has two audiences and they need identical rules. A human or a model writing a

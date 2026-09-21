@@ -6,8 +6,7 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI14** (deps: PI12 ✅, PI13 ✅) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
-- 📋 **PI15** (deps: PI14) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
+- 📋 **PI15** (deps: PI14 ✅) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
 - 📋 **PI16** (deps: PI15) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
 - 📋 **PI17** (deps: PI15) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
 
@@ -63,15 +62,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI14
-
-- **A version 1 fixture opens in the current app** Frozen files from every historical
-  version load through the migration chain, and each resolves to the same score the
-  current writer would produce from the same music.
-- **An unknown key outside extensions is an error** The validator rejects a misspelled
-  field by name rather than ignoring it, while the same key placed under extensions
-  survives a round trip untouched.
 
 ## Done when — PI15
 

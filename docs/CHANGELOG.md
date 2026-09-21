@@ -48,6 +48,9 @@
 - ✅ **PI13** **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Every score carries title, composer, level, tags and provenance, so a library can search and sort it and a packaging check can refuse an unlicensed one.
   checked **A bundled score names a public-domain source and licence** The packaging step refuses a build where any score under the bundled library has an empty provenance block, and the failure names the offending file.
   checked **The library filters on difficulty, composer and tags** Metadata read from the file populates the list view, and filtering by level word and by tag returns exactly the expected subset of a fixture library.
+- ✅ **PI14** **The format has no version, so a file written today stops opening the moment a field changes** — Every score declares a version that a migration chain walks forward, and a field the format does not define is an error naming the nearest real one.
+  checked **A version 1 fixture opens in the current app** Frozen files from every historical version load through the migration chain, and each resolves to the same score the current writer would produce from the same music.
+  checked **An unknown key outside extensions is an error** The validator rejects a misspelled field by name rather than ignoring it, while the same key placed under extensions survives a round trip untouched.
 
 ## Block C — Audio engine and transport
 
