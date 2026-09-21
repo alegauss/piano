@@ -27,8 +27,15 @@ const SKIP = new Set(['node_modules', 'dist', '.git', '.tsbuild', '.roadkeep'])
 
 const SOURCE = /\.(?:ts|tsx|mts|cts)$/
 
-/** A score type declared where it does not belong. */
-const DECLARES_SCORE_TYPE = /^\s*(?:export\s+)?(?:type|interface)\s+(Score\w*|\w*ScoreMetadata)\b/
+/**
+ * A score type declared where it does not belong.
+ *
+ * Declared, not imported: an import list split one name per line holds a line
+ * reading "type Score," too. What only a declaration has after the name is a
+ * type parameter list, an equals sign, a brace or extends.
+ */
+const DECLARES_SCORE_TYPE =
+  /^\s*(?:export\s+)?(?:declare\s+)?(?:type|interface)\s+(Score\w*|\w*ScoreMetadata)\b\s*(?:<|=|\{|extends\b)/
 
 /** An import that walks to the package instead of naming it. */
 const RELATIVE_REACH = /from\s+['"][^'"]*score-format[^'"]*['"]/

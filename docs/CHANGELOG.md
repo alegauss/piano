@@ -24,6 +24,7 @@
 - ✅ **PI6** **There is no installer: the app only runs in development mode, on the machine that built it** — One command produces a 107 MB Windows installer whose packaged app starts and passes all twelve self-checks, with a CI matrix for macOS and Linux beside it.
   checked **An installer is produced for Windows, macOS and Linux** One CI job builds NSIS, dmg and AppImage artifacts from the same electron-builder configuration, and each is downloadable from the run.
   checked **The packaged app runs with no development dependency present** Installed on a clean machine the window opens and a bundled score plays, with no Node runtime, no dev server and no source checkout available to it.
+- ✅ **PI60** **The format-ownership guard reads a split "type Score," import line as a declaration and fails the lint** — The ownership guard now matches a Score type only where a declaration follows the name, so a split import passes and a local declaration still fails.
 
 ## Block B — Score JSON format
 
