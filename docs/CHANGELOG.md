@@ -57,6 +57,8 @@
 - ✅ **PI16** **There are no reference scores, so nothing proves a format change kept old files readable** — Sixteen reference scores cover the hard cases, each round-trips identically after normalisation, and a checksum stops a frozen fixture being edited to suit its own migration.
   checked **Every fixture round-trips identically after normalisation** Parsing and reserialising each reference score returns the input, which is the check that catches a field silently dropped by a refactor of the loader.
   checked **Frozen per-version fixtures are never edited** A test asserts a checksum over each historical fixture, so a migration can never be made to pass by quietly changing the file it exists to migrate.
+- ✅ **PI17** **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — importMidi reads a MIDI file into a valid score and exportMidi writes one; both list what they dropped, and import marks what it guessed (design recorded in `packages/score-format/src/midi.ts`).
+  checked **Export reports what it dropped** Exporting a score carrying fingering, articulation and arrangements lists each thing MIDI cannot represent, instead of writing a file that silently lost them.
 
 ## Block C — Audio engine and transport
 

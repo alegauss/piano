@@ -6,8 +6,6 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI17** (deps: PI15 ✅) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
-
 ## Block C — Audio engine and transport
 
 - 📋 **PI18** (deps: PI1 ✅) **There is no way to produce sound, and no seam between the engine and everything that drives it** — One narrow engine interface lets a synthesised fallback and a sampled piano swap without the transport, the roll or the practice code knowing. → §PI18
@@ -60,15 +58,7 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI17
-
-- **A MIDI file imports and plays recognisably** A standard MIDI file of a known piece
-  imports, validates and plays with the right notes, tempo and pedal, and every inferred
-  field is marked as inferred.
-- **Export reports what it dropped** Exporting a score carrying fingering, articulation
-  and arrangements lists each thing MIDI cannot represent, instead of writing a file
-  that silently lost them.
+- 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 
 ## Done when — PI18
 

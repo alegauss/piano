@@ -131,6 +131,15 @@ export {
 export { buildSchemaDocument, renderSchemaDocument } from './schema-document'
 
 export {
+  exportMidi,
+  importMidi,
+  MIDI_IMPORT_EXTENSION,
+  type MidiExport,
+  type MidiImport,
+  type MidiImportOptions,
+} from './midi'
+
+export {
   barAtTick,
   barRangeToTicks,
   DEFAULT_MICROSECONDS_PER_QUARTER,

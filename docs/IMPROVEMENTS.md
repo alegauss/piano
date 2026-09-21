@@ -22,21 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI17 MIDI in and out, on the same tick grid
-
-The format was built on ticks and a tempo map precisely so MIDI conversion is a mapping
-rather than a rewrite. Import reads a standard MIDI file, takes its division as
-ticksPerQuarter, carries tempo and time signature events straight across, folds note-on
-and note-off pairs into note objects, and maps controller 64 into pedal events. What
-cannot be recovered is inferred conservatively and marked as inferred: hand assignment
-guessed from pitch and track, no fingering, no articulation. Export runs the other way
-and earns its place twice. It is the honest answer to the non-goal about audio
-recording, since anyone who wants to record can take the MIDI into a DAW. And it is the
-escape hatch that keeps this format from being a trap, because a library nobody can get
-their work back out of is one nobody should put work into. Neither direction is
-lossless, and the tool says so out loud by listing what it dropped rather than
-pretending a round trip through MIDI preserves a score.
-
 ## Block C — Audio engine and transport
 
 ### §PI18 A seam between making sound and deciding what to sound
@@ -546,7 +531,9 @@ the open-file event on macOS and the command-line argument on Windows, including
 case where the app is already running. Every route goes through the same validation, so
 a malformed file produces the same readable error however it arrived. A file that fails
 to open must not leave the app half-loaded with the previous score partly replaced,
-which is the bug this feature is most likely to grow.
+which is the bug this feature is most likely to grow. A .mid file takes the same routes
+through importMidi from the score-format package, and the lists of what it dropped and
+what it guessed are shown to whoever opened it rather than swallowed.
 
 ### §PI52 A collection that stays usable as it grows
 
@@ -604,3 +591,18 @@ arrangements authored by hand rather than generated, which makes them the refere
 what a good arrangement looks like and doubles them as fixtures. They are also the first
 thing a new contributor listens to, so a regression in timing or dynamics is caught by
 opening the app instead of by reading a test report.
+
+### §PI58 Saving a score as MIDI
+
+exportMidi in the score-format package already produces the bytes and the list of what a
+MIDI file cannot carry, so this is surface work rather than format work. An Export as
+MIDI menu item and keyboard shortcut sit beside the open routes PI51 adds. The main
+process owns the save dialog and the write, as it owns every other disk access; the
+renderer sends the score it is showing across a typed IPC channel rather than a path,
+because the score in memory is the thing being exported. The suggested file name comes
+from the title. The dropped list is shown after the write, in plain words, and never as
+a blocking question: somebody taking a practice piece into a DAW does not need to
+confirm that the fingerings stay behind, but should be told that they did. One choice is
+left open: whether the export plays the score as written, which is what exportMidi does
+today, or the arrangement currently selected, which would run resolveArrangement first
+and name the level in the file name.
