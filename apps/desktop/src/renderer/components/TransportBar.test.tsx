@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FakeTime, Listener, note, performance } from '../audio/test-doubles'
+import type { KeysInput } from '../lib/keys-input'
+import type { MidiInput } from '../lib/midi-input'
 import { Transport } from '../audio/transport'
 import { clockTime, TransportBar } from './TransportBar'
 
@@ -155,6 +157,34 @@ describe('TransportBar', () => {
     expect(button.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(button)
     expect(onView).toHaveBeenCalledWith('sheet')
+  })
+
+  it('does not wear the MIDI monitor’s icon while the stave is showing', () => {
+    // Both were Music4, two places apart in one row, so neither said which it
+    // was. jsdom is enough: an icon is inline SVG in the document, and the
+    // claim is about what is drawn rather than where it lands.
+    const midi: MidiInput = {
+      state: { status: 'ready', devices: [], chosen: null, detail: '' },
+      subscribe: () => () => {},
+      start: () => {},
+      choose: () => {},
+      onEvent: () => () => {},
+    }
+    const keys: KeysInput = {
+      state: { playing: false, octave: 0, range: [48, 72], held: [] },
+      subscribe: () => () => {},
+      setPlaying: () => {},
+      shiftOctave: () => {},
+      onEvent: () => () => {},
+      attach: () => () => {},
+    }
+    setup({ view: 'sheet', midi, keys })
+    const glyph = (label: string) => screen.getByLabelText(label).querySelector('svg')?.innerHTML
+    expect(glyph('Show the falling notes')).toBeTruthy()
+    expect(glyph('MIDI input')).toBeTruthy()
+    expect(glyph('Show the falling notes')).not.toBe(glyph('MIDI input'))
+    // And it is not the typing keyboard's either, which sits beside them too.
+    expect(glyph('Show the falling notes')).not.toBe(glyph('Play with the typing keyboard'))
   })
 
   it('offers the roll back while the stave is showing', () => {

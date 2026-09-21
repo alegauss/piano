@@ -34,28 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI82 An icon that is not the monitor's
-
-MidiMonitor.tsx imports Music4 and so does the bar's roll-or-stave button, which sits
-two places along. On the stave the button shows Music4 to mean "back to the falling
-notes", beside a Music4 that means "what the controller is sending": two identical
-glyphs, neither saying which is which.
-
-The pair the button swaps between has to read as the two things it swaps between.
-ClefTreble for the stave is right and unambiguous; the other half is what needs
-replacing, with something that says roll rather than music in general. KeyboardMusic is
-the closest — the roll falls onto the keyboard and that is what the view is — and it is
-far enough from Keyboard, which KeysPanel already uses for the typing keyboard, to be
-told apart beside it.
-
-Whatever it becomes, check it against the icons it actually sits next to rather than on
-its own: the bar holds the keys panel, the MIDI monitor, effects, theme and full screen,
-and two of those are already music-shaped.
-
-A jsdom test on TransportBar can only assert the accessible names, which are right
-already, so this is a browser test or nothing: render the bar in both views and assert
-the button's glyph is not the monitor's.
-
 ### §PI83 A zoom for the page, and following it across
 
 The roll has a zoom — the slider under the magnifier, MIN_LEAD_SECONDS to

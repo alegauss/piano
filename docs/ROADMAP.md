@@ -16,7 +16,6 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI82** (deps: —) **The button that leaves the stave shows the same note glyph as the MIDI monitor two places along** — Both are Music4, so a row of controls carries two identical icons and neither says which one it is. → §PI82
 - 📋 **PI83** (deps: PI81 ✅) **The stave is drawn at one size, and on a dense score its notes are too small to read** — The roll has a zoom and the stave has none, so a reader cannot make the glyphs bigger and move across them. → §PI83
 
 ## Done when — Block A

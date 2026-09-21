@@ -4,8 +4,8 @@ import {
   Maximize2,
   Minimize2,
   Moon,
-  Music4,
   Pause,
+  Piano,
   Play,
   PauseCircle,
   Repeat,
@@ -363,7 +363,7 @@ export function TransportBar({
             aria-label={view === 'sheet' ? 'Show the falling notes' : 'Show the sheet music'}
             aria-pressed={view === 'sheet'}
           >
-            {view === 'sheet' ? <Music4 /> : <ClefTreble />}
+            {view === 'sheet' ? <Piano /> : <ClefTreble />}
           </Button>
           <Button
             variant={effects ? 'secondary' : 'ghost'}
