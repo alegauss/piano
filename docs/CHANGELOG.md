@@ -140,5 +140,9 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
+- ✅ **PI43** **Claude Code cannot reach the app: there is no way to send a score or start playback** — The tools say what somebody asks for — validate, save, list, play, seek, practise — and the library is the only thing it touches (design recorded in `apps/mcp-server/src/tools.ts`).
+  checked **Every tool is usable from a cold read of its description** In a scripted evaluation a model with no other context calls each tool correctly on the first attempt, and no tool needs the source read to be understood.
+  checked **The server validates with the same code as the app** A score the MCP tool accepts opens in the app, and one either rejects is rejected by both, asserted across the whole malformed fixture set.
+
 ## Block G — Score library and distribution
 

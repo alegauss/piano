@@ -77,23 +77,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI43 The tools Claude Code actually needs
-
-The premise is that somebody types a sentence into Claude Code and a piano plays, so the
-tool surface has to be the shape of that sentence rather than the shape of the code
-beneath it. The set is small and deliberate. Score tools: validate a score and return
-errors a model can act on, save one into the library with its metadata, read one back.
-Transport tools: play, stop, seek to a bar or a named section, set tempo scale, set
-transpose, set difficulty level, report current state, and start a drill, which takes
-the passage, the hands and the tempo ladder as one request because "left hand only, bars
-17 to 20, starting at half tempo and climbing" is one sentence and not four calls.
-Library tools: list what is there and search it. What is not exposed matters as much:
-nothing that writes an arbitrary file, nothing that runs a command. The server is a
-separate package depending on the shared format package, so validation inside a tool
-call and validation inside the app are the same code and cannot disagree. Every tool
-description is written for a model reading it cold, because a description that needs the
-source to understand is a tool that gets called wrongly.
-
 ### §PI44 Finding the window the user is looking at
 
 The MCP server is started by Claude Code and the app is started by the user, so they are
@@ -102,12 +85,14 @@ failure: the tool call succeeds, something plays somewhere, and the window in fr
 the user sits silent. So the app writes a small file on start, in a known per-user
 location, holding the endpoint it listens on, a token and its process id, and removes it
 on exit. The server reads that file, checks the process is alive and connects. A stale
-file left by a crash is caught by the liveness check rather than trusted. Where several
-windows are open the most recently focused one wins, because that is the one the person
-is looking at. The channel itself is a local socket or a loopback endpoint, chosen for
-what is reliable on Windows as well as macOS, and the handshake carries a protocol
-version so an old plugin meeting a new app fails with a clear message instead of odd
-behaviour.
+file left by a crash is caught by the liveness check rather than trusted. What travels
+over the channel is already settled: the server's link module holds a closed set of
+commands, none of which carries a path or a script, and what is missing is only the
+carrying. Where several windows are open the most recently focused one wins, because
+that is the one the person is looking at. The channel itself is a local socket or a
+loopback endpoint, chosen for what is reliable on Windows as well as macOS, and the
+handshake carries a protocol version so an old plugin meeting a new app fails with a
+clear message instead of odd behaviour.
 
 ### §PI45 A plugin, not a configuration exercise
 

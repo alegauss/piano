@@ -5,7 +5,12 @@
   "description": "The MCP server Claude Code talks to: score tools, transport tools, library tools.",
   "type": "module",
   "main": "./src/index.ts",
+  "scripts": {
+    "start": "vite-node src/main.ts"
+  },
   "dependencies": {
-    "@piano/score-format": "*"
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@piano/score-format": "*",
+    "zod": "^4.1.12"
   }
 }

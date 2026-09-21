@@ -1,0 +1,80 @@
+import { FORMAT_VERSION } from '@piano/score-format'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
+import { createLibrary, type Files, type Library } from './library'
+import { noWindow, type Link } from './link'
+import { toolsFor, type Tool } from './tools'
+
+/**
+ * The server, which is the tool table plus a way to be spoken to.
+ *
+ * The protocol is the SDK's: an implementation of a specification is not the
+ * place to be inventive, and the parts of this worth writing by hand are the
+ * tools and what they refuse. Everything that answers a caller goes through
+ * one adapter below, so a refusal reads the same whichever tool produced it.
+ */
+
+/** Where scores are kept, unless a caller says otherwise. */
+export function defaultLibraryRoot(): string {
+  const named = process.env['PIANO_LIBRARY']
+  return named !== undefined && named.trim() !== '' ? named : join(homedir(), '.piano', 'library')
+}
+
+/** Node's filesystem, as the library asks for it. */
+export const nodeFiles: Files = {
+  read: (path) => readFile(path, 'utf8'),
+  write: (path, text) => writeFile(path, text, 'utf8'),
+  list: (dir) => readdir(dir),
+  ensure: async (dir) => {
+    await mkdir(dir, { recursive: true })
+  },
+}
+
+/**
+ * The tools, wired to a protocol server.
+ *
+ * A tool that fails says so in its text and is marked as an error, rather than
+ * throwing: a caller reading an exception learns that something went wrong,
+ * where a caller reading a sentence learns what to do instead.
+ */
+export function createServer(options: { library: Library; link?: Link }): McpServer {
+  const server = new McpServer(
+    { name: 'piano', version: '0.0.0' },
+    {
+      instructions:
+        'A piano that plays scores and teaches them. Scores are JSON in the piano score ' +
+        `format, version ${String(FORMAT_VERSION)}: write one, validate it, save it into the ` +
+        'library, then play or practise it in the open window.',
+    },
+  )
+  for (const one of toolsFor(options.library, options.link ?? noWindow())) {
+    register(server, one)
+  }
+  return server
+}
+
+function register(server: McpServer, one: Tool): void {
+  server.registerTool(
+    one.name,
+    { title: one.title, description: one.description, inputSchema: one.shape },
+    async (args: unknown) => {
+      const result = await one.run(args)
+      return {
+        content: [{ type: 'text' as const, text: result.text }],
+        structuredContent: result.data === undefined ? undefined : { result: result.data },
+        isError: !result.ok,
+      }
+    },
+  )
+}
+
+/** Start talking over stdin and stdout, which is how Claude Code starts one. */
+export async function start(root: string = defaultLibraryRoot()): Promise<McpServer> {
+  const server = createServer({ library: createLibrary(root, nodeFiles) })
+  await server.connect(new StdioServerTransport())
+  return server
+}
