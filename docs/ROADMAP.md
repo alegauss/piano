@@ -11,8 +11,6 @@
 
 ## Block E — Practice mode and difficulty levels
 
-- 📋 **PI62** (deps: PI38 ✅) **The roll says a note was late but not by how much, so a player who is always a hair early cannot see it** — A consistent bias is a shape on the roll rather than a word, and seeing it is what makes somebody fix it instead of guessing. → §PI62
-
 ## Block F — Claude Code First: MCP and plugin
 
 - 📋 **PI65** (deps: PI46 ✅) **validate_score passes a score with the left hand above the right, a chord no hand can reach, or a bar half full** — The arithmetic half of the skill's list, returned as warnings beside a valid result, is what a model acts on when it would skip rereading. → §PI65

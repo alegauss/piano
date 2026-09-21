@@ -236,6 +236,7 @@ export function PianoRoll({
       lastView.current = view
       const selecting = drag.current
       const judgement = current.feedback()
+      const clock = strikes?.now() ?? null
       drawRoll(context, view, current.score, current.palette, {
         loop: current.loop,
         selecting:
@@ -244,6 +245,9 @@ export function PianoRoll({
             : barsBetween(current.timing, selecting.from, selecting.to),
         labels: labels.current,
         judged: judgement === null ? undefined : (note) => noteLook(judgement, note, view),
+        ...(judgement === null || clock === null
+          ? {}
+          : { timings: { marks: judgement.timings, now: clock, window: judgement.window } }),
       })
       if (field !== null && strikes !== undefined) {
         const audioNow = strikes.now()
@@ -260,7 +264,6 @@ export function PianoRoll({
       for (const pitch of current.expected()) {
         states.set(pitch, 'expected')
       }
-      const clock = strikes?.now() ?? null
       if (judgement !== null && clock !== null) {
         for (const [pitch, mark] of judgement.keys) {
           if (clock - mark.at <= MARK_SECONDS) {

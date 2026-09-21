@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest'
 
 import { FRAME_BUDGET_MS, FrameTimes } from './frame-timing'
 import { NO_FEEDBACK, noteKey, noteLook, type Feedback, type Outcome } from './grading'
+import { keyRect } from './keyboard-geometry'
 import { forEachVisible, prepareRoll, type RollView } from './roll'
 import { drawRoll } from './roll-draw'
 import { StrikeField } from './strikes'
 import { readCanvasPalette, setTheme } from './theme'
+import { dashY, laneOf } from './timing-lane'
 
 /**
  * The roll at its worst moment, measured rather than assumed.
@@ -161,6 +163,43 @@ describe('drawing the densest bar', () => {
 
     expect(times.percentile(0.95)).toBeLessThan(DRAW_BUDGET_MS)
     expect(times.worst).toBeLessThan(FRAME_BUDGET_MS)
+  })
+
+  it('draws a strike’s timing as a dash on its own side of the lane, over its key', () => {
+    const { context } = field(800, 400)
+    const empty = prepareRoll([])
+    const at: RollView = { ...view(0), width: 800, height: 400 }
+    drawRoll(context, at, empty, readCanvasPalette(), {
+      timings: {
+        marks: [{ pitch: 60, offset: -0.1, outcome: 'correct', at: 1 }],
+        now: 1.2,
+        window: 0.12,
+      },
+    })
+    const lane = laneOf(400)
+    const struck = keyRect(60, 800)
+    const other = keyRect(84, 800)
+    if (struck === null || other === null) {
+      throw new Error('no key')
+    }
+    const pixel = (x: number, y: number) => [...context.getImageData(x, Math.round(y), 1, 1).data]
+    const early = dashY(lane, -0.1, 0.12)
+    const late = dashY(lane, 0.1, 0.12)
+    const middleOf = (key: { x: number; width: number }) => Math.round(key.x + key.width / 2)
+    // Painted above the middle over the key struck early, and nowhere else in that row.
+    expect(pixel(middleOf(struck), early)).not.toEqual(pixel(middleOf(other), early))
+    expect(pixel(middleOf(struck), late)).toEqual(pixel(middleOf(other), late))
+  })
+
+  it('leaves the lane empty when nothing has been struck', () => {
+    const { context } = field(800, 400)
+    const at: RollView = { ...view(0), width: 800, height: 400 }
+    drawRoll(context, at, prepareRoll([]), readCanvasPalette(), {
+      timings: { marks: [], now: 1, window: 0.12 },
+    })
+    const lane = laneOf(400)
+    const row = (y: number) => [...context.getImageData(400, Math.round(y), 1, 1).data]
+    expect(row(lane.middle)).toEqual(row(lane.middle - 6))
   })
 
   it('draws only what is on screen, however long the piece is', () => {

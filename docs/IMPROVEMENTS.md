@@ -47,23 +47,6 @@ message telling somebody which side to update names a number they cannot find.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI62 Timing error as a shape
-
-The colour says a note was not in time; it does not say by how much or which way, and
-those are different problems. Somebody consistently twenty milliseconds early is not
-making mistakes, they are playing to a different beat, and the answer is one sentence
-rather than another hour of practice. The figure is already measured: the grader keeps a
-signed offset on every verdict, in seconds a player feels, and the report prints it.
-What is missing is the drawing. A mark on the note at the distance from the strike line
-the error puts it reads as a shape, which is the point: a whole passage struck a little
-to one side is a bias, where a scatter either side of the line is ordinary human timing.
-It belongs on the roll, where the eye already is, and it is drawn the way the notes are,
-batched into a path per frame rather than a stroke per note. The hard part is the
-geometry rather than the arithmetic. A note being judged is at the strike line by
-definition, so a mark placed at its head is off the field the instant it matters; it
-needs somewhere to live that is still visible a moment later, and it has to stay legible
-on a note three pixels tall.
-
 ## Block F — Claude Code First: MCP and plugin
 
 ### §PI65 Warnings for music that validates

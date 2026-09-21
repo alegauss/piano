@@ -139,6 +139,7 @@
 - ✅ **PI42** **Every session starts from nothing: no record of what was played, what improved or what still fails** — Every graded attempt is kept against the piece and its notes, and the app names the bars that keep failing (design recorded in `apps/desktop/src/renderer/lib/progress.ts`).
   checked **History survives a score being re-saved** Progress keyed on score and section ids stays attached after the file is rewritten or its title is changed, rather than being orphaned by a path.
   checked **Practice data can be exported and deleted** One action exports the whole local store and one deletes it with nothing left behind, which is what the local-only non-goal requires in practice.
+- ✅ **PI62** **The roll says a note was late but not by how much, so a player who is always a hair early cannot see it** — Each right strike leaves a fading dash above the strike line, early above the middle and late below, so a bias reads as a row (design recorded in `apps/desktop/src/renderer/lib/timing-lane.ts`).
 
 ## Block F — Claude Code First: MCP and plugin
 

@@ -15,6 +15,7 @@ import {
   type Outcome,
   type Played,
   type Strictness,
+  type TimingMark,
 } from './grading'
 import { NO_LATENCY, struckAt, type Latency } from './latency'
 import type { MidiEvent } from './midi'
@@ -79,6 +80,9 @@ export type Grader = {
   readonly close: () => void
 }
 
+/** More strikes than a timing lane shows at once, however fast the passage. */
+const MAX_TIMINGS = 64
+
 export function createGrader(
   transport: Transport,
   now: () => AudioTime,
@@ -101,13 +105,22 @@ export function createGrader(
   let looks = new Map<string, Outcome>()
   let answered = new Set<string>()
   let keys = new Map<number, KeyMark>()
+  /** The latest strikes that found their note, for the timing lane; a few seconds' worth. */
+  let timings: TimingMark[] = []
   const listeners = new Set<() => void>()
   let state: GraderState = {
     strictness,
     running: false,
     taken: 0,
     attempt: null,
-    feedback: { notes: looks, owed, keys, attempting: false, window: WINDOWS[strictness] },
+    feedback: {
+      notes: looks,
+      owed,
+      keys,
+      attempting: false,
+      window: WINDOWS[strictness],
+      timings,
+    },
   }
 
   const changed = () => {
@@ -124,6 +137,7 @@ export function createGrader(
         keys,
         attempting: strikes.length > 0,
         window: WINDOWS[strictness],
+        timings,
       },
     }
     for (const listener of listeners) {
@@ -151,6 +165,7 @@ export function createGrader(
     looks = new Map()
     answered = new Set()
     keys = new Map()
+    timings = []
     from = transport.position()
     changed()
   }
@@ -196,6 +211,17 @@ export function createGrader(
       looks.set(key, verdict.outcome === 'extra' ? 'wrong' : verdict.outcome)
       if (verdict.settles) {
         answered.add(key)
+      }
+      // Only a strike on the right key says anything about the beat.
+      if (
+        verdict.outcome === 'correct' ||
+        verdict.outcome === 'early' ||
+        verdict.outcome === 'late'
+      ) {
+        timings = [
+          ...timings.slice(1 - MAX_TIMINGS),
+          { pitch: strike.pitch, offset: verdict.offset, outcome: verdict.outcome, at },
+        ]
       }
     }
     keys.set(strike.pitch, { outcome: verdict.outcome, at })

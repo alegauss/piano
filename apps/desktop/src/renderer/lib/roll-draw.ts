@@ -1,7 +1,7 @@
 import { partOf, type Note } from '@piano/score-format'
 
 import { barRange, gridLines } from './bars'
-import type { Outcome } from './grading'
+import type { Outcome, TimingMark } from './grading'
 import { LabelCache } from './label-cache'
 import {
   forEachVisible,
@@ -13,6 +13,7 @@ import {
   type RollView,
 } from './roll'
 import type { CanvasPalette, CanvasToken } from './theme'
+import { DASH_HEIGHT, laneDashes, laneOf } from './timing-lane'
 
 /**
  * One frame of the roll, on a context the caller owns.
@@ -68,7 +69,20 @@ export type RollOptions = {
    * like.
    */
   readonly judged?: (note: Note) => Outcome | null
+  /** How early or late recent strikes were, for the lane above the strike line. */
+  readonly timings?: {
+    readonly marks: readonly TimingMark[]
+    /** The audio clock now, which the marks were stamped on. */
+    readonly now: number
+    readonly window: number
+  }
 }
+
+/** How many steps a fading dash's opacity is drawn in: one fill per step and colour. */
+const FADE_STEPS = 4
+
+/** How faint the lane's middle line is. */
+const LANE_MIDDLE_ALPHA = 0.35
 
 const sharedLabels = new LabelCache()
 
@@ -126,10 +140,54 @@ export function drawRoll(
     context.stroke(missed)
   }
 
+  if (options.timings !== undefined) {
+    drawTimingLane(context, view, palette, options.timings)
+  }
+
   // The strike line last, so a note crossing it passes underneath.
   context.fillStyle = palette['--roll-strike-line']
   context.fillRect(0, view.height - STRIKE_HEIGHT, view.width, STRIKE_HEIGHT)
   return stats
+}
+
+/**
+ * The lane of recent strikes, over the notes arriving at the strike line.
+ *
+ * Only while there is something in it, and batched like the notes: one path
+ * per colour and fade step, so a fast passage costs a handful of fills.
+ */
+function drawTimingLane(
+  context: CanvasRenderingContext2D,
+  view: RollView,
+  palette: CanvasPalette,
+  timings: NonNullable<RollOptions['timings']>,
+): void {
+  const lane = laneOf(view.height)
+  const dashes = laneDashes(timings.marks, timings.now, timings.window, view.width, lane)
+  if (dashes.length === 0) {
+    return
+  }
+  context.globalAlpha = LANE_MIDDLE_ALPHA
+  context.fillStyle = palette['--text-muted']
+  context.fillRect(0, Math.round(lane.middle), view.width, 1)
+
+  const batches = new Map<string, { colour: string; alpha: number; path: Path2D }>()
+  for (const dash of dashes) {
+    const step = Math.ceil(dash.alpha * FADE_STEPS)
+    const name = `${dash.colour}|${String(step)}`
+    let batch = batches.get(name)
+    if (batch === undefined) {
+      batch = { colour: palette[dash.colour], alpha: step / FADE_STEPS, path: new Path2D() }
+      batches.set(name, batch)
+    }
+    batch.path.rect(dash.x, dash.y - DASH_HEIGHT / 2, dash.width, DASH_HEIGHT)
+  }
+  for (const batch of batches.values()) {
+    context.globalAlpha = batch.alpha
+    context.fillStyle = batch.colour
+    context.fill(batch.path)
+  }
+  context.globalAlpha = 1
 }
 
 /** The bar playing now, and any stretch marked for repeat, behind everything. */

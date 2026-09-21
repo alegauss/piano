@@ -350,6 +350,22 @@ export type KeyMark = {
 }
 
 /**
+ * One strike that found its note, and how far off the beat it landed.
+ *
+ * Kept per strike rather than per note, because what it is for is a shape
+ * over a passage: a run of marks all a little to one side is a player keeping
+ * a different beat, where marks scattered either side is ordinary timing.
+ */
+export type TimingMark = {
+  readonly pitch: number
+  /** Seconds late, negative for early, as the grader judged it. */
+  readonly offset: number
+  readonly outcome: 'correct' | 'early' | 'late'
+  /** On the audio clock, which is the clock a view draws against. */
+  readonly at: number
+}
+
+/**
  * What the roll and the keyboard are showing while a pass is under way.
  *
  * The maps are live rather than copied: they are read once a frame and
@@ -366,6 +382,8 @@ export type Feedback = {
   readonly attempting: boolean
   /** Seconds either side that count as in time. */
   readonly window: number
+  /** The latest strikes that found their note, oldest first, for the timing lane. */
+  readonly timings: readonly TimingMark[]
 }
 
 export const NO_FEEDBACK: Feedback = {
@@ -374,6 +392,7 @@ export const NO_FEEDBACK: Feedback = {
   keys: new Map(),
   attempting: false,
   window: WINDOWS[DEFAULT_STRICTNESS],
+  timings: [],
 }
 
 /**

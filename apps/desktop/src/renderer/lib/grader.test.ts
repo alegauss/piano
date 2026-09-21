@@ -266,6 +266,27 @@ describe('feedback, the instant a note lands', () => {
     play(60)
     expect(grader.state.feedback.keys.size).toBe(0)
   })
+
+  it('keeps how far off the beat each right note was, and which way, for the timing lane', () => {
+    const { time, transport, play, grader } = setup(melody)
+    transport.play()
+    time.run(at(0) - 0.03)
+    play(60)
+    time.run(at(QUARTER) + 0.02)
+    play(61)
+    play(62)
+
+    const { timings } = grader.state.feedback
+    // The fluff on 61 says nothing about the beat and leaves no mark.
+    expect(timings.map((one) => one.pitch)).toEqual([60, 62])
+    expect(timings[0]?.offset).toBeCloseTo(-0.03, 3)
+    expect(timings[1]?.offset).toBeCloseTo(0.02, 3)
+    expect(timings[0]?.at).toBeCloseTo(at(0) - 0.03, 6)
+
+    time.run(3)
+    transport.play()
+    expect(grader.state.feedback.timings).toEqual([])
+  })
 })
 
 describe('letting go', () => {
