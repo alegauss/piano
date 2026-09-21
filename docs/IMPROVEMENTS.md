@@ -58,22 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI30 The bar the whole app is driven from
-
-The reference image puts the entire control surface on one row, and that density is
-right: restart, pause, loop, elapsed and total time, an effects toggle, transpose, a BPM
-stepper, a theme switch, zoom and full screen, with a scrubber over the whole piece just
-below. Zoom is the roll's lead time, the seconds of music on screen: PianoRoll takes it
-as a prop and clamps it, and this bar is where a player finally changes it. Two things
-make this more than assembling buttons. The first is that every control has to be honest
-about a transport that is an independent state machine: pressing pause must reflect what
-actually happened rather than optimistically flipping an icon, and scrubbing has to seek
-without the position snapping back when the next clock reading arrives. The second is
-keyboard shortcuts, because a learner has their hands on a piano and not on a mouse:
-space to start and stop, and single keys for slower, faster, loop and restart. The bar
-collapses gracefully in a narrow window, and full screen hides everything except the
-roll and the keyboard, which is the mode someone actually plays in.
-
 ### §PI31 Taking the recording apart
 
 The PARTS panel down the left edge of the reference image is how a listener stops being

@@ -96,6 +96,9 @@
 - ✅ **PI29** **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines, beat lines and numbers come from the time signature map, the current bar is lit, and a drag across the field loops whole bars (design recorded in `apps/desktop/src/renderer/lib/bars.ts`).
   checked **Bar lines follow a mid-piece meter change** A fixture moving from 4/4 to 3/4 draws bar lines at the right ticks and numbers the bars continuously across the change, with the pickup bar labelled correctly.
   checked **Dragging across bars sets a loop** Selecting a bar range directly on the roll sets loop points to those bar boundaries exactly, with no numeric entry and no snapping to the wrong beat.
+- ✅ **PI30** **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One bar carries play, restart, loop, time, tempo, transpose, zoom, effects and full screen, showing what the transport did (design recorded in `apps/desktop/src/renderer/components/TransportBar.tsx`).
+  checked **Controls reflect the transport, not an optimistic guess** Pause, seek and loop update the bar from transport state, and a seek that is clamped or rejected shows the position that actually took effect rather than the one requested.
+  checked **The app is playable from the keyboard alone** Space, slower, faster, loop and restart all work without touching the mouse, which is what somebody with both hands on a piano actually needs.
 
 ## Block E — Practice mode and difficulty levels
 
