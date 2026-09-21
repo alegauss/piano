@@ -67,6 +67,19 @@ export function visibleTicks(view: RollView): { readonly from: number; readonly 
   return { from: view.position, to: secondsToTicks(view.timing, now + span(view)) }
 }
 
+/** Where a tick sits on the field: the strike line at the bottom, the lead away at the top. */
+export function yAtTick(view: RollView, tick: number): number {
+  const now = ticksToSeconds(view.timing, view.position)
+  const seconds = ticksToSeconds(view.timing, tick)
+  return view.height * (1 - (seconds - now) / span(view))
+}
+
+/** The tick under a height on the field, for a pointer that lands on it. */
+export function tickAtY(view: RollView, y: number): number {
+  const now = ticksToSeconds(view.timing, view.position)
+  return secondsToTicks(view.timing, now + (1 - y / view.height) * span(view))
+}
+
 export type NoteBox = {
   readonly x: number
   readonly width: number
@@ -89,20 +102,16 @@ export function noteBox(note: Note, view: RollView): NoteBox | null {
   if (key === null) {
     return null
   }
-  const now = ticksToSeconds(view.timing, view.position)
-  const start = ticksToSeconds(view.timing, note.start)
-  const end = ticksToSeconds(view.timing, note.start + note.duration)
-  const visible = span(view)
-  if (start > now + visible || end < now) {
+  const { from, to } = visibleTicks(view)
+  if (note.start > to || note.start + note.duration < from) {
     return null
   }
-  const y = (seconds: number) => view.height * (1 - (seconds - now) / visible)
-  const top = y(end)
+  const top = yAtTick(view, note.start + note.duration)
   return {
     x: key.x,
     width: key.width,
     y: top,
-    height: Math.max(MIN_NOTE_HEIGHT, y(start) - top),
+    height: Math.max(MIN_NOTE_HEIGHT, yAtTick(view, note.start) - top),
   }
 }
 

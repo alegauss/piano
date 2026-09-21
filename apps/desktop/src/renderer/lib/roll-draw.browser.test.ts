@@ -84,6 +84,7 @@ describe('drawing the densest bar', () => {
     expect(drawn).toBeGreaterThan(150)
     expect(times.percentile(0.95)).toBeLessThan(DRAW_BUDGET_MS)
     // And no single frame eats a whole frame, which is what a stutter is.
+    // The first one pays to shape the bar numbers; after that they are blits.
     expect(times.worst).toBeLessThan(FRAME_BUDGET_MS)
   })
 

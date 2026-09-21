@@ -1,10 +1,19 @@
 import type { Note, ResolvedTiming } from '@piano/score-format'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 
-import type { StrikeSource } from '../audio'
+import type { LoopRange, StrikeSource } from '../audio'
+import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
+import { LabelCache } from '../lib/label-cache'
 import { FrameTimes } from '../lib/frame-timing'
-import { clampLead, DEFAULT_LEAD_SECONDS, prepareRoll, soundingPitches } from '../lib/roll'
+import {
+  clampLead,
+  DEFAULT_LEAD_SECONDS,
+  prepareRoll,
+  soundingPitches,
+  tickAtY,
+  type RollView,
+} from '../lib/roll'
 import { drawRoll } from '../lib/roll-draw'
 import { StrikeField } from '../lib/strikes'
 import { useCanvasPalette } from '../lib/useCanvasPalette'
@@ -48,6 +57,13 @@ export type PianoRollProps = {
   readonly strikes?: StrikeSource
   /** The burst and the flash at the moment of contact. Off draws and costs nothing. */
   readonly effects?: boolean
+  /** The stretch marked for repeat, drawn behind the notes. */
+  readonly loop?: LoopRange | null
+  /**
+   * Called with the bars a drag across the field covered, or null for a
+   * click, which clears the loop. Without it the roll is not draggable.
+   */
+  readonly onSelectLoop?: (range: LoopRange | null) => void
   /** The frame-time overlay: on in development, and forced either way by a test. */
   readonly meter?: boolean
   readonly className?: string
@@ -62,6 +78,9 @@ const MAX_PIXEL_RATIO = 2
 /** How often the overlay is allowed to re-render, in milliseconds. */
 const METER_INTERVAL_MS = 500
 
+/** Ticks of movement below which a drag was really a click. */
+const WOBBLE_TICKS = 24
+
 export function PianoRoll({
   timing,
   notes,
@@ -70,6 +89,8 @@ export function PianoRoll({
   leadSeconds = DEFAULT_LEAD_SECONDS,
   strikes,
   effects = true,
+  loop = null,
+  onSelectLoop,
   meter = import.meta.env.DEV,
   className,
 }: PianoRollProps) {
@@ -79,13 +100,22 @@ export function PianoRoll({
   const [frameTime, setFrameTime] = useState<{ worst: number; typical: number } | null>(null)
   // Sorted once per score rather than per frame.
   const score = useMemo(() => prepareRoll(notes), [notes])
+  // Bar numbers are rendered once each and blitted after that.
+  const labels = useRef(new LabelCache())
+  /**
+   * The drag in progress and the view it is being read against. Both live in
+   * refs: a drag redraws on the next frame anyway, and re-rendering React on
+   * every pointer move to move a band would be the expensive way to do it.
+   */
+  const drag = useRef<{ from: number; to: number; moved: boolean } | null>(null)
+  const lastView = useRef<RollView | null>(null)
 
   // The draw loop reads these through a ref so that changing the lead or the
   // score does not tear down and rebuild the loop mid-flight. Kept current
   // after each render rather than during it, which is not a ref's moment.
-  const frame = useRef({ timing, score, position, tempoScale, leadSeconds, palette })
+  const frame = useRef({ timing, score, position, tempoScale, leadSeconds, palette, loop })
   useEffect(() => {
-    frame.current = { timing, score, position, tempoScale, leadSeconds, palette }
+    frame.current = { timing, score, position, tempoScale, leadSeconds, palette, loop }
   })
 
   useEffect(() => {
@@ -149,7 +179,16 @@ export function PianoRoll({
         width: size.width,
         height: size.height,
       }
-      drawRoll(context, view, current.score, current.palette)
+      lastView.current = view
+      const selecting = drag.current
+      drawRoll(context, view, current.score, current.palette, {
+        loop: current.loop,
+        selecting:
+          selecting === null || !selecting.moved
+            ? null
+            : barsBetween(current.timing, selecting.from, selecting.to),
+        labels: labels.current,
+      })
       if (field !== null && strikes !== undefined) {
         const audioNow = strikes.now()
         field.update(audioNow, view.width, view.height)
@@ -181,15 +220,69 @@ export function PianoRoll({
     }
   }, [meter, effects, strikes])
 
+  /** Where a pointer landed on the field, in ticks. */
+  function tickUnder(event: { clientY: number }): number | null {
+    const element = canvas.current
+    const view = lastView.current
+    if (element === null || view === null) {
+      return null
+    }
+    return tickAtY(view, event.clientY - element.getBoundingClientRect().top)
+  }
+
+  const dragging =
+    onSelectLoop === undefined
+      ? {}
+      : {
+          onPointerDown: (event: ReactPointerEvent<HTMLCanvasElement>) => {
+            const tick = tickUnder(event)
+            if (tick === null) {
+              return
+            }
+            event.currentTarget.setPointerCapture(event.pointerId)
+            drag.current = { from: tick, to: tick, moved: false }
+          },
+          onPointerMove: (event: ReactPointerEvent<HTMLCanvasElement>) => {
+            const current = drag.current
+            const tick = current === null ? null : tickUnder(event)
+            if (current === null || tick === null) {
+              return
+            }
+            // A few pixels of wobble is a click, not a drag across bars.
+            drag.current = {
+              ...current,
+              to: tick,
+              moved: current.moved || Math.abs(tick - current.from) > WOBBLE_TICKS,
+            }
+          },
+          onPointerUp: (event: ReactPointerEvent<HTMLCanvasElement>) => {
+            const current = drag.current
+            drag.current = null
+            event.currentTarget.releasePointerCapture(event.pointerId)
+            if (current === null) {
+              return
+            }
+            onSelectLoop(current.moved ? barsBetween(timing, current.from, current.to) : null)
+          },
+          onPointerCancel: () => {
+            drag.current = null
+          },
+        }
+
   return (
     <div className={cn('relative flex w-full flex-col', className)}>
       <canvas
         ref={canvas}
         role="img"
         aria-label="Falling notes"
+        {...dragging}
         /* min-h-0 or the canvas insists on its own 2:1 intrinsic size and
            squeezes the keyboard out of the column. */
-        className="min-h-0 w-full flex-1 rounded-t-(--radius)"
+        className={cn(
+          'min-h-0 w-full flex-1 rounded-t-(--radius)',
+          // The browser must not take the drag for a scroll or a selection.
+          onSelectLoop === undefined ? null : 'touch-none',
+        )}
       />
       {frameTime === null ? null : (
         <p

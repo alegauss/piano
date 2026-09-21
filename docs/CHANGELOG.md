@@ -93,6 +93,9 @@
 - ✅ **PI28** **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A note reaching the keyboard throws a burst from a fixed pool and flashes its key, fired by the scheduler's own strike event (design recorded in `apps/desktop/src/renderer/lib/strikes.ts`).
   checked **The burst fires on the same event as the sound** The effect is triggered from the scheduled note event, so a test over a fake clock shows light and sound sharing one timestamp instead of differing by a frame.
   checked **Effects off costs nothing** With the toggle off no particle is allocated and no pool is updated, measurable as a drop in frame time on the dense fixture rather than as invisible work still running.
+- ✅ **PI29** **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines, beat lines and numbers come from the time signature map, the current bar is lit, and a drag across the field loops whole bars (design recorded in `apps/desktop/src/renderer/lib/bars.ts`).
+  checked **Bar lines follow a mid-piece meter change** A fixture moving from 4/4 to 3/4 draws bar lines at the right ticks and numbers the bars continuously across the change, with the pickup bar labelled correctly.
+  checked **Dragging across bars sets a loop** Selecting a bar range directly on the roll sets loop points to those bar boundaries exactly, with no numeric entry and no snapping to the wrong beat.
 
 ## Block E — Practice mode and difficulty levels
 

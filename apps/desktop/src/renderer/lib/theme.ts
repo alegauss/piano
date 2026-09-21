@@ -13,6 +13,9 @@ export type ThemeName = 'dark' | 'light'
 /** The tokens the canvas draws with. Chrome colours go through Tailwind instead. */
 export const CANVAS_TOKENS = [
   '--roll-background',
+  // Bar numbers and the loop band: chrome colours the canvas also draws with.
+  '--text-muted',
+  '--accent',
   '--roll-bar-line',
   '--roll-beat-line',
   '--roll-strike-line',

@@ -58,23 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI29 Bar lines, numbers and somewhere to point
-
-Without bar lines the roll is a stream with no structure and nothing to count. Bar lines
-come from the time signature map rather than a fixed division, so a piece that changes
-meter draws correctly and a pickup bar is not mislabelled as bar one. Bar numbers sit at
-the left edge, as in the reference image, and they are the vocabulary everything else
-uses: the loop selector, the practice tools and the MCP transport commands all speak in
-bars. Beat subdivisions are drawn more faintly than bar lines, because that hierarchy is
-what makes the field readable at a glance instead of a grid of equal lines. The current
-bar is highlighted, which is the cheapest possible answer to where am I. Lines and
-numbers change only with the meter, the zoom and the size, so they are drawn to an
-offscreen canvas and blitted per frame rather than laid out again: that is PI27's cached
-static layer, which had nothing to cache while the field held only notes. And bars are
-selectable directly on the roll by dragging across a range to set a loop, because the
-alternative is typing numbers into a field, and nobody practising wants to do that
-between attempts.
-
 ### §PI30 The bar the whole app is driven from
 
 The reference image puts the entire control surface on one row, and that density is

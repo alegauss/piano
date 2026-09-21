@@ -2,7 +2,7 @@ import { render } from '@testing-library/react'
 import { resolveTiming, type Note } from '@piano/score-format'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { StrikeEvent, StrikeSource } from '../audio'
+import type { LoopRange, StrikeEvent, StrikeSource } from '../audio'
 import { FakeTime, Listener } from '../audio/test-doubles'
 import { Transport } from '../audio/transport'
 import { keyRect } from '../lib/keyboard-geometry'
@@ -29,6 +29,13 @@ async function frames(count = 3) {
   }
 }
 
+/**
+ * Where the notes are, as pixels.
+ *
+ * Notes are vivid blue where everything else on the field — the bar lines,
+ * the current-bar band, the strike line, the particles — is grey or white,
+ * so a strongly blue pixel is a note and nothing else is.
+ */
 function drawn(canvas: HTMLCanvasElement) {
   const context = canvas.getContext('2d')
   if (context === null) {
@@ -36,9 +43,8 @@ function drawn(canvas: HTMLCanvasElement) {
   }
   const field = canvas.getBoundingClientRect()
   const ratio = canvas.width / field.width
-  const background = context.getImageData(0, 0, 1, 1).data
   const isNote = (data: Uint8ClampedArray, at: number) =>
-    data[at] !== background[0] || data[at + 1] !== background[1] || data[at + 2] !== background[2]
+    (data[at + 2] ?? 0) > 90 && (data[at + 2] ?? 0) - (data[at] ?? 0) > 40
 
   return {
     /** The field's own height, which is the container less the keyboard. */
@@ -90,10 +96,23 @@ function bright(canvas: HTMLCanvasElement): number {
   return count
 }
 
+/** A pointer drag down the field, as a mouse makes one. */
+function drag(canvas: HTMLCanvasElement, fromY: number, toY: number): void {
+  const x = canvas.getBoundingClientRect().left + 80
+  const options = { pointerId: 1, bubbles: true, clientX: x }
+  canvas.dispatchEvent(new PointerEvent('pointerdown', { ...options, clientY: fromY }))
+  canvas.dispatchEvent(new PointerEvent('pointermove', { ...options, clientY: toY }))
+  canvas.dispatchEvent(new PointerEvent('pointerup', { ...options, clientY: toY }))
+}
+
 function mount(
   notes: readonly Note[],
   transport: Transport,
-  effects: { strikes?: StrikeSource; effects?: boolean } = {},
+  effects: {
+    strikes?: StrikeSource
+    effects?: boolean
+    onSelectLoop?: (range: LoopRange | null) => void
+  } = {},
 ) {
   const { container } = render(
     <div style={{ width: WIDTH, height: HEIGHT }}>
@@ -105,6 +124,7 @@ function mount(
         leadSeconds={LEAD}
         strikes={effects.strikes}
         effects={effects.effects}
+        onSelectLoop={effects.onSelectLoop}
         className="h-full"
       />
     </div>,
@@ -205,6 +225,43 @@ describe('PianoRoll, drawing', () => {
 
     expect(subscribed).toBe(0)
     expect(bright(canvas)).toBe(0)
+  })
+
+  it('sets a loop of whole bars from a drag across the field', async () => {
+    const notes = [{ pitch: 60, start: 0, duration: 16 * QUARTER, velocity: 80 }]
+    transport.load({ timing, notes })
+    const chosen: (LoopRange | null)[] = []
+    const { canvas } = mount(notes, transport, {
+      onSelectLoop: (range) => chosen.push(range),
+    })
+    await frames()
+
+    // From near the strike line, which is now, up the field into the future.
+    const box = canvas.getBoundingClientRect()
+    drag(canvas, box.bottom - 10, box.top + 40)
+    await frames()
+
+    const range = chosen[0]
+    expect(chosen).toHaveLength(1)
+    // Whole bars: four beats to the bar at 480 ticks a beat.
+    expect((range?.start ?? -1) % (4 * QUARTER)).toBe(0)
+    expect((range?.end ?? -1) % (4 * QUARTER)).toBe(0)
+    expect(range?.end ?? 0).toBeGreaterThan(range?.start ?? 0)
+  })
+
+  it('takes a click as clearing the loop rather than as a one-tick one', async () => {
+    const notes = [{ pitch: 60, start: 0, duration: 16 * QUARTER, velocity: 80 }]
+    transport.load({ timing, notes })
+    const chosen: (LoopRange | null)[] = []
+    const { canvas } = mount(notes, transport, {
+      onSelectLoop: (range) => chosen.push(range),
+    })
+    await frames()
+
+    const box = canvas.getBoundingClientRect()
+    drag(canvas, box.bottom - 30, box.bottom - 30)
+    await frames()
+    expect(chosen).toEqual([null])
   })
 
   it('reports what a frame is costing, for anyone watching it', async () => {
