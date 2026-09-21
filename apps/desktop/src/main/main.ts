@@ -16,6 +16,7 @@ import {
 import { createLibrary, nodeFiles } from '@piano/library'
 import { app, BrowserWindow, dialog, Menu, session, type OpenDialogOptions } from 'electron'
 
+import { BUNDLED_SCORES } from './bundled'
 import { registerIpcHandlers } from './ipc'
 import { watchLibrary } from './library-watch'
 import { startLinkHost, type LinkHost } from './link-host'
@@ -402,6 +403,10 @@ if (firstInstance) {
       const theme = async () => (await settings.read()).settings.theme
       createWindow(await theme())
       if (!isSmokeRun && !isSelfCheckRun) {
+        // A first launch finds something to play in the library, once.
+        void library.seed(BUNDLED_SCORES).catch((error: unknown) => {
+          process.stderr.write(`piano: the bundled scores were not added: ${String(error)}\n`)
+        })
         void watchLibrary(library.root, () => {
           if (mainWindow !== null && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send(PUSH_NAMES.libraryChanged)

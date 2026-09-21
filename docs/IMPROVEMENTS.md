@@ -115,20 +115,6 @@ validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 
-### §PI55 Something to hear on the first launch
-
-An app that opens empty asks the user to do work before it has proved it is worth any.
-So the install carries a small set of scores, chosen deliberately rather than whatever
-was to hand. They are public domain with source and licence recorded, as the non-goals
-require and as the packaging check enforces. They cover the range: something simple
-enough for a beginner to play within minutes, something familiar enough that a listener
-recognises it and can hear whether the playback is right, and something dense enough to
-put the roll and the audio engine under real load. Each ships with all three difficulty
-arrangements authored by hand rather than generated, which makes them the reference for
-what a good arrangement looks like and doubles them as fixtures. They are also the first
-thing a new contributor listens to, so a regression in timing or dynamics is caught by
-opening the app instead of by reading a test report.
-
 ### §PI58 Saving a score as MIDI
 
 exportMidi in the score-format package already produces the bytes and the list of what a

@@ -4,6 +4,7 @@ export {
   durationOf,
   INDEX_FILE,
   libraryId,
+  SEEDED_FILE,
   type Library,
   type LibraryEntry,
   type Order,

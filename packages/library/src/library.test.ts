@@ -170,6 +170,40 @@ describe('listing what is there', () => {
   })
 })
 
+describe('the scores an app ships with', () => {
+  const shipped = [named('ode', 'Ode'), named('minuet', 'Minuet')]
+
+  it('are put in the library once', async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    expect(await library.seed(shipped)).toEqual(['ode', 'minuet'])
+    expect(await library.seed(shipped)).toEqual([])
+    expect((await library.list()).map((one) => one.id).sort()).toEqual(['minuet', 'ode'])
+  })
+
+  it('stay gone once somebody deletes one', async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    await library.seed(shipped)
+    files.held.delete(`${root}/ode${SCORE_SUFFIX}`)
+    expect(await library.seed(shipped)).toEqual([])
+    expect((await library.list()).map((one) => one.id)).toEqual(['minuet'])
+  })
+
+  it('never overwrite a score of somebody’s own with the same id', async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    await library.save(named('ode', 'My own ode'))
+    expect(await library.seed(shipped)).toEqual(['minuet'])
+    expect((await library.read('ode')).metadata.title).toBe('My own ode')
+  })
+
+  it('refuse to seed a score that is not valid, rather than shipping one', async () => {
+    const library = createLibrary(root, memoryFiles())
+    await expect(library.seed([{ formatVersion: 1, metadata: {} }])).rejects.toThrow('not valid')
+  })
+})
+
 describe('the index a listing is served from', () => {
   it('reads each score once, and again only when it changes', async () => {
     const files = memoryFiles()

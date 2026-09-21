@@ -69,7 +69,19 @@ export type Library = {
   readonly read: (id: string) => Promise<Score>
   readonly list: (order?: Order) => Promise<LibraryEntry[]>
   readonly search: (filter: LibraryFilter, order?: Order) => Promise<LibraryEntry[]>
+  /**
+   * Put the scores an app ships with into the library, each one once. One
+   * somebody deleted is not put back, and one whose id a score of their own
+   * already has is left alone: seeding gives, it never overwrites. Answers
+   * with the ids it added.
+   */
+  readonly seed: (scores: readonly unknown[]) => Promise<string[]>
 }
+
+/** Which shipped scores have been put in the library before, so none comes back once deleted. */
+export const SEEDED_FILE = '.seeded.json'
+
+const seededSchema = z.object({ ids: z.array(z.string()) })
 
 /** What a score is filed under: its own id where it has one, its title otherwise. */
 export function libraryId(score: Score): string {
@@ -218,6 +230,38 @@ export function createLibrary(root: string, files: Files): Library {
       return { id, file, metadata: parsed.score.metadata, score: parsed.score }
     },
     read: (id) => readScore(pathFor(id)),
+    seed: async (scores) => {
+      const seededPath = `${root}/${SEEDED_FILE}`
+      let seeded: string[] = []
+      try {
+        const held = seededSchema.safeParse(JSON.parse(await files.read(seededPath)))
+        seeded = held.success ? held.data.ids : []
+      } catch {
+        // Never seeded, or a record that cannot be read: at worst a deleted
+        // score comes back once, which is better than a library left empty.
+      }
+      const added: string[] = []
+      for (const raw of scores) {
+        const parsed = parseScore(raw)
+        if (!parsed.ok) {
+          throw new Error(`a score the app ships with is not valid: ${parsed.message}`)
+        }
+        const id = libraryId(parsed.score)
+        if (seeded.includes(id)) {
+          continue
+        }
+        seeded.push(id)
+        if ((await files.stat(pathFor(id))) !== null) {
+          continue
+        }
+        await files.ensure(root)
+        await files.write(pathFor(id), `${JSON.stringify(parsed.score, null, 2)}\n`)
+        added.push(id)
+      }
+      await files.ensure(root)
+      await files.write(seededPath, `${JSON.stringify({ ids: seeded })}\n`)
+      return added
+    },
     list: async (order = 'easiest') => sorted(await entries(), order),
     search: async (filter, order = 'easiest') =>
       sorted(

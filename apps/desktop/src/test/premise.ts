@@ -154,10 +154,10 @@ export async function runPremise(recording: Recording): Promise<PremiseRun> {
       answers.push(await call('stop', {}))
     }
 
-    const files = await readdir(library)
+    // The file the save answered with, beside whatever the app ships into the library.
     const kept =
-      files.length === 1
-        ? (JSON.parse(await readFile(join(library, files[0] ?? ''), 'utf8')) as unknown)
+      typeof id === 'string'
+        ? (JSON.parse(await readFile(join(library, `${id}.score.json`), 'utf8')) as unknown)
         : null
     return { request: recording.request, answers, saved: kept }
   } finally {
