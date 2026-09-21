@@ -122,6 +122,9 @@
 - ✅ **PI37** **Nothing says how the attempt went: wrong notes, late notes and missed notes all pass unremarked** — An attempt is graded against a timing window the learner sets, and the report names the bars to go back to, with the touch apart (design recorded in `apps/desktop/src/renderer/lib/grading.ts`).
   checked **A dropped note does not cascade into wrong notes** A recorded attempt missing one note grades that note as missed and every following note as correct, rather than shifting the whole sequence by one position.
   checked **The report names bars, not a percentage** A session ends with accuracy per bar and per named section, so the worst passage is identifiable without interpreting a single overall number.
+- ✅ **PI38** **The player gets no feedback: nothing on screen says which note was right, wrong or late** — The key and the note take the judgement's colour as each strike lands, and a note nobody played goes by outlined instead of vanishing.
+  checked **Judgement appears on the key and the note, not a panel** Expected, correct, wrong and missed each have a visible state on the keyboard and on the roll, and a missed note stays visible instead of silently vanishing.
+  checked **Feedback fires on the judgement event** A test over a fake clock shows the visual state changing at the judged timestamp rather than waiting for the next frame boundary.
 
 ## Block F — Claude Code First: MCP and plugin
 

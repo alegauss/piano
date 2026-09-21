@@ -144,6 +144,11 @@ export type Attempt = {
   readonly dynamics: Dynamics | null
 }
 
+/** How a verdict addresses a note: a tick and a pitch name one. */
+export function noteKey(tick: number, pitch: number): string {
+  return `${String(tick)}:${String(pitch)}`
+}
+
 /** The notes of a stretch, as the grader asks for them. Both ends included. */
 export function expectedFrom(notes: readonly Note[], from: number, to: number): Expected[] {
   return notes
@@ -253,6 +258,154 @@ export function grade(
   }
 }
 
+/**
+ * What one strike turned out to be, the instant it arrived.
+ *
+ * The same window and the same notion of what is owed as the report, asked of
+ * one strike instead of a whole pass, because feedback on the key cannot wait
+ * for the piece to end. It is a narrower question and it says so: whether a
+ * strike was the right note is partly a question about the notes around it,
+ * and the ones still to come have not happened yet.
+ */
+export type StrikeVerdict = {
+  /**
+   * Against the note it was an attempt at, or `extra` where nothing was owed
+   * anywhere near it.
+   */
+  readonly outcome: Exclude<Outcome, 'missed'> | 'extra'
+  readonly note: Expected | null
+  readonly offset: number
+  /**
+   * Whether that note is answered now. Only the right pitch answers one: a
+   * fluff marks the note it was aimed at without spending it, so the player
+   * correcting themselves a moment later still lands on it.
+   */
+  readonly settles: boolean
+}
+
+export function judge(
+  expected: readonly Expected[],
+  played: Played,
+  options: {
+    readonly timing: ResolvedTiming
+    readonly strictness?: Strictness
+    /** Notes already answered in this pass, by noteKey. */
+    readonly claimed?: ReadonlySet<string>
+  },
+): StrikeVerdict {
+  const window = WINDOWS[options.strictness ?? DEFAULT_STRICTNESS]
+  const reach = window * REACH
+  const claimed = options.claimed ?? new Set<string>()
+  let mine: Expected | null = null
+  let mineOff = 0
+  let closest = Infinity
+  let other: Expected | null = null
+  let otherOff = 0
+  let nearest = Infinity
+
+  for (const note of expected) {
+    if (claimed.has(noteKey(note.tick, note.pitch))) {
+      continue
+    }
+    const offset = offsetOf(options.timing, note, played)
+    const size = Math.abs(offset)
+    if (size > reach) {
+      continue
+    }
+    if (note.pitch === played.pitch) {
+      if (size < closest) {
+        closest = size
+        mine = note
+        mineOff = offset
+      }
+    } else if (size < nearest) {
+      nearest = size
+      other = note
+      otherOff = offset
+    }
+  }
+
+  if (mine !== null) {
+    return {
+      outcome: outcomeOf(mine, played, mineOff, window),
+      note: mine,
+      offset: mineOff,
+      settles: true,
+    }
+  }
+  if (other !== null) {
+    return { outcome: 'wrong', note: other, offset: otherOff, settles: false }
+  }
+  return { outcome: 'extra', note: null, offset: 0, settles: false }
+}
+
+/** How long a key shows what became of the strike on it, in seconds. */
+export const MARK_SECONDS = 0.6
+
+/** The last strike on a key, for the moment after it lands. */
+export type KeyMark = {
+  readonly outcome: StrikeVerdict['outcome']
+  /** On the audio clock, which is the clock a view draws against. */
+  readonly at: number
+}
+
+/**
+ * What the roll and the keyboard are showing while a pass is under way.
+ *
+ * The maps are live rather than copied: they are read once a frame and
+ * replaced whole at the start of a pass, and copying them on every strike
+ * would allocate a map per note played for nobody's benefit.
+ */
+export type Feedback = {
+  /** What became of each note the player owes, once something became of it. */
+  readonly notes: ReadonlyMap<string, Outcome>
+  /** Every note the player owes, so nothing else is ever called missed. */
+  readonly owed: ReadonlySet<string>
+  readonly keys: ReadonlyMap<number, KeyMark>
+  /** Nothing is called missed before the player has played anything at all. */
+  readonly attempting: boolean
+  /** Seconds either side that count as in time. */
+  readonly window: number
+}
+
+export const NO_FEEDBACK: Feedback = {
+  notes: new Map(),
+  owed: new Set(),
+  keys: new Map(),
+  attempting: false,
+  window: WINDOWS[DEFAULT_STRICTNESS],
+}
+
+/**
+ * What a note on the roll is showing: the verdict it was given, or nothing.
+ *
+ * A note nobody answered becomes missed once the music has gone past it,
+ * which is a question about where playback is and so cannot be answered when
+ * the strikes are. It is asked only of notes the player owes, and only once
+ * they have played something: a piece being listened to is not a pass full of
+ * missed notes.
+ */
+export function noteLook(
+  feedback: Feedback,
+  note: { readonly start: number; readonly pitch: number },
+  view: {
+    readonly timing: ResolvedTiming
+    readonly position: number
+    readonly tempoScale: number
+  },
+): Outcome | null {
+  const key = noteKey(note.start, note.pitch)
+  const known = feedback.notes.get(key)
+  if (known !== undefined) {
+    return known
+  }
+  if (!feedback.attempting || !feedback.owed.has(key)) {
+    return null
+  }
+  const past = ticksToSeconds(view.timing, view.position) - ticksToSeconds(view.timing, note.start)
+  return past > feedback.window * view.tempoScale ? 'missed' : null
+}
+
 function outcomeOf(
   note: Expected,
   strike: Played,
@@ -301,7 +454,7 @@ export function barNames(bars: readonly number[]): string {
   const sorted = [...new Set(bars)].sort((one, other) => one - other)
   const runs: [number, number][] = []
   for (const bar of sorted) {
-    const last = runs[runs.length - 1]
+    const last = runs.at(-1)
     if (last !== undefined && bar === last[1] + 1) {
       last[1] = bar
       continue

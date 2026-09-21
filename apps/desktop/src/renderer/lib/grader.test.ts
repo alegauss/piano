@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { ClickRecorder, FakeTime, Listener } from '../audio/test-doubles'
 import { START_LEAD_SECONDS, Transport } from '../audio/transport'
 import { createGrader } from './grader'
+import { noteKey } from './grading'
 import { NO_LATENCY, type Latency } from './latency'
 
 /**
@@ -210,6 +211,60 @@ describe('the touch', () => {
     second.play(60, 110, true)
     second.transport.pause()
     expect(second.grader.state.attempt?.dynamics).toMatchObject({ of: 1, within: 0 })
+  })
+})
+
+describe('feedback, the instant a note lands', () => {
+  const melody = [note(60, 0), note(62, QUARTER)]
+
+  it('marks the key with what became of the strike, and the note with it', () => {
+    const { time, transport, play, grader } = setup(melody)
+    transport.play()
+    time.run(at(0))
+    play(60)
+
+    const { feedback } = grader.state
+    expect(feedback.keys.get(60)?.outcome).toBe('correct')
+    expect(feedback.notes.get(noteKey(0, 60))).toBe('correct')
+    expect(feedback.attempting).toBe(true)
+  })
+
+  it('marks a fluff wrong and lets the note be played after it', () => {
+    const { time, transport, play, grader } = setup(melody)
+    transport.play()
+    time.run(at(0))
+    play(61)
+
+    expect(grader.state.feedback.notes.get(noteKey(0, 60))).toBe('wrong')
+    expect(grader.state.feedback.keys.get(61)?.outcome).toBe('wrong')
+
+    play(60)
+    expect(grader.state.feedback.notes.get(noteKey(0, 60))).toBe('correct')
+  })
+
+  it('knows every note the player owes, so nothing else is ever called missed', () => {
+    const { grader } = setup(melody)
+    expect(grader.state.feedback.owed.has(noteKey(QUARTER, 62))).toBe(true)
+    expect(grader.state.feedback.owed.has(noteKey(QUARTER, 99))).toBe(false)
+  })
+
+  it('starts each pass with a clean field', () => {
+    const { time, transport, play, grader } = setup(melody)
+    transport.play()
+    time.run(at(0))
+    play(60)
+    time.run(3)
+
+    transport.play()
+    expect(grader.state.feedback.notes.size).toBe(0)
+    expect(grader.state.feedback.keys.size).toBe(0)
+    expect(grader.state.feedback.attempting).toBe(false)
+  })
+
+  it('says nothing about a key struck while nothing is playing', () => {
+    const { play, grader } = setup(melody)
+    play(60)
+    expect(grader.state.feedback.keys.size).toBe(0)
   })
 })
 

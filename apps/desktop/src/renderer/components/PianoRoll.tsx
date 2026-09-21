@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import type { LoopRange, StrikeSource } from '../audio'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
+import { MARK_SECONDS, noteLook, type Feedback, type StrikeVerdict } from '../lib/grading'
 import { LabelCache } from '../lib/label-cache'
 import { FrameTimes } from '../lib/frame-timing'
 import {
@@ -68,6 +69,11 @@ export type PianoRollProps = {
    * a frame like the position, since it changes as notes are played.
    */
   readonly expected?: () => readonly number[]
+  /**
+   * What the player has made of the notes so far, read once a frame like the
+   * position. Without it the roll draws the music and judges nothing.
+   */
+  readonly feedback?: () => Feedback | null
   /** The stretch marked for repeat, drawn behind the notes. */
   readonly loop?: LoopRange | null
   /**
@@ -92,6 +98,19 @@ const METER_INTERVAL_MS = 500
 /** Ticks of movement below which a drag was really a click. */
 const WOBBLE_TICKS = 24
 
+/**
+ * What a key shows for each verdict. Early and late are one state, as they
+ * are one colour on the roll; a note nobody asked for is wrong on the key
+ * that played it, whatever the score was owed elsewhere.
+ */
+const KEY_STATES: Readonly<Record<StrikeVerdict['outcome'], KeyState>> = {
+  correct: 'correct',
+  early: 'late',
+  late: 'late',
+  wrong: 'wrong',
+  extra: 'wrong',
+}
+
 export function PianoRoll({
   timing,
   notes,
@@ -101,6 +120,7 @@ export function PianoRoll({
   strikes,
   effects = true,
   expected = () => [],
+  feedback = () => null,
   colours,
   loop = null,
   onSelectLoop,
@@ -135,6 +155,7 @@ export function PianoRoll({
     palette,
     loop,
     expected,
+    feedback,
   })
   useEffect(() => {
     frame.current = {
@@ -146,6 +167,7 @@ export function PianoRoll({
       palette,
       loop,
       expected,
+      feedback,
     }
   })
 
@@ -160,7 +182,8 @@ export function PianoRoll({
     }
 
     let running = true
-    let shown: readonly number[] = []
+    /** What the keyboard was last told, as one string to compare cheaply. */
+    let shown = ''
     // Off is off: no field, no subscription, nothing asked of the clock.
     // Drawing invisible particles is not the same as not drawing them.
     const field = effects && strikes !== undefined ? new StrikeField() : null
@@ -212,6 +235,7 @@ export function PianoRoll({
       }
       lastView.current = view
       const selecting = drag.current
+      const judgement = current.feedback()
       drawRoll(context, view, current.score, current.palette, {
         loop: current.loop,
         selecting:
@@ -219,6 +243,7 @@ export function PianoRoll({
             ? null
             : barsBetween(current.timing, selecting.from, selecting.to),
         labels: labels.current,
+        judged: judgement === null ? undefined : (note) => noteLook(judgement, note, view),
       })
       if (field !== null && strikes !== undefined) {
         const audioNow = strikes.now()
@@ -226,20 +251,28 @@ export function PianoRoll({
         field.draw(context, audioNow, view, current.palette)
       }
 
-      // What the keyboard shows: the notes sounding, and the ones the player
-      // owes. An expected key wins, because it is the one being asked for.
-      const owed = current.expected()
-      const pitches = [...soundingPitches(current.score, view.position), ...owed]
+      // What the keyboard shows, in the order each beats the one before: what
+      // the app is sounding, what the player owes, and what became of the key
+      // they have just struck, which is the freshest thing on the keyboard.
+      const states = new Map<number, KeyState>(
+        soundingPitches(current.score, view.position).map((pitch) => [pitch, 'sounding']),
+      )
+      for (const pitch of current.expected()) {
+        states.set(pitch, 'expected')
+      }
+      const clock = strikes?.now() ?? null
+      if (judgement !== null && clock !== null) {
+        for (const [pitch, mark] of judgement.keys) {
+          if (clock - mark.at <= MARK_SECONDS) {
+            states.set(pitch, KEY_STATES[mark.outcome])
+          }
+        }
+      }
       // Only when it changes: 88 keys re-rendering every frame buys nothing,
       // since a key is struck a few times a second at most.
-      if (pitches.length !== shown.length || pitches.some((p, i) => p !== shown[i])) {
-        shown = pitches
-        const states = new Map<number, KeyState>(
-          soundingPitches(current.score, view.position).map((pitch) => [pitch, 'sounding']),
-        )
-        for (const pitch of owed) {
-          states.set(pitch, 'expected')
-        }
+      const signature = [...states].map(([pitch, state]) => `${String(pitch)}${state}`).join(' ')
+      if (signature !== shown) {
+        shown = signature
         setSounding(states)
       }
 

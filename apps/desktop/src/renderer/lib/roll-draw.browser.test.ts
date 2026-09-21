@@ -2,6 +2,7 @@ import { resolveTiming, type Note } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { FRAME_BUDGET_MS, FrameTimes } from './frame-timing'
+import { NO_FEEDBACK, noteKey, noteLook, type Feedback, type Outcome } from './grading'
 import { forEachVisible, prepareRoll, type RollView } from './roll'
 import { drawRoll } from './roll-draw'
 import { StrikeField } from './strikes'
@@ -124,6 +125,40 @@ describe('drawing the densest bar', () => {
     }
 
     expect(strikes.alive).toBeGreaterThan(0)
+    expect(times.percentile(0.95)).toBeLessThan(DRAW_BUDGET_MS)
+    expect(times.worst).toBeLessThan(FRAME_BUDGET_MS)
+  })
+
+  /**
+   * The same field with a judgement on it. The worst case is not the notes
+   * that were answered but the ones that were not: a look-up that misses is
+   * the one that goes on to ask where the music is.
+   */
+  it('holds the budget with every note judged', () => {
+    const { context } = field(1600, 900)
+    const palette = readCanvasPalette()
+    const times = new FrameTimes()
+    const step = QUARTER / 30
+    const notes = new Map<string, Outcome>()
+    const owed = new Set<string>()
+    score.notes.forEach((note, index) => {
+      const key = noteKey(note.start, note.pitch)
+      owed.add(key)
+      if (index % 2 === 0) {
+        notes.set(key, index % 4 === 0 ? 'correct' : 'late')
+      }
+    })
+    const feedback: Feedback = { ...NO_FEEDBACK, notes, owed, attempting: true }
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      const at = view(BEATS * 0.5 * QUARTER + frame * step)
+      const started = performance.now()
+      drawRoll(context, at, score, palette, {
+        judged: (note) => noteLook(feedback, note, at),
+      })
+      times.record(performance.now() - started)
+    }
+
     expect(times.percentile(0.95)).toBeLessThan(DRAW_BUDGET_MS)
     expect(times.worst).toBeLessThan(FRAME_BUDGET_MS)
   })

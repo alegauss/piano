@@ -5,7 +5,14 @@ import {
   DEFAULT_STRICTNESS,
   expectedFrom,
   grade,
+  judge,
+  noteKey,
+  WINDOWS,
   type Attempt,
+  type Expected,
+  type Feedback,
+  type KeyMark,
+  type Outcome,
   type Played,
   type Strictness,
 } from './grading'
@@ -42,6 +49,12 @@ export type GraderState = {
   readonly taken: number
   /** The last attempt graded, or null until there has been one. */
   readonly attempt: Attempt | null
+  /**
+   * What the roll and the keyboard are showing now. Judged as each strike
+   * arrives rather than at the end of the pass, because feedback that waits
+   * for the piece to finish is a report and not feedback.
+   */
+  readonly feedback: Feedback
 }
 
 export type Grader = {
@@ -73,8 +86,6 @@ export function createGrader(
 ): Grader {
   let strictness = options.strictness ?? DEFAULT_STRICTNESS
   let timing: ResolvedTiming | null = null
-  let notes: readonly Note[] = []
-  let filter: PlaybackFilter = {}
   let sections: readonly Section[] = []
   let latency: Latency = NO_LATENCY
   let attempt: Attempt | null = null
@@ -82,11 +93,39 @@ export function createGrader(
   /** Where this pass began, which is the first tick anything is owed at. */
   let from = 0
   let strikes: Played[] = []
+  /** Every note the player owes in the whole piece, which is what a strike is judged against. */
+  let owedNotes: readonly Expected[] = []
+  /** The same notes by key, so the roll can tell a note nobody owes from one nobody played. */
+  let owed: ReadonlySet<string> = new Set()
+  /** What became of each note this pass, and which of them are answered for good. */
+  let looks = new Map<string, Outcome>()
+  let answered = new Set<string>()
+  let keys = new Map<number, KeyMark>()
   const listeners = new Set<() => void>()
-  let state: GraderState = { strictness, running: false, taken: 0, attempt: null }
+  let state: GraderState = {
+    strictness,
+    running: false,
+    taken: 0,
+    attempt: null,
+    feedback: { notes: looks, owed, keys, attempting: false, window: WINDOWS[strictness] },
+  }
 
   const changed = () => {
-    state = { strictness, running, taken: strikes.length, attempt }
+    state = {
+      strictness,
+      running,
+      taken: strikes.length,
+      attempt,
+      // Rebuilt around the same maps: the view reads them once a frame, and
+      // copying them on every strike would allocate a map per note played.
+      feedback: {
+        notes: looks,
+        owed,
+        keys,
+        attempting: strikes.length > 0,
+        window: WINDOWS[strictness],
+      },
+    }
     for (const listener of listeners) {
       listener()
     }
@@ -107,6 +146,11 @@ export function createGrader(
   const begin = () => {
     running = true
     strikes = []
+    // A pass starts with a clean field: what the last attempt made of a note
+    // says nothing about this one.
+    looks = new Map()
+    answered = new Set()
+    keys = new Map()
     from = transport.position()
     changed()
   }
@@ -118,13 +162,37 @@ export function createGrader(
       // the furthest anything was played, so a pass that looped back still
       // owes the notes it went past.
       const to = strikes.reduce((last, strike) => Math.max(last, strike.tick), transport.reached)
-      attempt = grade(expectedFrom(playerNotes(notes, filter), from, Math.max(from, to)), strikes, {
-        timing,
-        sections,
-        strictness,
-      })
+      const covered = Math.max(from, to)
+      attempt = grade(
+        owedNotes.filter((note) => note.tick >= from && note.tick <= covered),
+        strikes,
+        { timing, sections, strictness },
+      )
     }
     changed()
+  }
+
+  /**
+   * What this strike means, said at once: the key shows what became of it and
+   * the note on the roll shows what became of it.
+   *
+   * A fluff marks the note it was aimed at without answering it, so the
+   * player correcting themselves a moment later still lands on that note and
+   * the roll shows it going from wrong to played.
+   */
+  const mark = (strike: Played, at: number) => {
+    if (timing === null) {
+      return
+    }
+    const verdict = judge(owedNotes, strike, { timing, strictness, claimed: answered })
+    if (verdict.note !== null) {
+      const key = noteKey(verdict.note.tick, verdict.note.pitch)
+      looks.set(key, verdict.outcome === 'extra' ? 'wrong' : verdict.outcome)
+      if (verdict.settles) {
+        answered.add(key)
+      }
+    }
+    keys.set(strike.pitch, { outcome: verdict.outcome, at })
   }
 
   const watching = transport.subscribe(() => {
@@ -155,9 +223,10 @@ export function createGrader(
     },
     use: (nextTiming, nextNotes, nextFilter, nextSections = []) => {
       timing = nextTiming
-      notes = nextNotes
-      filter = nextFilter
       sections = nextSections
+      owedNotes = expectedFrom(playerNotes(nextNotes, nextFilter), 0, Number.POSITIVE_INFINITY)
+      owed = new Set(owedNotes.map((note) => noteKey(note.tick, note.pitch)))
+      changed()
     },
     useLatency: (next) => {
       latency = next
@@ -174,7 +243,7 @@ export function createGrader(
         return
       }
       const tick = waiting ? (transport.heldAt ?? transport.position()) : transport.tickAt(at)
-      strikes.push({
+      const strike: Played = {
         pitch: event.pitch,
         velocity: event.velocity,
         tick,
@@ -183,7 +252,11 @@ export function createGrader(
         slip: waiting ? 0 : at - transport.timeAt(tick),
         scale: transport.tempoScale,
         expressive,
-      })
+      }
+      strikes.push(strike)
+      if (timing !== null) {
+        mark(strike, at)
+      }
       changed()
     },
     close: () => {

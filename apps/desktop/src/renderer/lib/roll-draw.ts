@@ -1,6 +1,7 @@
-import { partOf } from '@piano/score-format'
+import { partOf, type Note } from '@piano/score-format'
 
 import { barRange, gridLines } from './bars'
+import type { Outcome } from './grading'
 import { LabelCache } from './label-cache'
 import {
   forEachVisible,
@@ -11,7 +12,7 @@ import {
   type RollStats,
   type RollView,
 } from './roll'
-import type { CanvasPalette } from './theme'
+import type { CanvasPalette, CanvasToken } from './theme'
 
 /**
  * One frame of the roll, on a context the caller owns.
@@ -34,6 +35,22 @@ const LABEL_LEFT = 6
 /** Enough to sit a label just above its bar line. */
 const LABEL_HEIGHT = 15
 
+/**
+ * The colour a judged note is drawn in. Early and late share one: what they
+ * have in common is the note being right and the moment being wrong, and a
+ * fourth colour to tell two halves of that apart is a legend nobody reads.
+ */
+const JUDGED: Readonly<Record<Exclude<Outcome, 'missed'>, CanvasToken>> = {
+  correct: '--judge-correct',
+  early: '--judge-late',
+  late: '--judge-late',
+  wrong: '--judge-wrong',
+}
+
+/** How visible a note nobody played stays as it goes by, and how thick its outline is. */
+const MISSED_ALPHA = 0.2
+const MISSED_LINE = 1.5
+
 /** What else is on the field besides the notes. */
 export type RollOptions = {
   /** A stretch marked for repeat. */
@@ -45,6 +62,12 @@ export type RollOptions = {
    * should hold its own; this default serves a one-off draw.
    */
   readonly labels?: LabelCache
+  /**
+   * What the player made of a note, for the ones anything has been made of.
+   * Null leaves the note its part's colour, which is what listening looks
+   * like.
+   */
+  readonly judged?: (note: Note) => Outcome | null
 }
 
 const sharedLabels = new LabelCache()
@@ -65,12 +88,23 @@ export function drawRoll(
   // Notes of one colour in one path: a fill per note is the difference
   // between a dense bar costing one draw call per part and hundreds.
   const paths = new Map<string, Path2D>()
+  // A note nobody played is left visibly unplayed rather than vanishing, so
+  // it is outlined instead of filled and kept out of the colour batches.
+  const missed = new Path2D()
+  let missing = false
   const stats = forEachVisible(score, view, (note) => {
     const box = noteBox(note, view)
     if (box === null) {
       return
     }
-    const colour = palette[score.colours.get(partOf(note)) ?? '--note-part-1']
+    const look = options.judged?.(note) ?? null
+    if (look === 'missed') {
+      missing = true
+      missed.roundRect(box.x, box.y, box.width, box.height, NOTE_RADIUS)
+      return
+    }
+    const colour =
+      palette[look === null ? (score.colours.get(partOf(note)) ?? '--note-part-1') : JUDGED[look]]
     let path = paths.get(colour)
     if (path === undefined) {
       path = new Path2D()
@@ -81,6 +115,15 @@ export function drawRoll(
   for (const [colour, path] of paths) {
     context.fillStyle = colour
     context.fill(path)
+  }
+  if (missing) {
+    context.fillStyle = palette['--judge-wrong']
+    context.globalAlpha = MISSED_ALPHA
+    context.fill(missed)
+    context.globalAlpha = 1
+    context.lineWidth = MISSED_LINE
+    context.strokeStyle = palette['--judge-wrong']
+    context.stroke(missed)
   }
 
   // The strike line last, so a note crossing it passes underneath.

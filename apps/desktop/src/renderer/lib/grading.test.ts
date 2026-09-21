@@ -5,9 +5,14 @@ import {
   barNames,
   expectedFrom,
   grade,
+  judge,
+  NO_FEEDBACK,
+  noteKey,
+  noteLook,
   troubled,
   WINDOWS,
   type Expected,
+  type Feedback,
   type Outcome,
   type Played,
 } from './grading'
@@ -186,6 +191,79 @@ describe('the touch, kept apart from the notes', () => {
     const attempt = grade(note, [strike(60, 0, 0, { velocity: 20, expressive: true })], { timing })
     expect(attempt.tally.correct).toBe(1)
     expect(attempt.dynamics?.within).toBe(0)
+  })
+})
+
+describe('judging a strike as it lands', () => {
+  const owed = [expected(60, 0), expected(64, QUARTER)]
+
+  it('answers the note at its own pitch, and says that note is settled', () => {
+    const verdict = judge(owed, strike(60, 0), { timing })
+    expect(verdict.outcome).toBe('correct')
+    expect(verdict.note?.pitch).toBe(60)
+    expect(verdict.settles).toBe(true)
+  })
+
+  it('marks a fluff against the note it was aimed at without spending it', () => {
+    const verdict = judge(owed, strike(61, 0), { timing })
+    expect(verdict.outcome).toBe('wrong')
+    expect(verdict.note?.pitch).toBe(60)
+    expect(verdict.settles).toBe(false)
+  })
+
+  it('calls a strike with nothing owed near it an extra', () => {
+    const verdict = judge(owed, strike(61, 4 * BAR), { timing })
+    expect(verdict.outcome).toBe('extra')
+    expect(verdict.note).toBeNull()
+  })
+
+  it('leaves a note that has already been answered alone', () => {
+    const claimed = new Set([noteKey(0, 60)])
+    expect(judge(owed, strike(60, 0), { timing, claimed }).outcome).toBe('extra')
+  })
+
+  it('is the window the report will use, and moves with the setting', () => {
+    expect(judge(owed, strike(60, 0, 0.1), { timing }).outcome).toBe('correct')
+    expect(judge(owed, strike(60, 0, 0.1), { timing, strictness: 'strict' }).outcome).toBe('late')
+  })
+
+  it('agrees with the report on a pass played one note at a time', () => {
+    const played = [strike(60, 0), strike(64, QUARTER)]
+    const claimed = new Set<string>()
+    const live = played.map((one) => {
+      const verdict = judge(owed, one, { timing, claimed })
+      if (verdict.settles && verdict.note !== null) {
+        claimed.add(noteKey(verdict.note.tick, verdict.note.pitch))
+      }
+      return verdict.outcome
+    })
+    expect(live).toEqual(grade(owed, played, { timing }).judged.map((one) => one.outcome))
+  })
+})
+
+describe('what a note on the roll shows', () => {
+  const owedNote = { start: 0, pitch: 60 }
+  const view = (position: number) => ({ timing, position, tempoScale: 1 })
+  const feedback = (over: Partial<Feedback>): Feedback => ({ ...NO_FEEDBACK, ...over })
+
+  it('shows the verdict the note was given', () => {
+    const judged = feedback({ notes: new Map<string, Outcome>([[noteKey(0, 60), 'late']]) })
+    expect(noteLook(judged, owedNote, view(0))).toBe('late')
+  })
+
+  it('calls an owed note the music has gone past missed', () => {
+    const attempting = feedback({ owed: new Set([noteKey(0, 60)]), attempting: true })
+    expect(noteLook(attempting, owedNote, view(0))).toBeNull()
+    expect(noteLook(attempting, owedNote, view(BAR))).toBe('missed')
+  })
+
+  it('calls nothing missed while a piece is only being listened to', () => {
+    const listening = feedback({ owed: new Set([noteKey(0, 60)]) })
+    expect(noteLook(listening, owedNote, view(BAR))).toBeNull()
+  })
+
+  it('says nothing at all about a note the player does not owe', () => {
+    expect(noteLook(feedback({ attempting: true }), owedNote, view(BAR))).toBeNull()
   })
 })
 

@@ -3,7 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { Grader, GraderState } from '../lib/grader'
-import { grade, type Attempt, type Expected, type Played, type Strictness } from '../lib/grading'
+import {
+  grade,
+  NO_FEEDBACK,
+  type Attempt,
+  type Expected,
+  type Played,
+  type Strictness,
+} from '../lib/grading'
 import { ReportPanel } from './ReportPanel'
 
 /**
@@ -27,7 +34,13 @@ function strike(pitch: number, tick: number, extra: Partial<Played> = {}): Playe
 /** A grader that holds one report and nothing else: the panel is the subject. */
 function stub(attempt: Attempt | null, running = false): Grader {
   const listeners = new Set<() => void>()
-  let state: GraderState = { strictness: 'steady', running, taken: 0, attempt }
+  let state: GraderState = {
+    strictness: 'steady',
+    running,
+    taken: 0,
+    attempt,
+    feedback: NO_FEEDBACK,
+  }
   return {
     get state() {
       return state

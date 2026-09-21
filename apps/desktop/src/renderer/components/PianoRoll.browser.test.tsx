@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { LoopRange, StrikeEvent, StrikeSource } from '../audio'
 import { FakeTime, Listener } from '../audio/test-doubles'
 import { Transport } from '../audio/transport'
+import { MARK_SECONDS, NO_FEEDBACK, noteKey, type Feedback, type Outcome } from '../lib/grading'
 import { keyRect } from '../lib/keyboard-geometry'
 import { PianoRoll } from './PianoRoll'
 
@@ -96,6 +97,28 @@ function bright(canvas: HTMLCanvasElement): number {
   return count
 }
 
+/**
+ * Counting pixels of a hue, which is how the judgement colours are told
+ * apart: a played note is blue, a right one green and a missed one red, and
+ * nothing else on the field is any of those.
+ */
+function hued(canvas: HTMLCanvasElement, channel: 0 | 1 | 2): number {
+  const context = canvas.getContext('2d')
+  if (context === null) {
+    throw new Error('no 2d context')
+  }
+  const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+  const others: readonly number[] = [0, 1, 2].filter((one) => one !== channel)
+  let count = 0
+  for (let at = 0; at < data.length; at += 4) {
+    const mine = data[at + channel] ?? 0
+    if (others.every((other) => mine - (data[at + other] ?? 0) > 40)) {
+      count += 1
+    }
+  }
+  return count
+}
+
 /** A pointer drag down the field, as a mouse makes one. */
 function drag(canvas: HTMLCanvasElement, fromY: number, toY: number): void {
   const x = canvas.getBoundingClientRect().left + 80
@@ -112,6 +135,7 @@ function mount(
     strikes?: StrikeSource
     effects?: boolean
     onSelectLoop?: (range: LoopRange | null) => void
+    feedback?: () => Feedback
   } = {},
 ) {
   const { container } = render(
@@ -125,6 +149,7 @@ function mount(
         strikes={effects.strikes}
         effects={effects.effects}
         onSelectLoop={effects.onSelectLoop}
+        feedback={effects.feedback}
         className="h-full"
       />
     </div>,
@@ -289,6 +314,54 @@ describe('PianoRoll, drawing', () => {
       Math.min(window.devicePixelRatio, 2),
       1,
     )
+  })
+
+  it('shows what became of a note on the note and on its key', async () => {
+    const notes = [{ pitch: 60, start: 4 * QUARTER, duration: QUARTER, velocity: 80 }]
+    transport.load({ timing, notes })
+    const judged: Feedback = {
+      ...NO_FEEDBACK,
+      notes: new Map<string, Outcome>([[noteKey(4 * QUARTER, 60), 'correct']]),
+      keys: new Map([[60, { outcome: 'correct', at: 0 }]]),
+      attempting: true,
+    }
+    const { canvas, container } = mount(notes, transport, {
+      strikes: transport.strikes,
+      feedback: () => judged,
+    })
+    await frames()
+
+    const key = () => container.querySelector('[data-pitch="60"]')
+    expect(hued(canvas, 1)).toBeGreaterThan(0)
+    expect(hued(canvas, 2)).toBe(0)
+    expect(key()?.getAttribute('data-state')).toBe('correct')
+
+    // The mark on the key is for the moment after the strike, not for ever.
+    time.run(MARK_SECONDS + 0.1)
+    await frames()
+    expect(key()?.getAttribute('data-state')).toBe('idle')
+  })
+
+  it('leaves a note nobody played visibly unplayed rather than vanishing', async () => {
+    const notes = [{ pitch: 60, start: 4 * QUARTER, duration: QUARTER, velocity: 80 }]
+    transport.load({ timing, notes })
+    const owed: Feedback = {
+      ...NO_FEEDBACK,
+      owed: new Set([noteKey(4 * QUARTER, 60)]),
+      attempting: true,
+    }
+    const listening: Feedback = { ...owed, attempting: false }
+    let feedback = listening
+    const { canvas } = mount(notes, transport, { feedback: () => feedback })
+    // Past the note by more than the window, with its tail still on the field.
+    transport.seek(4 * QUARTER + 200)
+    await frames()
+    expect(hued(canvas, 0)).toBe(0)
+    expect(hued(canvas, 2)).toBeGreaterThan(0)
+
+    feedback = owed
+    await frames()
+    expect(hued(canvas, 0)).toBeGreaterThan(0)
   })
 
   it('lights the key a note is sounding on, and puts it out at the release', async () => {

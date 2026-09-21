@@ -300,6 +300,10 @@ export function App() {
             strikes={transport.strikes}
             effects={effects}
             expected={() => waitState.outstanding}
+            /* Read straight from the grader rather than through React: it
+               changes on every note played and the roll reads it every frame,
+               which is not a reason to re-render the app. */
+            feedback={() => grader.state.feedback}
             loop={loop}
             onSelectLoop={chooseLoop}
             className="min-h-0 flex-1"
