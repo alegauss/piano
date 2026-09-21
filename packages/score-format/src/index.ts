@@ -151,6 +151,8 @@ export {
 
 export { nearestOption, PER_KIND, problemFromIssue } from './repair'
 
+export { formatWarnings, scoreWarnings, type ScoreWarning, type WarningKind } from './warnings'
+
 export {
   arrangementSchema,
   CURRENT_FORMAT_VERSION,

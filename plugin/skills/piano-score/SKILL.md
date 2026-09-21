@@ -121,18 +121,24 @@ problems name and check again.
   rather than refused.
 - A `spelling` such as `"Bb3"` must agree with the pitch it sits on.
 
+A valid score can come back with **warnings** as well: music that passes and is
+still probably wrong. Each names the bar and the note. They are not refusals —
+hands do cross, and a rest can end a bar — so read each one, fix the slips, and
+leave what the music means. They only check notes that name their `hand`.
+
 ## What nothing catches, and you must
 
 These are the mistakes that pass validation and still make a bad score. Read
-the finished score for each of them before saving it.
+the finished score for each of them before saving it. The ones marked
+_(warned)_ also come back as warnings, but only where the arithmetic shows them.
 
-1. **A left hand above the right.** The bass sits below the melody. If the hands
-   cross, it should be because the music crosses, not because octaves were
-   miscounted — check the lowest right-hand note against the highest left-hand
-   note in each bar.
-2. **A chord no hand can reach.** Notes one hand plays at once should span an
-   octave (12 semitones) or less; a tenth is for large hands only. Spread a wider
-   chord across both hands or roll it.
+1. **A left hand above the right** _(warned)_. The bass sits below the melody. If
+   the hands cross, it should be because the music crosses, not because octaves
+   were miscounted — check the lowest right-hand note against the highest
+   left-hand note in each bar.
+2. **A chord no hand can reach** _(warned)_. Notes one hand plays at once should
+   span an octave (12 semitones) or less; a tenth is for large hands only. Spread
+   a wider chord across both hands or roll it.
 3. **A melody stuck in one octave.** A tune that never leaves five neighbouring
    notes is a drill, not a melody. Give it a shape: a rise to a high point, and
    somewhere to come back to.
@@ -140,9 +146,10 @@ the finished score for each of them before saving it.
    must actually be easier: the melody alone, one voice, fewer notes, slower
    (`tempoScale`). If you cannot make one that is easier, leave arrangements out
    and let the app reduce the piece itself.
-5. **Notes that do not fill the bar.** Add up the durations in each hand for each
-   bar; a 4/4 bar is 1920 ticks of notes and rests. Rests are gaps between notes,
-   not notes of their own.
+5. **Notes that do not fill the bar** _(warned)_. Add up the durations in each
+   hand for each bar; a 4/4 bar is 1920 ticks of notes and rests. Rests are gaps
+   between notes, not notes of their own. The warnings catch a note running into
+   the next in one voice, and a bar where every hand stops a beat or more early.
 6. **Velocity with no dynamics.** See above: shape inside the phrase, level
    from the marks.
 7. **No sections.** Name the phrases, verses or movements, so somebody can say

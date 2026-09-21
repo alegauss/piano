@@ -229,7 +229,12 @@ function optionProblem(at: Where, options: readonly string[], value: unknown): S
   }
 }
 
-function line(problem: ScoreProblem): string {
+/** What the prose needs of a problem, which a warning has too. */
+type Reported = Pick<ScoreProblem, 'path' | 'received' | 'expected' | 'fix'> & {
+  readonly kind: string
+}
+
+function line(problem: Reported): string {
   const said = `${problem.path}: expected ${problem.expected}, received ${problem.received}`
   return problem.fix === undefined ? said : `${said}; fix: ${problem.fix}`
 }
@@ -240,16 +245,16 @@ function line(problem: ScoreProblem): string {
  * Grouped so that the first kind of trouble cannot bury the second — two
  * hundred misspelled pitches and one missing title show three pitches and the
  * title, not eight pitches — and bounded, so the reply always fits in a
- * turn the model can act on.
+ * turn the model can act on. Warnings are told the same way, as warnings.
  */
-export function formatProblems(problems: readonly ScoreProblem[]): string {
-  const kinds = new Map<ProblemKind, ScoreProblem[]>()
+export function formatProblems(problems: readonly Reported[], noun = 'problems'): string {
+  const kinds = new Map<string, Reported[]>()
   for (const problem of problems) {
     kinds.set(problem.kind, [...(kinds.get(problem.kind) ?? []), problem])
   }
 
   const lines: string[] = []
-  const hidden = new Map<ProblemKind, number>()
+  const hidden = new Map<string, number>()
   for (const [kind, ofKind] of kinds) {
     const room = Math.max(0, Math.min(PER_KIND, MAX_REPORTED_PROBLEMS - lines.length))
     for (const problem of ofKind.slice(0, room)) {
@@ -263,7 +268,11 @@ export function formatProblems(problems: readonly ScoreProblem[]): string {
   if (hidden.size > 0) {
     const count = [...hidden.values()].reduce((sum, one) => sum + one, 0)
     const which = [...hidden].map(([kind, one]) => `${String(one)} ${kind}`).join(', ')
-    lines.push(`and ${String(count)} more problems like these (${which})`)
+    const counted =
+      count === 1
+        ? `1 more ${noun.replace(/s$/, '')} like this`
+        : `${String(count)} more ${noun} like these`
+    lines.push(`and ${counted} (${which})`)
   }
   return lines.join('\n')
 }

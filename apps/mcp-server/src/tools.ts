@@ -1,5 +1,13 @@
 import type { Library, LibraryEntry } from '@piano/library'
-import { describeScore, formatProblems, LEVELS, parseScore } from '@piano/score-format'
+import {
+  describeScore,
+  formatProblems,
+  formatWarnings,
+  LEVELS,
+  parseScore,
+  scoreWarnings,
+  type ScoreWarning,
+} from '@piano/score-format'
 import { z } from 'zod'
 
 import type { Link, PassageAsk } from './link'
@@ -115,6 +123,24 @@ function passageOf(
   return bars === undefined ? null : { kind: 'bars', from: bars.from, to: bars.to }
 }
 
+/**
+ * What a valid score is still probably wrong about, said after the verdict.
+ *
+ * Only ever beside a valid result: the score is kept or passed either way,
+ * and each warning names a bar and a note so the model can decide in one
+ * step whether it is the music or a slip.
+ */
+function warned(warnings: readonly ScoreWarning[]): string {
+  if (warnings.length === 0) {
+    return ''
+  }
+  const count = warnings.length === 1 ? '1 thing' : `${String(warnings.length)} things`
+  return (
+    `\n\nValid, but ${count} a score usually gets wrong. Each may be what the music means; ` +
+    `check them and change only the slips:\n${formatWarnings(warnings)}`
+  )
+}
+
 /** What a transport answer looks like whichever command produced it. */
 function fromLink(result: { ok: boolean; text: string; data?: unknown }): ToolResult {
   return { ok: result.ok, text: result.text, data: result.data }
@@ -128,18 +154,27 @@ export function toolsFor(library: Library, link: Link): Tool[] {
       description:
         'Check a score against the piano score format and say what is wrong with it. ' +
         'Returns the problems one by one, each naming the field and the value, so a score ' +
-        'can be corrected and checked again. Validates nothing else: it does not save, ' +
-        'open or play anything.',
+        'can be corrected and checked again. A valid score may come back with warnings: ' +
+        'the hands crossing, a chord one hand cannot span, a line holding more than its ' +
+        'bar, a bar going silent before its end. They are not refusals; read each and fix ' +
+        'the ones that are mistakes. Validates nothing else: it does not save, open or ' +
+        'play anything.',
       shape: { score: scoreArgument },
       run: ({ score }) => {
         const parsed = parseScore(score)
-        return parsed.ok
-          ? { ok: true, text: `Valid: ${describeScore(parsed.score)}`, data: { valid: true } }
-          : {
-              ok: false,
-              text: formatProblems(parsed.problems),
-              data: { valid: false, problems: parsed.problems },
-            }
+        if (parsed.ok) {
+          const warnings = scoreWarnings(parsed.score)
+          return {
+            ok: true,
+            text: `Valid: ${describeScore(parsed.score)}${warned(warnings)}`,
+            data: { valid: true, warnings },
+          }
+        }
+        return {
+          ok: false,
+          text: formatProblems(parsed.problems),
+          data: { valid: false, problems: parsed.problems },
+        }
       },
     }),
 
@@ -155,10 +190,12 @@ export function toolsFor(library: Library, link: Link): Tool[] {
       run: async ({ score }) => {
         try {
           const saved = await library.save(score)
+          // Said here too, for a score saved without being validated first.
+          const warnings = scoreWarnings(saved.score)
           return {
             ok: true,
-            text: `Saved as "${saved.id}": ${describeScore(saved.score)}`,
-            data: { id: saved.id },
+            text: `Saved as "${saved.id}": ${describeScore(saved.score)}${warned(warnings)}`,
+            data: { id: saved.id, warnings },
           }
         } catch (cause: unknown) {
           return { ok: false, text: cause instanceof Error ? cause.message : String(cause) }

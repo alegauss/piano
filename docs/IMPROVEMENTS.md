@@ -30,23 +30,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI65 Warnings for music that validates
-
-The skill lists the mistakes that pass validation and still make a bad score, and asks
-the model to read its own work against the list before saving. That is a request, and a
-request is what a model skips when it is sure of itself. Three of the seven are
-arithmetic rather than taste, so the format package can check them: the left hand's
-highest note against the right hand's lowest in each bar, the span of what one hand
-strikes at once, and whether each hand's notes and gaps fill the bar the meter says.
-They come back as warnings beside a valid result, never as refusals, because each one
-has a legitimate exception — hands do cross, and a rest is a gap nobody wrote down — and
-a validator that refuses music it does not understand teaches the model to write around
-it. A warning names the bar and the notes, in the same shape the repair loop already
-reads, so a model can decide in one step whether the warning is the music or a mistake.
-The other four stay in the skill, because a melody's range and a beginner version being
-easier enough are judgements, not sums. The warnings live in score-format beside
-validation, so the app can show the same ones to somebody opening a file.
-
 ## Block G — Score library and distribution
 
 ### §PI66 A file type the system can hand to the piano

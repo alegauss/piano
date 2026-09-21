@@ -168,6 +168,7 @@
 - ✅ **PI50** **Nothing proves the premise: no single run goes from a request to a piece actually playing** — A recorded model score goes through the plugin's server into the built app, which opens and plays it; its opening is heard note by note, in CI (design recorded in `apps/desktop/src/test/premise.ts`).
   checked **One run goes from a request to an audible piece** The end-to-end test asks for a named public-domain piece and asserts the expected pitches sound at the expected times in an offline render.
   checked **The chain is gated in CI without a live model** A recorded model response is the default path so every push is checked, with a live run available on demand for when the prompt itself changes.
+- ✅ **PI65** **validate_score passes a score with the left hand above the right, a chord no hand can reach, or a bar half full** — validate_score and save_score warn beside a valid result of crossed hands, unreachable chords and bars that don't add up (design recorded in `packages/score-format/src/warnings.ts`).
 
 ## Block G — Score library and distribution
 

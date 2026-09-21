@@ -87,6 +87,33 @@ describe('the score tools', () => {
     expect(bad.text).toContain('title')
   })
 
+  it('passes music that is probably wrong, with warnings naming the bar and the note', async () => {
+    const { by } = setup()
+    // The left hand an octave too high: valid, and almost certainly a slip.
+    const crossed = {
+      formatVersion: 1,
+      metadata: { title: 'Crossed' },
+      notes: [
+        { pitch: 60, start: 0, duration: 1920, velocity: 80, hand: 'right' },
+        { pitch: 67, start: 0, duration: 1920, velocity: 80, hand: 'left' },
+      ],
+    }
+    const checked = await by('validate_score').run({ score: crossed })
+    expect(checked.ok).toBe(true)
+    expect(checked.text).toMatch(/^Valid: /)
+    expect(checked.text).toContain('notes.1 (bar 1): expected the left hand below the right')
+    expect(checked.data).toMatchObject({ valid: true, warnings: [{ kind: 'hands crossed' }] })
+
+    const saved = await by('save_score').run({ score: crossed })
+    expect(saved.ok).toBe(true)
+    expect(saved.text).toContain('hands really cross')
+
+    // Nothing is said about a score with nothing to say about it.
+    const clean = await by('validate_score').run({ score: minimal })
+    expect(clean.text).not.toContain('usually gets wrong')
+    expect(clean.data).toEqual({ valid: true, warnings: [] })
+  })
+
   it('saves a score under an id the other tools can address it by', async () => {
     const { by } = setup()
     const saved = await by('save_score').run({ score: minimal })
