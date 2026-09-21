@@ -146,3 +146,11 @@ export {
   type TimeSignatureEvent,
   type Timing,
 } from './time'
+
+export {
+  checksum,
+  FROZEN_FIXTURES,
+  MALFORMED_FIXTURES,
+  stableStringify,
+  VALID_FIXTURES,
+} from './fixtures/index'

@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "Twice as fast at bar nine" },
+  "timing": {
+    "ticksPerQuarter": 480,
+    "tempo": [
+      { "tick": 0, "microsecondsPerQuarter": 500000 },
+      { "tick": 15360, "microsecondsPerQuarter": 250000 }
+    ]
+  },
+  "notes": [
+    { "id": "a", "pitch": 60, "start": 0, "duration": 480, "velocity": 80 },
+    { "id": "b", "pitch": 62, "start": 15360, "duration": 480, "velocity": 80 }
+  ]
+}

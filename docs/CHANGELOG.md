@@ -54,6 +54,9 @@
 - ✅ **PI15** **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — One zod schema produces the types, the runtime validator and the published JSON Schema, and a bad score is refused at the door naming the path and the value.
   checked **The generated JSON Schema matches the zod schema** CI regenerates it and fails when the checked-in file differs, so the document a model reads is never behind the validator the app actually runs.
   checked **Errors name the path, the value and the expectation** Each malformed fixture produces a message a model can act on: a JSON pointer to the field, the value that arrived and what was required instead.
+- ✅ **PI16** **There are no reference scores, so nothing proves a format change kept old files readable** — Sixteen reference scores cover the hard cases, each round-trips identically after normalisation, and a checksum stops a frozen fixture being edited to suit its own migration.
+  checked **Every fixture round-trips identically after normalisation** Parsing and reserialising each reference score returns the input, which is the check that catches a field silently dropped by a refactor of the loader.
+  checked **Frozen per-version fixtures are never edited** A test asserts a checksum over each historical fixture, so a migration can never be made to pass by quietly changing the file it exists to migrate.
 
 ## Block C — Audio engine and transport
 

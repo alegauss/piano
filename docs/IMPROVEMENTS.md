@@ -22,21 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI16 Fixtures that say what a valid score is
-
-The format will be refactored, and the only thing standing between that refactor and a
-library of files that no longer open is a set of reference scores. The fixture set
-covers the cases that are easy to get wrong rather than the easy ones: a pickup bar, a
-mid-piece tempo change, a time signature change, overlapping voices inside one hand, a
-pedal held across a bar line, a score with three arrangements, a score with no parts and
-no metadata beyond a title, and one deliberately malformed file for every validation
-rule. Round-trip tests parse each fixture and serialise it back, asserting the output is
-identical after normalisation, which is what catches a field quietly dropped. Migration
-tests keep one frozen file per historical format version, and those files are never
-edited again, because a fixture updated alongside the migration it exists to test proves
-nothing at all. Every bug found in the format arrives with the fixture that reproduced
-it, and that habit is what keeps this set worth running a year from now.
-
 ### §PI17 MIDI in and out, on the same tick grid
 
 The format was built on ticks and a tempo map precisely so MIDI conversion is a mapping

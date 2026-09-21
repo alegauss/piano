@@ -6,7 +6,6 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI16** (deps: PI15 ✅) **There are no reference scores, so nothing proves a format change kept old files readable** — Fixtures covering the hard cases plus round-trip tests turn the format into something a refactor cannot silently break. → §PI16
 - 📋 **PI17** (deps: PI15 ✅) **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — MIDI import seeds the library from existing material and export lets a score reach a DAW, which is the honest answer to the recording non-goal. → §PI17
 
 ## Block C — Audio engine and transport
@@ -39,7 +38,7 @@
 - 📋 **PI37** (deps: PI35, PI36) **Nothing says how the attempt went: wrong notes, late notes and missed notes all pass unremarked** — Grading against a timing window, with a report naming the bars that failed, is what turns playing along into practising. → §PI37
 - 📋 **PI38** (deps: PI32, PI37) **The player gets no feedback: nothing on screen says which note was right, wrong or late** — Colouring the key and the note the instant it is judged puts feedback where the eye already is, rather than in a side panel. → §PI38
 - 📋 **PI39** (deps: PI12 ✅) **Beginner, intermediate and advanced are only words: nothing says what changes between them** — Level presets fixing tempo, hands, voices and ornaments make the three levels a promise the app can keep for any score. → §PI39
-- 📋 **PI40** (deps: PI12 ✅, PI16) **Only scores hand-authored with three arrangements are playable at beginner level** — Reducing a full score to a simpler arrangement automatically keeps every piece usable at every level without three times the authoring. → §PI40
+- 📋 **PI40** (deps: PI12 ✅, PI16 ✅) **Only scores hand-authored with three arrangements are playable at beginner level** — Reducing a full score to a simpler arrangement automatically keeps every piece usable at every level without three times the authoring. → §PI40
 - 📋 **PI41** (deps: PI11 ✅, PI39) **A hard bar can only be practised by replaying the whole piece and waiting for it to arrive** — Looping a passage, raising the tempo gradually and splitting the hands are the three things practice actually consists of. → §PI41
 - 📋 **PI42** (deps: PI11 ✅, PI37) **Every session starts from nothing: no record of what was played, what improved or what still fails** — Progress stored per score and per section lets the app point at the bar that keeps failing instead of the user having to remember. → §PI42
 
@@ -61,15 +60,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI16
-
-- **Every fixture round-trips identically after normalisation** Parsing and
-  reserialising each reference score returns the input, which is the check that catches
-  a field silently dropped by a refactor of the loader.
-- **Frozen per-version fixtures are never edited** A test asserts a checksum over each
-  historical fixture, so a migration can never be made to pass by quietly changing the
-  file it exists to migrate.
 
 ## Done when — PI17
 

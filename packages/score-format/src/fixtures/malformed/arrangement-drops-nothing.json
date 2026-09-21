@@ -1,0 +1,6 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "An arrangement naming a note that is not there" },
+  "notes": [{ "id": "a", "pitch": 60, "start": 0, "duration": 480, "velocity": 80 }],
+  "arrangements": [{ "id": "easy", "level": "beginner", "drop": ["ghost"] }]
+}

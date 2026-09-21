@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "One voice overlapping itself" },
+  "notes": [
+    { "id": "a", "pitch": 60, "start": 0, "duration": 480, "velocity": 80, "voice": 0 },
+    { "id": "b", "pitch": 60, "start": 240, "duration": 480, "velocity": 80, "voice": 0 }
+  ]
+}

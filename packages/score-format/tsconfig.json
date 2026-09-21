@@ -11,5 +11,7 @@
     // in the MCP server, so anything platform-specific here is a bug.
     "types": []
   },
-  "include": ["src/**/*.ts"]
+  // The fixtures are imported rather than read from disk, so they are part of
+  // the program: this package must not learn to open a file.
+  "include": ["src/**/*.ts", "src/**/*.json"]
 }

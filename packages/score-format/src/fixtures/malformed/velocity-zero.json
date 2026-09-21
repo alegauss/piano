@@ -1,0 +1,5 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "A note-off pretending to be a note" },
+  "notes": [{ "id": "a", "pitch": 60, "start": 0, "duration": 480, "velocity": 0 }]
+}

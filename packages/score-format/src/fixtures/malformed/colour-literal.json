@@ -1,0 +1,5 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "A part with a colour of its own" },
+  "parts": [{ "id": "p1", "name": "Piano", "colour": "#ff0000" }]
+}

@@ -1,0 +1,5 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "A note of no length" },
+  "notes": [{ "id": "a", "pitch": 60, "start": 0, "duration": 0, "velocity": 80 }]
+}

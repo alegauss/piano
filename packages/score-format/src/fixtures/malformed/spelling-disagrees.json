@@ -1,0 +1,7 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "The spelling says one pitch and the number says another" },
+  "notes": [
+    { "id": "a", "pitch": 60, "spelling": "D4", "start": 0, "duration": 480, "velocity": 80 }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "Two voices in one hand" },
+  "notes": [
+    {
+      "id": "hi",
+      "pitch": 72,
+      "start": 0,
+      "duration": 960,
+      "velocity": 85,
+      "voice": 0,
+      "hand": "right"
+    },
+    {
+      "id": "lo",
+      "pitch": 72,
+      "start": 480,
+      "duration": 480,
+      "velocity": 70,
+      "voice": 1,
+      "hand": "right"
+    }
+  ]
+}

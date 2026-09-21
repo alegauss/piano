@@ -1,0 +1,9 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "With a pickup", "composer": "Anonymous" },
+  "timing": { "ticksPerQuarter": 480, "pickupTicks": 480 },
+  "notes": [
+    { "id": "up", "pitch": 67, "start": 0, "duration": 480, "velocity": 70, "hand": "right" },
+    { "id": "d1", "pitch": 72, "start": 480, "duration": 960, "velocity": 88, "hand": "right" }
+  ]
+}

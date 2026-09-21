@@ -1,0 +1,6 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "Frozen at version 1", "composer": "Nobody" },
+  "timing": { "ticksPerQuarter": 480 },
+  "notes": [{ "id": "n1", "pitch": 60, "start": 0, "duration": 480, "velocity": 80 }]
+}

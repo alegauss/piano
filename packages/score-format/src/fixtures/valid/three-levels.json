@@ -1,0 +1,52 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "One piece, three levels", "level": "intermediate", "difficulty": 5 },
+  "parts": [
+    { "id": "melody", "name": "Melody", "colour": "note-part-1", "role": "melody" },
+    { "id": "accomp", "name": "Accompaniment", "colour": "note-part-2", "role": "accompaniment" }
+  ],
+  "notes": [
+    {
+      "id": "m1",
+      "pitch": 72,
+      "start": 0,
+      "duration": 480,
+      "velocity": 90,
+      "part": "melody",
+      "hand": "right"
+    },
+    {
+      "id": "orn",
+      "pitch": 74,
+      "start": 460,
+      "duration": 20,
+      "velocity": 60,
+      "part": "melody",
+      "hand": "right",
+      "articulation": "staccato"
+    },
+    {
+      "id": "a1",
+      "pitch": 48,
+      "start": 0,
+      "duration": 240,
+      "velocity": 60,
+      "part": "accomp",
+      "hand": "left"
+    }
+  ],
+  "sections": [{ "id": "opening", "label": "Opening", "startTick": 0, "endTick": 1920 }],
+  "arrangements": [
+    {
+      "id": "easy",
+      "level": "beginner",
+      "label": "Melody only",
+      "parts": ["melody"],
+      "drop": ["orn"],
+      "tempoScale": 0.66
+    },
+    { "id": "middle", "level": "intermediate", "drop": ["orn"], "tempoScale": 0.85 },
+    { "id": "full", "level": "advanced" }
+  ],
+  "extensions": { "com.example.study": { "notes": "kept across a round trip" } }
+}

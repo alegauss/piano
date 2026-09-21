@@ -1,0 +1,15 @@
+{
+  "formatVersion": 1,
+  "metadata": { "title": "Four then three" },
+  "timing": {
+    "ticksPerQuarter": 480,
+    "timeSignatures": [
+      { "tick": 0, "numerator": 4, "denominator": 4 },
+      { "tick": 7680, "numerator": 3, "denominator": 4 }
+    ]
+  },
+  "notes": [
+    { "id": "a", "pitch": 60, "start": 0, "duration": 1920, "velocity": 80 },
+    { "id": "b", "pitch": 64, "start": 7680, "duration": 1440, "velocity": 80 }
+  ]
+}
