@@ -22,6 +22,13 @@ import { cn } from './lib/cn'
 import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
 import { appKeys } from './lib/keys-input'
+import {
+  calibrationKey,
+  createCalibrator,
+  saveInputLatency,
+  savedInputLatency,
+  type Latency,
+} from './lib/latency'
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { appPiano, appSound } from './lib/sound'
@@ -81,6 +88,9 @@ export function App() {
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
   const midi = appMidi()
   const keys = appKeys()
+  const midiState = useSyncExternalStore(midi.subscribe, () => midi.state)
+  /** Figures measured in this session, over whatever was stored before it. */
+  const [measured, setMeasured] = useState<Readonly<Record<string, number>>>({})
 
   const timing = useMemo(() => timingOf(placeholder), [])
   const notes = useMemo(() => notesOf(placeholder), [])
@@ -106,12 +116,37 @@ export function App() {
     return made
   }, [piano, timing, notes])
 
+  /**
+   * Which calibration applies: one figure per device and per output, since a
+   * Bluetooth headset and a controller each change it.
+   */
+  const device = midiState.devices.find((found) => found.id === midiState.chosen)?.name ?? null
+  const latencyKey = calibrationKey(device, null)
+  // The figure follows the setup: choosing another controller brings back
+  // what was measured with that one, and nothing if it has never been
+  // measured. Derived rather than copied into state, so there is one answer.
+  const stored = useMemo(() => savedInputLatency(latencyKey) ?? 0, [latencyKey])
+  const latency: Latency = useMemo(
+    () => ({ output: piano.outputLatency(), input: measured[latencyKey] ?? stored }),
+    [piano, measured, latencyKey, stored],
+  )
+
+  const calibrator = useMemo(() => createCalibrator(piano.clicker, () => piano.now()), [piano])
+  // Told the lag rather than asked for it: the calibrator outlives this view.
+  useEffect(() => {
+    calibrator.useLatency(latency)
+  }, [calibrator, latency])
+
   // What a player presses reaches the piano, from either input, at the pitch
   // pressed and at the clock's now.
   useEffect(() => {
     const sound = (event: Parameters<typeof playLive>[2]) => {
       void piano.resume()
       playLive(piano.engine, () => piano.now(), event)
+      // A calibration in progress counts the strike, whichever input it came from.
+      if (event.kind === 'on') {
+        calibrator.strike(piano.now())
+      }
     }
     const stopMidi = midi.onEvent(sound)
     const stopKeys = keys.onEvent(sound)
@@ -119,7 +154,7 @@ export function App() {
       stopMidi()
       stopKeys()
     }
-  }, [piano, midi, keys])
+  }, [piano, midi, keys, calibrator])
 
   // What is heard follows the panel. The transport takes it at the next note
   // it schedules, so nothing already sounding is cut.
@@ -210,7 +245,7 @@ export function App() {
         with it for height, which is what flattened the roll when both were
         flex children of one column.
       */}
-      <main className={cn('flex shrink-0 flex-col', full ? 'h-full' : 'h-[78vh] min-h-[420px]')}>
+      <main className={cn('flex shrink-0 flex-col', full ? 'h-full' : 'h-[78vh] min-h-105')}>
         {error === null || full ? null : (
           <p className="mx-6 mt-4 rounded-(--radius) border border-danger px-3 py-2 text-sm text-danger">
             {error}
@@ -258,6 +293,13 @@ export function App() {
           onFull={setFull}
           midi={midi}
           keys={keys}
+          latency={latency}
+          calibrator={calibrator}
+          latencySetup={device ?? 'the typing keyboard'}
+          onMeasuredLatency={(seconds) => {
+            setMeasured((held) => ({ ...held, [latencyKey]: seconds }))
+            saveInputLatency(latencyKey, seconds)
+          }}
           onStart={() => {
             void piano.resume()
           }}

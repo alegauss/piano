@@ -1,6 +1,7 @@
 import { WebAudioClicker, type Clicker } from './clicker'
 import type { AudioTime, PianoEngine } from './engine'
 import { EngineSwitch } from './engine-switch'
+import { outputLatencyOf } from '../lib/latency'
 import { PackBank, type PackSource } from './pack-bank'
 import { SampledEngine } from './sampled-engine'
 import { SynthEngine } from './synth-engine'
@@ -20,6 +21,8 @@ export type Piano = {
   readonly clicker: Clicker
   /** The audio clock, which is the only clock a note may be scheduled against. */
   now(): AudioTime
+  /** Seconds between scheduling a note and hearing it, as the platform reports it. */
+  outputLatency(): number
   /** Start the clock where the platform holds audio until a gesture. */
   resume(): Promise<void>
   /**
@@ -42,6 +45,8 @@ export function pianoOn(
     engine,
     clicker: new WebAudioClicker(context),
     now: () => context.currentTime,
+    outputLatency: () =>
+      outputLatencyOf(context as { outputLatency?: number; baseLatency?: number }),
     resume,
     usePack: async (source, options) => {
       const bank = await PackBank.open(context, source, options)

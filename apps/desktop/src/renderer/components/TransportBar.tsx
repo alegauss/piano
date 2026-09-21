@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react'
 
 import type { LoopRange, Transport } from '../audio'
 import type { KeysInput } from '../lib/keys-input'
+import type { Calibrator, Latency } from '../lib/latency'
 import type { MidiInput } from '../lib/midi-input'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
@@ -22,6 +23,7 @@ import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
 import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
 import { KeysPanel } from './KeysPanel'
+import { LatencyPanel } from './LatencyPanel'
 import { MidiMonitor } from './MidiMonitor'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
@@ -65,6 +67,12 @@ export type TransportBarProps = {
   readonly midi?: MidiInput
   /** The typing keyboard as an instrument, for the panel that switches it on. */
   readonly keys?: KeysInput
+  /** The machine's measured lag, shown rather than hidden. */
+  readonly latency?: Latency
+  readonly calibrator?: Calibrator
+  readonly onMeasuredLatency?: (seconds: number) => void
+  /** What a calibration was taken with: the device and the output. */
+  readonly latencySetup?: string
   /** Called before playing, to let the platform's audio start on a gesture. */
   readonly onStart?: () => void
   readonly className?: string
@@ -91,6 +99,10 @@ export function TransportBar({
   onFull,
   midi,
   keys,
+  latency,
+  calibrator,
+  onMeasuredLatency,
+  latencySetup = 'this setup',
   onStart,
   className,
 }: TransportBarProps) {
@@ -245,6 +257,14 @@ export function TransportBar({
             />
           </label>
 
+          {latency === undefined || calibrator === undefined ? null : (
+            <LatencyPanel
+              latency={latency}
+              calibrator={calibrator}
+              onMeasured={onMeasuredLatency ?? (() => {})}
+              setup={latencySetup}
+            />
+          )}
           {keys === undefined ? null : <KeysPanel keys={keys} />}
           {midi === undefined ? null : <MidiMonitor midi={midi} />}
           <Button

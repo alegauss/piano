@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI35 Measuring the lag before grading anyone
-
-Every machine has latency, and on a bad setup it is enough to make a player who is
-perfectly in time look consistently late. Two delays matter and they are not the same.
-Output latency is how long after scheduling a note it is actually heard, and Web Audio
-reports an estimate that is usually close enough to use. Input latency is how long after
-a key is struck the event arrives, and nothing reports that, so it is measured: the app
-plays a click and asks the player to strike along with it a dozen times, takes the
-median offset and stores it as a per-device calibration. Median rather than mean,
-because a player will mistime one or two and an average drags. The measured value is
-subtracted before any timing judgement and is shown to the user rather than hidden,
-since an absurd figure usually means a bad audio driver and the honest response is to
-say so out loud. Calibration is per device and per output, because a Bluetooth headset
-and a controller each change it.
-
 ### §PI36 Letting the learner set the pace
 
 The single most useful practice feature is also the simplest: the score does not advance
@@ -103,7 +88,9 @@ tells nobody what to do next while bars 17 to 20 failed four attempts out of fiv
 Velocity is graded only where the input can express it, and dynamic accuracy is reported
 apart from note accuracy, since they are different skills. Nothing played during the
 count-in is matched or scored: the transport's isCountIn(time) says where the piece
-begins.
+begins. Both sides of every comparison go through PI35's arithmetic first, heardAt for
+the note and struckAt for the strike, since the window is meaningless against times the
+machine's own lag has already moved.
 
 ### §PI38 Feedback where the eye already is
 
