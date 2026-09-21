@@ -24,22 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI20 Turning a sample library into a shippable pack
-
-The Salamander Grand is the usual starting point: a well recorded piano under a
-permissive licence, distributed as hundreds of megabytes of uncompressed WAV across many
-velocity layers. It cannot ship in that form. The pipeline is a script, checked into the
-repository and runnable from scratch, that fetches the source, verifies a checksum,
-trims silence, normalises consistently, encodes to a compressed format and emits a
-manifest saying which file covers which pitch and which velocity range. Pitches that
-were never sampled are filled by shifting a neighbour at load time, so the pack stays
-small without leaving holes. The manifest is what the engine reads; no filename is ever
-constructed by convention. The licence text travels inside the pack and is surfaced in
-the app, because shipping somebody else's recordings without attribution is exactly the
-kind of thing this project has already said it will not do. Users never run the script:
-it produces a versioned artifact that both the build and the first-run downloader point
-at.
-
 ### §PI21 First note now, full piano shortly
 
 A piano pack is large enough that waiting for it makes the app feel broken, and the
@@ -53,7 +37,11 @@ larger than the compressed file and an app that grows without limit will be blam
 the piano. Progress is visible but never modal: the user can play while it loads. The
 switch between the two engines has to be inaudible in the ordinary case, which means
 matching gain and attack across them, and that is worth testing deliberately rather than
-discovering by ear during a lesson.
+discovering by ear during a lesson. The pack arrives as a directory whose manifest.json
+goes through parseManifest from @piano/sample-pack before anything is decoded, and its
+credit is shown in the app (an about panel naming the library, its author and its
+licence) once a pack is loaded: PI20 made the licence travel with the pack and left
+showing it to the code that loads it.
 
 ### §PI22 Velocity layers, release and a sustain model
 
@@ -67,8 +55,11 @@ struck while the pedal is down keep ringing past their written end, and pedal up
 releases everything currently held, all driven by the control events the format already
 carries. Half pedal maps to partial damping rather than a switch, since the format
 stores a value and discarding it would waste the one place that nuance was written down.
-Each of these is verifiable by measuring rendered output offline, which is how they get
-tested at all without a human sitting and listening.
+The pack from PI20 keeps four of Salamander's sixteen layers, each with its velocity
+range, and marks the undamped top strings and any tuning correction in the manifest;
+release samples are not in it yet, so the pipeline's plan gains the library's release
+regions first. Each of these is verifiable by measuring rendered output offline, which
+is how they get tested at all without a human sitting and listening.
 
 ### §PI23 One clock, one transport state machine
 
@@ -559,10 +550,12 @@ about its size before it starts. While it runs the app stays fully usable on the
 synthesised engine, which is the whole reason that engine exists. A failed or cancelled
 download leaves a working app rather than a broken one and can be retried later from
 settings. The pack is versioned, so a later release can ship a better one without a
-reinstall, and the app tolerates holding an older pack than it would prefer. For an
-offline or restricted machine there is a manual path: a documented location to drop the
-pack file by hand. That is not an edge case, it is every corporate laptop the app will
-ever run on.
+reinstall; npm run pack:samples builds it reproducibly as a directory whose manifest
+lists every file with its size and sha256, which is what the download verifies against,
+and the app tolerates holding an older pack than it would prefer. For an offline or
+restricted machine there is a manual path: a documented location to drop the pack file
+by hand. That is not an edge case, it is every corporate laptop the app will ever run
+on.
 
 ### §PI55 Something to hear on the first launch
 

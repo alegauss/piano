@@ -8,8 +8,7 @@
 
 ## Block C — Audio engine and transport
 
-- 📋 **PI20** (deps: PI1 ✅) **There is no piano sound: raw sample libraries are gigabytes of WAV, unusable as they ship** — A repeatable pipeline that converts, trims and indexes the samples into a compressed pack with its licence turns a download into a shippable asset. → §PI20
-- 📋 **PI21** (deps: PI18 ✅, PI20) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Lazy loading by register with a memory budget, and a synthesised fallback while samples arrive, let the first note sound immediately. → §PI21
+- 📋 **PI21** (deps: PI18 ✅, PI20 ✅) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Lazy loading by register with a memory budget, and a synthesised fallback while samples arrive, let the first note sound immediately. → §PI21
 - 📋 **PI22** (deps: PI10 ✅, PI21) **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity layers, release samples and a real sustain model are what separate a piano from a sine wave, and they are cheap once the pack is indexed. → §PI22
 - 📋 **PI23** (deps: PI19 ✅) **There is no transport: nothing plays, pauses, seeks, loops or changes tempo** — One clock and one state machine driving play, pause, seek, loop, tempo and transpose keep the audio and the roll from disagreeing. → §PI23
 - 📋 **PI24** (deps: PI19 ✅) **Practising without a beat reference is guesswork, and playback starts with no warning** — A metronome driven by the same clock plus a count-in bar give the learner somewhere to put the first note. → §PI24
@@ -55,18 +54,9 @@
 - 📋 **PI51** (deps: PI3 ✅, PI15 ✅) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
 - 📋 **PI52** (deps: PI13 ✅, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
-- 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
+- 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI20
-
-- **The pack builds from scratch with one command** A clean machine runs the script,
-  which fetches the source, verifies its checksum and produces the versioned pack and
-  manifest with no manual step in between.
-- **The licence travels with the pack and is shown in the app** The artifact contains
-  the licence text and a credits screen displays it; a pack built without it fails the
-  build rather than shipping unattributed.
 
 ## Done when — PI21
 

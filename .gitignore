@@ -7,6 +7,11 @@ dist/
 out/
 release/
 
+# The sample pack's downloads and what it builds from them: large, and rebuilt
+# from the pinned source by `npm run pack:samples`
+packages/sample-pack/.cache/
+packages/sample-pack/out/
+
 # local environment
 .env
 .env.local

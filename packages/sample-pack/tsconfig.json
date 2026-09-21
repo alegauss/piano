@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2023"],
+    // No node and no DOM: the renderer reads the manifest and the build script
+    // writes it, so the half they share is platform-free and the file system
+    // lives in scripts/ alone.
+    "types": []
+  },
+  "include": ["src/**/*.ts"]
+}

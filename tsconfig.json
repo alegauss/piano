@@ -8,6 +8,12 @@
       "path": "packages/ipc"
     },
     {
+      "path": "packages/sample-pack"
+    },
+    {
+      "path": "packages/sample-pack/scripts"
+    },
+    {
       "path": "apps/mcp-server"
     },
     {

@@ -70,6 +70,8 @@
   checked **Scheduled onsets stay within a few milliseconds of target** Driving the scheduler over a fake clock across a hundred bars asserts every note scheduled inside tolerance, including under a simulated main-thread stall.
   checked **A chord lands as a single event** Every note of a chord is scheduled at an identical audio time, asserted exactly rather than within a window, because a spread chord is the defect a listener notices first.
   checked **The scheduler is tested against a fake clock** Scheduler tests advance a synthetic time source and assert note ordering and offsets deterministically, with no real timers, no sleeps and no audible output.
+- ✅ **PI20** **There is no piano sound: raw sample libraries are gigabytes of WAV, unusable as they ship** — npm run pack:samples builds a reproducible 16 MB Opus pack from pinned, checksummed Salamander sources, with manifest and licence (design recorded in `packages/sample-pack/scripts/build-pack.mts`).
+  checked **The pack builds from scratch with one command** A clean machine runs the script, which fetches the source, verifies its checksum and produces the versioned pack and manifest with no manual step in between.
 
 ## Block D — Piano roll and on-screen keyboard
 

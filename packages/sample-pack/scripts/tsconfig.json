@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    // The pipeline is the half of the pack that touches the network, the disk
+    // and ffmpeg, so it gets node and the package itself stays without it.
+    "outDir": "../../../.tsbuild/sample-pack-scripts",
+    "rootDir": ".",
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": ["*.mts"],
+  "references": [{ "path": ".." }]
+}
