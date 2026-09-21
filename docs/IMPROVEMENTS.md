@@ -18,7 +18,9 @@ leaving it is concrete and worth writing down: on Windows a first-time user sees
 panel naming an unknown publisher, and on macOS the app refuses to open until they
 right-click and confirm. Somebody who wanted to try a piano does neither. Until this is
 done the honest position is that the installers are for people who were told where they
-came from, and the README should say so rather than implying a public release.
+came from, and the README should say so rather than implying a public release. It does
+not cross "User accounts, cloud storage or sync across machines": these are the
+publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ### §PI64 Something to download
 

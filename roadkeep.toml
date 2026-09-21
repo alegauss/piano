@@ -45,8 +45,9 @@ held = 60
 # what has to be *present* to finish a line — hardware, an account, somebody's time.
 # Not a dep: `pick` offers a line needing one only to a caller that says it has it,
 # with `--have`. Uncomment and name your own; an undeclared word is refused.
-# [requirements]
-# declared = ["hardware"]
+# `accounts`: a paid account or certificate somebody has to buy and hold (signing).
+[requirements]
+declared = ["accounts"]
 
 [install]
 wired = "0.2.480"

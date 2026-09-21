@@ -2,7 +2,7 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI57** (deps: PI6 ✅) **An unsigned build trips SmartScreen and Gatekeeper, so a new user meets a warning before the app** — Signing needs a purchased Windows certificate and an Apple developer account, which is a decision with a price rather than a line of configuration. → §PI57
+- 📋 **PI57** (deps: PI6 ✅) (requires: accounts) **An unsigned build trips SmartScreen and Gatekeeper, so a new user meets a warning before the app** — Signing needs a purchased Windows certificate and an Apple developer account, which is a decision with a price rather than a line of configuration. → §PI57
 - 📋 **PI64** (deps: PI6 ✅, PI45 ✅) **Nothing is published to download: the plugin sends a person without the app to an empty releases page** — Installers built per platform from a version tag and attached to a release are what make the plugin's install guidance point at something real. → §PI64
 
 ## Block B — Score JSON format
