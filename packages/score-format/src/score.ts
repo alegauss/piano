@@ -12,6 +12,7 @@
  * play rather than an error anybody can read.
  */
 
+import { validateExpression, type Expression } from './expression'
 import { validateNotes, type Note } from './note'
 import { partsOf, validateParts, type Part } from './part'
 import { resolveTiming, type ResolvedTiming, type Timing } from './time'
@@ -49,6 +50,11 @@ export type Score = {
    * so a quick melody needs no part table.
    */
   readonly parts?: readonly Part[]
+  /**
+   * Pedal and dynamics: the events that are about a span of time rather than
+   * about one note. A score with none plays flat but plays.
+   */
+  readonly expression?: Expression
 }
 
 /** The parts a score plays with, with the implicit one supplied where needed. */
@@ -71,7 +77,11 @@ export function notesOf(score: Score): readonly Note[] {
  */
 export function validateScoreNotes(score: Score): string[] {
   const notes = notesOf(score)
-  return [...validateNotes(notes), ...validateParts(scoreParts(score), notes)]
+  return [
+    ...validateNotes(notes),
+    ...validateParts(scoreParts(score), notes),
+    ...validateExpression(score.expression),
+  ]
 }
 
 /** The timing a score actually plays under, with every default filled in. */

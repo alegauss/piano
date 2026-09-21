@@ -43,6 +43,22 @@ export {
 } from './part'
 
 export {
+  DYNAMIC_LEVELS,
+  dynamicScaleAt,
+  pedalValueAt,
+  PEDAL_CONTROLLERS,
+  soundingNote,
+  validateExpression,
+  type Articulation,
+  type DynamicLevel,
+  type DynamicMark,
+  type Expression,
+  type PedalEvent,
+  type PedalKind,
+  type SoundingNote,
+} from './expression'
+
+export {
   barAtTick,
   barRangeToTicks,
   DEFAULT_MICROSECONDS_PER_QUARTER,

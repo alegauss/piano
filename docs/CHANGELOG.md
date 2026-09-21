@@ -36,6 +36,9 @@
 - ✅ **PI9** **A score is one flat list of notes, so the parts panel has nothing to mute, solo or colour** — Notes group into named parts that can be muted, soloed or filtered by hand, and a score declaring no parts gets one implicit part and plays.
   checked **Notes group into parts and a part can be silenced** A fixture with two parts loads, and muting one removes its notes from both playback and the roll while the other continues unchanged.
   checked **A score declaring no parts still loads and plays** The loader assigns one implicit part which the panel shows, and no validation error is raised for the missing part table.
+- ✅ **PI10** **Sustain pedal, dynamics and articulation are unrepresented, so playback sounds mechanical** — Pedal is a timed event covering everything between down and up, and dynamics multiply written velocity so an accent stays above its neighbours through a crescendo.
+  checked **A pedal held across a bar line is one event, not a per-note flag** The fixture carries two control events, down and up; playback sustains every note between them, and the note objects themselves carry no pedal field at all.
+  checked **Dynamics multiply written velocity rather than replacing it** A fixture with an accent inside a crescendo keeps the accent measurable: the accented note stays above its neighbours at every point along the ramp.
 
 ## Block C — Audio engine and transport
 

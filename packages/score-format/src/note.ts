@@ -8,6 +8,8 @@
  * fields nobody has filled in yet are simply absent.
  */
 
+import type { Articulation } from './expression'
+
 /** Which hand plays it. Deliberately not the same question as which part it belongs to. */
 export type Hand = 'left' | 'right'
 
@@ -40,6 +42,11 @@ export type Note = {
   readonly voice?: number
   readonly hand?: Hand
   readonly finger?: Finger
+  /**
+   * Staccato, tenuto, accent or marcato. On the note because it is about this
+   * note, unlike a pedal or a crescendo, which are about a span of time.
+   */
+  readonly articulation?: Articulation
   /** Which part it belongs to, by id. Absent means the score's single implicit part. */
   readonly part?: string
 }

@@ -22,22 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI10 Pedal, dynamics and articulation as timed events
-
-Three things separate a score that sounds like music from one that sounds like a
-typewriter, and none of them belong on the note object. Sustain pedal is a timed control
-event with a tick and a value from 0 to 127, so half-pedalling stays expressible and a
-pedal held across a bar line is one event rather than a flag repeated on forty notes;
-sostenuto and una corda reuse the shape with a different controller id. Dynamics are
-marks placed on a tick with a level from pp to ff, plus ramps carrying a start and an
-end, and they act as a multiplier over the velocity each note already has rather than
-replacing it, so a written accent survives a crescendo. Articulation lives on the note
-as a small closed set, staccato, tenuto, accent and marcato, which the engine maps to
-changes of length and velocity in exactly one place instead of scattering the rules. All
-of it is optional. A score with no pedal and no dynamics plays flat but plays, and that
-property is what keeps a model from needing to be a musicologist before it can be
-useful.
-
 ### §PI11 Named ranges, so a passage has a name
 
 Ask Claude Code to play the chorus more slowly and something has to know what the chorus
