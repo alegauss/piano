@@ -32,27 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI68 Associations checked on the system that registers them
-
-Building a package proves the configuration parses, not that a system acts on it.
-electron-builder's NSIS template calls `customInstall` by name: a macro spelled
-differently is never called and the build still succeeds, so the piano would quietly
-fail to appear under Open With for a MIDI file. macOS reads the document types and the
-exported type declaration only once the app is registered with Launch Services. Linux
-reads the desktop entry's MimeType only where the AppImage has been integrated. None of
-that is touched by packaging.
-
-A runner can touch it, each on the system it is for, straight after the installer is
-built. On Windows: a silent install into a temporary directory, then read the registry —
-the class for `.piano`, and the OpenWithProgids value under `.mid` which must name the
-piano without becoming the default — then run the uninstaller and check the same keys
-are gone. On macOS: copy the app out of the DMG and ask `lsregister` what it now knows
-about the bundle id, the extension and its rank. On Linux: `desktop-file-validate` the
-entry the AppImage carries and read its MimeType line. The natural home is the release
-workflow beside packaging, so an installer that does not register what it claims stops
-the release instead of reaching somebody's machine. The same step can start the
-installed app with a score's path and watch the window open it.
-
 ### §PI69 The copy button and the piece it is looking at
 
 The footer now carries the doors on the whole history: save it as a file, delete it
@@ -74,3 +53,27 @@ here can leave the clipboard and the file disagreeing about what was practised.
 
 Done when the report panel's copy hands over the piece on screen and nothing else, the
 footer's save still hands over everything, and a test says which is which.
+
+### §PI70 Starting the installed app with a score
+
+PI68 reads back what an installer wrote: the registry says a score is claimed and starts
+the piano, Launch Services says the bundle owns `.piano`, the desktop entry says which
+types it opens. All of that is a promise about what happens next, and nothing tests that
+part. The app could refuse the path, or open on the placeholder, and every reading would
+still pass.
+
+What is missing is observability rather than a shell. A smoke run loads the renderer and
+quits before the window asks main what it was launched with, so a run started with a
+score's path says nothing about the score. Give the headless run a word for it: main
+knows the file it opened, so it can print that name once, the way it prints that the
+renderer loaded. Then the association check ends by starting the installed binary with a
+score it wrote to a temporary file, and looks for that name. The score is one the check
+writes: the point is the installed app on a machine with nothing else of ours on it.
+
+Keep it to the one claim. Whether the window shows the notes is the live suite's
+question and it has a display for it; this is about whether a launch argument survives
+installation, which is where a `%1` that was never written, or written unquoted, would
+show.
+
+Done when the check starts the installed app with a score and fails where the app opens
+something else.

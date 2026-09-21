@@ -112,6 +112,13 @@ jobs:
           xvfb-run --auto-servernum env PIANO_SMOKE=1 ./release/linux-unpacked/piano | tee /tmp/out
           grep -q 'renderer loaded' /tmp/out
 
+      # What the installer writes is read back from the registry, Launch
+      # Services and the desktop entry, on the system that keeps each of them.
+      # Here as well as in the release, so a macro renamed on a branch is
+      # answered by that branch and not by a tag weeks later.
+      - name: the installer registers what it claims
+        run: npm run check:associations
+
       - uses: actions/upload-artifact@v4
         with:
           name: piano-${{ matrix.artifact }}

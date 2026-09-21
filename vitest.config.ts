@@ -30,6 +30,7 @@ export default defineConfig({
       'apps/desktop/vitest.browser.config.ts',
       'apps/desktop/vitest.live.config.ts',
       'apps/desktop/vitest.premise.config.ts',
+      'vitest.scripts.config.ts',
     ],
   },
 })

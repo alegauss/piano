@@ -86,6 +86,13 @@ jobs:
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum npm run package
 
+      # An installer that does not register what the packaging claims stops the
+      # release here rather than reaching somebody's machine and quietly failing
+      # to appear under Open With. It installs and uninstalls, which is fine on
+      # a runner that is thrown away and is why it is not part of packaging.
+      - name: the installer registers what it claims
+        run: npm run check:associations
+
       - name: attach to the release
         shell: bash
         env:

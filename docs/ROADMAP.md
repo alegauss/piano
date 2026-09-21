@@ -14,8 +14,8 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI68** (deps: PI66 ✅) **Nothing exercises the file associations an installer writes, so a wrong macro or plist key ships unnoticed** — Installing what was just built and reading back the registry, Launch Services and the desktop entry is what turns a claim in a config file into one the system honours. → §PI68
 - 📋 **PI69** (deps: —) **The report panel's copy button hands over every piece's history from a view about one piece** — It sits beside "Forget this piece" and copies all of it, so somebody asking for what is on screen gets the whole record. → §PI69
+- 📋 **PI70** (deps: PI68 ✅) **Nothing starts the installed app with a score and watches it open that score** — The registry says the piano is offered a file; only launching it that way says the piano does anything with what it is handed. → §PI70
 
 ## Done when — Block A
 
