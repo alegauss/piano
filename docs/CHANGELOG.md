@@ -195,3 +195,6 @@
 - ✅ **PI68** **Nothing exercises the file associations an installer writes, so a wrong macro or plist key ships unnoticed** — An installed piano is read back from the registry, Launch Services and the desktop entry, in CI and before a release (design recorded in `scripts/associations.mjs`).
 - ✅ **PI69** **The report panel's copy button hands over every piece's history from a view about one piece** — The report panel's copy hands over the piece on screen, as its neighbour forgets it; the whole history stays the footer's door.
 - ✅ **PI70** **Nothing starts the installed app with a score and watches it open that score** — A headless run started with a score says which one it opened, and the association check starts the installed app to read that line.
+
+## Block H — Sheet music view
+
