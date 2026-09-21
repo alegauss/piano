@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { MidiEvent } from './midi'
-import { createMidiInput } from './midi-input'
+import { createMidiInput, type DeviceMemory } from './midi-input'
 
 /**
  * A Web MIDI implementation the test drives by hand: ports appear, disappear
@@ -39,18 +39,25 @@ class FakeAccess {
   }
 }
 
-function setup(access = new FakeAccess()) {
-  const input = createMidiInput(() => Promise.resolve(access as never))
+/** Somewhere to keep the chosen keyboard, shared between two sessions when a test says so. */
+function kept(): DeviceMemory {
+  let name: string | null = null
+  return {
+    wanted: () => name,
+    remember: (next) => {
+      name = next
+    },
+  }
+}
+
+function setup(access = new FakeAccess(), memory: DeviceMemory = kept()) {
+  const input = createMidiInput(() => Promise.resolve(access as never), memory)
   const heard: MidiEvent[] = []
   input.onEvent((event) => heard.push(event))
   return { access, input, heard }
 }
 
 describe('finding a controller', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('lists what is plugged in, by name', async () => {
     const { access, input } = setup()
     access.inputs.set('a', new FakePort('a', 'Digital Piano'))
@@ -73,14 +80,14 @@ describe('finding a controller', () => {
   })
 
   it('says so when there is no Web MIDI at all, rather than throwing', () => {
-    const input = createMidiInput(undefined)
+    const input = createMidiInput(undefined, kept())
     input.start()
     expect(input.state.status).toBe('unsupported')
     expect(input.state.detail).not.toBe('')
   })
 
   it('says so when the permission is refused', async () => {
-    const input = createMidiInput(() => Promise.reject(new Error('no')))
+    const input = createMidiInput(() => Promise.reject(new Error('no')), kept())
     input.start()
     await Promise.resolve()
     await Promise.resolve()
@@ -94,7 +101,7 @@ describe('finding a controller', () => {
     const input = createMidiInput(() => {
       asked += 1
       return Promise.resolve(access as never)
-    })
+    }, kept())
     input.start()
     input.start()
     await Promise.resolve()
@@ -103,10 +110,6 @@ describe('finding a controller', () => {
 })
 
 describe('a controller switched on later', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('connects without a restart', async () => {
     const { access, input, heard } = setup()
     input.start()
@@ -157,12 +160,9 @@ describe('a controller switched on later', () => {
 })
 
 describe('remembering the choice', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('does not ask twice in two sessions', async () => {
-    const first = setup()
+    const memory = kept()
+    const first = setup(new FakeAccess(), memory)
     first.access.inputs.set('a', new FakePort('a', 'Digital Piano'))
     first.access.inputs.set('b', new FakePort('b', 'Drum Pad'))
     first.input.start()
@@ -171,11 +171,41 @@ describe('remembering the choice', () => {
     expect(first.input.state.chosen).toBe('b')
 
     // A second session, with the same two devices in the other order.
-    const next = setup()
+    const next = setup(new FakeAccess(), memory)
     next.access.inputs.set('x', new FakePort('x', 'Digital Piano'))
     next.access.inputs.set('y', new FakePort('y', 'Drum Pad'))
     next.input.start()
     await Promise.resolve()
     expect(next.input.state.chosen).toBe('y')
+  })
+
+  it('listens to the keyboard the settings name, once they have been read', async () => {
+    let name: string | null = null
+    const told = new Set<() => void>()
+    const memory: DeviceMemory = {
+      wanted: () => name,
+      remember: (next) => {
+        name = next
+      },
+      subscribe: (listener) => {
+        told.add(listener)
+        return () => {
+          told.delete(listener)
+        }
+      },
+    }
+    const { access, input } = setup(new FakeAccess(), memory)
+    access.inputs.set('a', new FakePort('a', 'Digital Piano'))
+    access.inputs.set('b', new FakePort('b', 'Drum Pad'))
+    input.start()
+    await Promise.resolve()
+    expect(input.state.chosen).toBeNull()
+
+    // The settings arrive after access was granted.
+    name = 'Drum Pad'
+    for (const listener of told) {
+      listener()
+    }
+    expect(input.state.chosen).toBe('b')
   })
 })

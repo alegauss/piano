@@ -28,6 +28,9 @@ function bridge(overrides: Partial<PianoBridge> = {}): PianoBridge {
     onScoreOpened: () => () => {},
     libraryScores: () => Promise.resolve([]),
     onLibraryChanged: () => () => {},
+    readSettings: () => Promise.reject(new Error('not used')),
+    writeSettings: () => Promise.reject(new Error('not used')),
+    resetSettings: () => Promise.reject(new Error('not used')),
     ...overrides,
   }
 }

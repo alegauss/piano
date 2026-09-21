@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { linkResultSchema, type Command } from './link'
 import { CHANNEL_NAMES } from './names'
+import { settingsPatchSchema, settingsSchema } from './settings'
 
 /**
  * Every channel between the renderer and main, declared once.
@@ -228,6 +229,35 @@ export const libraryList = {
   response: z.array(libraryItemSchema),
 } as const satisfies Channel<'library:list', z.ZodType, z.ZodType>
 
+/**
+ * The settings as main holds them, with word of anything that had to go back
+ * to its default, and whether there was a file at all — the one moment the
+ * window imports what an older version kept in the browser's storage.
+ */
+export const settingsRead = {
+  channel: CHANNEL_NAMES.settingsRead,
+  request: z.null(),
+  response: z.object({
+    settings: settingsSchema,
+    notice: z.string().nullable(),
+    fresh: z.boolean(),
+  }),
+} as const satisfies Channel<'settings:read', z.ZodType, z.ZodType>
+
+/** Change some settings; what comes back is all of them, as now kept. */
+export const settingsWrite = {
+  channel: CHANNEL_NAMES.settingsWrite,
+  request: settingsPatchSchema,
+  response: settingsSchema,
+} as const satisfies Channel<'settings:write', z.ZodType, z.ZodType>
+
+/** Every setting back to its default: the quickest way out of a setup that went wrong. */
+export const settingsReset = {
+  channel: CHANNEL_NAMES.settingsReset,
+  request: z.null(),
+  response: settingsSchema,
+} as const satisfies Channel<'settings:reset', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
 export const allChannels = [
   appInfo,
@@ -239,6 +269,9 @@ export const allChannels = [
   scoreOpen,
   scoreRecent,
   libraryList,
+  settingsRead,
+  settingsWrite,
+  settingsReset,
 ] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
@@ -255,6 +288,7 @@ export type OpenResult = z.infer<typeof openResultSchema>
 export type RecentEntry = z.infer<typeof recentEntrySchema>
 export type LibraryQuery = z.infer<typeof libraryQuerySchema>
 export type LibraryItem = z.infer<typeof libraryItemSchema>
+export type SettingsReadResponse = z.infer<typeof settingsRead.response>
 
 /** What main pushes the window: a command, and the id its answer must carry. */
 export type LinkCommandPush = {

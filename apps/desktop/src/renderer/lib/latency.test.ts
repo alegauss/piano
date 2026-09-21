@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   calibrationKey,
@@ -15,6 +15,7 @@ import {
   suspicious,
   SUSPICIOUS_SECONDS,
 } from './latency'
+import { createSettings } from './settings'
 
 describe('what the platform reports', () => {
   it('takes the output latency it is given', () => {
@@ -81,29 +82,21 @@ describe('subtracting the lag', () => {
 })
 
 describe('remembering a calibration', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
-  it('keeps one figure per device and per output', () => {
+  it('keeps one figure per device and per output, in the settings', () => {
+    const settings = createSettings(null)
     const headset = calibrationKey('Digital Piano', 'Bluetooth headset')
     const speakers = calibrationKey('Digital Piano', 'default')
     expect(headset).not.toBe(speakers)
 
-    saveInputLatency(headset, 0.12)
-    saveInputLatency(speakers, 0.03)
-    expect(savedInputLatency(headset)).toBeCloseTo(0.12, 6)
-    expect(savedInputLatency(speakers)).toBeCloseTo(0.03, 6)
+    saveInputLatency(settings, headset, 0.12)
+    saveInputLatency(settings, speakers, 0.03)
+    expect(savedInputLatency(settings.state.settings, headset)).toBeCloseTo(0.12, 6)
+    expect(savedInputLatency(settings.state.settings, speakers)).toBeCloseTo(0.03, 6)
   })
 
   it('has nothing to say about a setup it has never seen', () => {
-    expect(savedInputLatency(calibrationKey('Other', null))).toBeNull()
-  })
-
-  it('treats rubbish in storage as nothing measured', () => {
-    const key = calibrationKey(null, null)
-    localStorage.setItem(key, 'not a number')
-    expect(savedInputLatency(key)).toBeNull()
+    const settings = createSettings(null)
+    expect(savedInputLatency(settings.state.settings, calibrationKey('Other', null))).toBeNull()
   })
 })
 

@@ -1,8 +1,15 @@
-import type { OpenRequest, OpenResult, PianoBridge } from '@piano/ipc'
+import { DEFAULT_SETTINGS, type OpenRequest, type OpenResult, type PianoBridge } from '@piano/ipc'
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { App } from './App'
+import { appSettings } from './lib/settings'
+
+// A level chosen in one test is remembered, as it would be across launches;
+// each test starts from the defaults instead.
+afterEach(async () => {
+  await appSettings().reset()
+})
 
 /**
  * The whole app, in a browser, because this is where the pieces meet: one
@@ -95,6 +102,9 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     },
     libraryScores: () => Promise.resolve([]),
     onLibraryChanged: () => () => {},
+    readSettings: () => Promise.resolve({ settings: DEFAULT_SETTINGS, notice: null, fresh: false }),
+    writeSettings: () => Promise.resolve(DEFAULT_SETTINGS),
+    resetSettings: () => Promise.resolve(DEFAULT_SETTINGS),
   }
   Object.defineProperty(window, 'piano', { value: bridge, configurable: true })
   return {

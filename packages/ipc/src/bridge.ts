@@ -10,9 +10,11 @@ import type {
   PackFileResponse,
   PackManifestResponse,
   RecentEntry,
+  SettingsReadResponse,
   WindowSetTitleRequest,
   WindowSetTitleResponse,
 } from './channels'
+import type { Settings, SettingsPatch } from './settings'
 
 /**
  * What the preload puts on `window.piano`, declared once.
@@ -59,4 +61,10 @@ export type PianoBridge = {
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
   /** Be told when a score arrives in the library folder, or leaves it. */
   readonly onLibraryChanged: (listener: () => void) => () => void
+  /** What the app remembers between launches, and whether any of it had to be reset. */
+  readonly readSettings: () => Promise<SettingsReadResponse>
+  /** Change some settings; all of them come back as now kept. */
+  readonly writeSettings: (patch: SettingsPatch) => Promise<Settings>
+  /** Every setting back to its default. */
+  readonly resetSettings: () => Promise<Settings>
 }

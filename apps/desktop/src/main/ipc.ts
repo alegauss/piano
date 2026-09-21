@@ -9,6 +9,9 @@ import {
   packManifest,
   scoreOpen,
   scoreRecent,
+  settingsRead,
+  settingsReset,
+  settingsWrite,
   windowSetTitle,
   type Channel,
   type LibraryItem,
@@ -23,6 +26,7 @@ import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { z } from 'zod'
 
 import { packDirectory, readPackFile, readPackManifest } from './sample-pack'
+import type { SettingsStore } from './settings-store'
 
 /**
  * Every channel is registered through this one function, so no handler can
@@ -80,6 +84,7 @@ export function registerIpcHandlers(options: {
   readonly openScore: (request: OpenRequest) => Promise<OpenResult>
   readonly recentScores: () => Promise<RecentEntry[]>
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
+  readonly settings: SettingsStore
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -116,6 +121,12 @@ export function registerIpcHandlers(options: {
   handle(scoreRecent, () => options.recentScores())
 
   handle(libraryList, (query) => options.libraryScores(query))
+
+  handle(settingsRead, () => options.settings.read())
+
+  handle(settingsWrite, (patch) => options.settings.update(patch))
+
+  handle(settingsReset, () => options.settings.reset())
 }
 
 /**

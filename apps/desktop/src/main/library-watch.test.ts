@@ -34,7 +34,12 @@ describe('watching the library folder', () => {
     await writeFile(join(root, 'aria.score.json'), '{}')
     await writeFile(join(root, 'aria.score.json'), '{ }')
     await writeFile(join(root, 'bourree.score.json'), '{}')
-    await settle(600)
+    // However late the system delivers the events, they arrive as one piece of news.
+    const until = Date.now() + 5000
+    while (told === 0 && Date.now() < until) {
+      await settle(50)
+    }
+    await settle(400)
     expect(told).toBe(1)
   })
 

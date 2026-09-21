@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { App } from './App'
+import { appSettings } from './lib/settings'
 import { restoreTheme } from './lib/theme'
 import './app.css'
 
@@ -14,8 +15,15 @@ if (container === null) {
   throw new Error('renderer: #root is missing from index.html')
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// Drawn once the settings are read, one round trip to main, so every control
+// starts where it was left rather than jumping there a moment later. A read
+// that fails still draws the window, on the defaults, and says so.
+void appSettings()
+  .load()
+  .finally(() => {
+    createRoot(container).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    )
+  })

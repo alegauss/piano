@@ -11,6 +11,7 @@ import {
   type AppRecord,
   type OpenResult,
   type RecentEntry,
+  type Settings,
 } from '@piano/ipc'
 import { createLibrary, nodeFiles } from '@piano/library'
 import { app, BrowserWindow, dialog, Menu, session, type OpenDialogOptions } from 'electron'
@@ -22,6 +23,7 @@ import { createRelay } from './link-relay'
 import { menuTemplate } from './menu'
 import { createOpener } from './opener'
 import { createRecent } from './recent'
+import { createSettingsStore } from './settings-store'
 import { launchPath, libraryItem, libraryRoot, openScoreFile } from './score-files'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
 import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
@@ -100,6 +102,9 @@ const recent = createRecent(join(app.getPath('userData'), 'recent-scores.json'))
 
 /** The library Claude Code saves into, read through the same index its tools read. */
 const library = createLibrary(libraryRoot(), nodeFiles)
+
+/** What the app remembers between launches, in this profile. */
+const settings = createSettingsStore(join(app.getPath('userData'), 'settings.json'))
 
 /**
  * What the app was started to open, held until the window asks for it: a
@@ -242,7 +247,7 @@ function appLocation(): string {
     : executable
 }
 
-function createWindow(): void {
+function createWindow(theme: Settings['theme']): void {
   const icon = windowIcon()
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -282,10 +287,14 @@ function createWindow(): void {
     armHeadlessRun(mainWindow)
   }
 
+  // The theme travels with the page, so the first paint is already in it
+  // rather than dark for a moment before the settings arrive.
   if (devServerUrl !== undefined && devServerUrl !== '') {
-    void mainWindow.loadURL(devServerUrl)
+    const url = new URL(devServerUrl)
+    url.searchParams.set('theme', theme)
+    void mainWindow.loadURL(url.href)
   } else {
-    void mainWindow.loadFile(rendererPage())
+    void mainWindow.loadFile(rendererPage(), { query: { theme } })
   }
 }
 
@@ -360,7 +369,7 @@ app.on('open-file', (event, path) => {
 if (firstInstance) {
   app
     .whenReady()
-    .then(() => {
+    .then(async () => {
       applyContentSecurityPolicy(session.defaultSession, devServerUrl)
       applyPermissions(session.defaultSession)
       registerIpcHandlers({
@@ -379,11 +388,13 @@ if (firstInstance) {
         recentScores: () => recent.list(),
         libraryScores: async ({ order, ...filter }) =>
           (await library.search(filter, order)).map(libraryItem),
+        settings,
       })
 
       setMenu([])
       void recent.list().then(setMenu)
-      createWindow()
+      const theme = async () => (await settings.read()).settings.theme
+      createWindow(await theme())
       if (!isSmokeRun && !isSelfCheckRun) {
         void watchLibrary(library.root, () => {
           if (mainWindow !== null && !mainWindow.isDestroyed()) {
@@ -397,7 +408,7 @@ if (firstInstance) {
 
       app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
-          createWindow()
+          void theme().then(createWindow)
         }
       })
     })

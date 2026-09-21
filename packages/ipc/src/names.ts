@@ -19,6 +19,9 @@ export const CHANNEL_NAMES = {
   scoreOpen: 'score:open',
   scoreRecent: 'score:recent',
   libraryList: 'library:list',
+  settingsRead: 'settings:read',
+  settingsWrite: 'settings:write',
+  settingsReset: 'settings:reset',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]

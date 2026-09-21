@@ -1,4 +1,5 @@
 import { parseMidi, type MidiEvent } from './midi'
+import { appSettings } from './settings'
 
 /**
  * The MIDI keyboards plugged into this machine, and what they are playing.
@@ -46,22 +47,23 @@ export type MidiInput = {
   readonly onEvent: (listener: (event: MidiEvent, raw: readonly number[]) => void) => () => void
 }
 
-const STORAGE_KEY = 'piano.midi.device'
-
-function remember(name: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, name)
-  } catch {
-    // A choice that does not persist is a small loss; a renderer that fails
-    // to start is not.
-  }
+/** Where the chosen keyboard is kept between sessions, by name. */
+export type DeviceMemory = {
+  readonly wanted: () => string | null
+  readonly remember: (name: string) => void
+  /** Told when what is kept changes underneath, as it does once the settings are read. */
+  readonly subscribe?: (listener: () => void) => () => void
 }
 
-function remembered(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY)
-  } catch {
-    return null
+/** The settings, as the MIDI input remembers a keyboard in them. */
+function settingsMemory(): DeviceMemory {
+  const settings = appSettings()
+  return {
+    wanted: () => settings.state.settings.midiDevice,
+    remember: (name) => {
+      settings.update({ midiDevice: name })
+    },
+    subscribe: settings.subscribe,
   }
 }
 
@@ -72,6 +74,7 @@ type Access = Pick<MIDIAccess, 'inputs'> & {
 /** The MIDI input, on a given Web MIDI implementation; the app's asks the browser. */
 export function createMidiInput(
   request: (() => Promise<Access>) | undefined = navigator.requestMIDIAccess?.bind(navigator),
+  memory: DeviceMemory = settingsMemory(),
 ): MidiInput {
   let state: MidiState = { status: 'starting', devices: [], chosen: null, detail: '' }
   let access: Access | null = null
@@ -80,7 +83,7 @@ export function createMidiInput(
   const listeners = new Set<() => void>()
   const events = new Set<(event: MidiEvent, raw: readonly number[]) => void>()
   /** The name of the device to listen to, which outlives any one port id. */
-  let wanted: string | null = remembered()
+  let wanted: string | null = memory.wanted()
 
   const report = (next: MidiState) => {
     state = next
@@ -90,6 +93,18 @@ export function createMidiInput(
   }
 
   const ports = (): MIDIInput[] => [...(access?.inputs.values() ?? [])]
+
+  // The settings may be read after access was granted; the keyboard they name
+  // is then listened to as soon as they say which.
+  memory.subscribe?.(() => {
+    const now = memory.wanted()
+    if (now !== wanted) {
+      wanted = now
+      if (access !== null) {
+        attach()
+      }
+    }
+  })
 
   const onMessage = (message: MIDIMessageEvent) => {
     const data = message.data
@@ -189,7 +204,7 @@ export function createMidiInput(
         return
       }
       wanted = port.name ?? port.id
-      remember(wanted)
+      memory.remember(wanted)
       attach()
     },
     onEvent: (listener) => {

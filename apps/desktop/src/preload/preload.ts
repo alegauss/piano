@@ -69,6 +69,9 @@ const bridge: PianoBridge = {
   },
   recentScores: async () => invoke(CHANNEL_NAMES.scoreRecent, null),
   libraryScores: async (query) => invoke(CHANNEL_NAMES.libraryList, query),
+  readSettings: async () => invoke(CHANNEL_NAMES.settingsRead, null),
+  writeSettings: async (patch) => invoke(CHANNEL_NAMES.settingsWrite, patch),
+  resetSettings: async () => invoke(CHANNEL_NAMES.settingsReset, null),
   onLibraryChanged: (listener) => {
     const forward = () => {
       listener()

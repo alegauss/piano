@@ -112,25 +112,6 @@ validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 
-### §PI53 Asking once
-
-A handful of things must survive a restart or the app feels amnesiac: the chosen MIDI
-device, the latency calibration measured for it, the theme, the default difficulty
-level, effects on or off, the lead time visible on the roll, the library location, and
-the metronome and count-in preferences, and the timing window an attempt is graded
-against. They live in one store in the per-user application directory, validated on read
-the same way the score format is, so a corrupted or hand-edited file falls back to
-defaults with a message rather than crashing at startup. Settings are versioned and
-migrated for the same reason scores are, because a setting whose meaning changes
-silently is worse than one that is missing. Anything sensitive, which here is
-essentially the handshake token, stays out of this file and is regenerated per run
-instead. The practice history is the other store, and it wants the same treatment for
-the same reasons: written on every attempt, validated on read, versioned, and personal
-data, so the door that hands it over and deletes it belongs beside the settings rather
-than behind a clipboard. A reset to defaults is offered, because the fastest way out of
-a bad audio configuration is to start over, and the alternative is somebody deleting a
-file they first had to find.
-
 ### §PI54 Getting the piano onto the machine
 
 The sample pack is too large to sit inside an installer people are expected to download
@@ -214,3 +195,21 @@ which is `rank: Alternate` on macOS and an OpenWithProgids entry rather than a d
 verb on Windows. The Linux AppImage gets a desktop entry and a MIME type with the same
 split. Done when a score double-clicked in the file manager opens in the piano, and a
 MIDI file offers it without taking it over.
+
+### §PI67 The practice history, kept like the settings
+
+The practice history is written on every attempt and read at every launch, and it is the
+one record in the app about a person rather than a piece. Today it sits in the
+renderer's browser storage as JSON nobody validates: a record from a damaged store is
+cast rather than checked, there is no version to migrate from, and nothing in the app
+hands it over or deletes it. It wants the settings' treatment. Main keeps it in its own
+file in the app's profile, written whole through a temporary file; each record is
+validated on read, and one that fails is dropped and counted rather than taking the rest
+down with it; the file carries a version, and the first launch moves what browser
+storage held into it, as the settings did. Beside the reset in the footer go two plain
+doors: save the history as a file somebody can keep, and delete it after asking. Neither
+crosses a non-goal. "Audio recording or export to WAV or MP3" is about sound, and this
+exports records of attempts as JSON. "User accounts, cloud storage or sync across
+machines" is about leaving the machine, and this file stays in the local profile unless
+its owner carries it somewhere. Done when the history survives a restart from the file,
+a damaged record costs only itself, and both doors work.

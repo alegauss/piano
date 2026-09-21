@@ -1,3 +1,7 @@
+import type { Settings } from '@piano/ipc'
+
+import type { SettingsStore } from './settings'
+
 /**
  * How late the machine is, measured before anyone is graded on it.
  *
@@ -109,26 +113,14 @@ export function calibrationKey(device: string | null, output: string | null): st
   return `piano.latency|${device ?? 'keys'}|${output ?? 'default'}`
 }
 
-export function savedInputLatency(key: string): number | null {
-  try {
-    const held = localStorage.getItem(key)
-    if (held === null) {
-      return null
-    }
-    const seconds = Number(held)
-    return Number.isFinite(seconds) ? seconds : null
-  } catch {
-    return null
-  }
+/** The figure measured for a setup, from the settings, or null where it has never been measured. */
+export function savedInputLatency(settings: Settings, key: string): number | null {
+  return settings.calibrations[key] ?? null
 }
 
-export function saveInputLatency(key: string, seconds: number): void {
-  try {
-    localStorage.setItem(key, String(seconds))
-  } catch {
-    // A calibration that does not persist is an annoyance; a renderer that
-    // fails to start is not.
-  }
+/** Keep a figure for a setup, beside the ones measured for every other. */
+export function saveInputLatency(store: SettingsStore, key: string, seconds: number): void {
+  store.update({ calibrations: { ...store.state.settings.calibrations, [key]: seconds } })
 }
 
 export type CalibrationState = {

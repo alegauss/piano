@@ -29,6 +29,7 @@ import { OpenControls } from './components/OpenControls'
 import { OpenReport, type Report } from './components/OpenReport'
 import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
+import { SettingsStatus } from './components/SettingsStatus'
 import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { TransportBar } from './components/TransportBar'
@@ -40,7 +41,7 @@ import {
   visibleNotes,
   type PartsView,
 } from './lib/parts'
-import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
+import { partColours } from './lib/roll'
 import { runCommand, type Controls, type Opening } from './lib/commands'
 import { createDrill } from './lib/drill'
 import { createGrader } from './lib/grader'
@@ -64,9 +65,10 @@ import {
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { outcomeOf, type Opened } from './lib/open'
+import { appSettings } from './lib/settings'
 import { appPiano, appSound } from './lib/sound'
 import { createWaitMode } from './lib/wait-mode'
-import { getTheme, setTheme, type ThemeName } from './lib/theme'
+import { setTheme, type ThemeName } from './lib/theme'
 
 /** The library as main answers it; nothing when there is no bridge to ask. */
 function searchLibrary(query: LibraryQuery): Promise<LibraryItem[]> {
@@ -121,22 +123,26 @@ export function App() {
   const [error, setError] = useState<string | null>(() =>
     readBridge() === null ? 'no bridge: this page is not running inside the app' : null,
   )
-  const [theme, setThemeState] = useState<ThemeName>(getTheme)
-  const [leadSeconds, setLeadSeconds] = useState(DEFAULT_LEAD_SECONDS)
-  const [effects, setEffects] = useState(true)
+  // What was chosen last time. The window is drawn once these have been read,
+  // so each is where its control starts rather than a correction after it.
+  const settings = appSettings()
+  const remembered = useSyncExternalStore(settings.subscribe, () => settings.state)
+  const { theme, leadSeconds, effects } = remembered.settings
   const [full, setFull] = useState(false)
   const [loop, setLoop] = useState<LoopRange | null>(null)
-  const [partsView, setPartsView] = useState<PartsView>(NOTHING_TOUCHED)
-  const [waiting, setWaiting] = useState(false)
-  /** Null until somebody chooses one, which is the piece as written. */
-  const [level, setLevel] = useState<Level | null>(null)
+  /** Null for the piece as written; otherwise the level chosen, last time or since. */
+  const [level, setLevel] = useState<Level | null>(() => settings.state.settings.level)
+  const [partsView, setPartsView] = useState<PartsView>(() =>
+    level === null ? NOTHING_TOUCHED : viewFor(LEVEL_PRESETS[level], NOTHING_TOUCHED),
+  )
+  const [waiting, setWaiting] = useState(() =>
+    level === null ? false : LEVEL_PRESETS[level].waiting,
+  )
   const sound = appSound()
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
   const midi = appMidi()
   const keys = appKeys()
   const midiState = useSyncExternalStore(midi.subscribe, () => midi.state)
-  /** Figures measured in this session, over whatever was stored before it. */
-  const [measured, setMeasured] = useState<Readonly<Record<string, number>>>({})
   /**
    * The piece that is open. Replaced whole, and only by a score main read and
    * validated: a file that fails to open never reaches this, so there is no
@@ -193,10 +199,18 @@ export function App() {
   // changing level swaps the arrangement, and a new transport would take wait
   // mode, the grader and the position down with it.
   const piano = appPiano()
-  const transport = useMemo(
-    () => new Transport(piano.engine, { now: () => piano.now() }, undefined, piano.clicker),
-    [piano],
-  )
+  const transport = useMemo(() => {
+    const made = new Transport(piano.engine, { now: () => piano.now() }, undefined, piano.clicker)
+    // The level chosen last time starts at the tempo it asks for, as choosing it would.
+    const start = settings.state.settings.level
+    if (start !== null) {
+      made.setTempoScale(
+        arrangementForLevel(arrangementsOf(placeholder), start)?.tempoScale ??
+          LEVEL_PRESETS[start].tempoScale,
+      )
+    }
+    return made
+  }, [piano, settings])
   useEffect(() => {
     transport.load({ timing, notes })
     // An open that asked to be told, a tool call about to play what it
@@ -216,17 +230,33 @@ export function App() {
   const latencyKey = calibrationKey(device, null)
   // The figure follows the setup: choosing another controller brings back
   // what was measured with that one, and nothing if it has never been
-  // measured. Derived rather than copied into state, so there is one answer.
-  const stored = useMemo(() => savedInputLatency(latencyKey) ?? 0, [latencyKey])
-  const latency: Latency = useMemo(
-    () => ({ output: piano.outputLatency(), input: measured[latencyKey] ?? stored }),
-    [piano, measured, latencyKey, stored],
-  )
+  // measured. Derived from the settings rather than copied into state, so
+  // there is one answer, and a new measurement is it at once.
+  const input = savedInputLatency(remembered.settings, latencyKey) ?? 0
+  const latency: Latency = useMemo(() => ({ output: piano.outputLatency(), input }), [piano, input])
 
   const calibrator = useMemo(() => createCalibrator(piano.clicker, () => piano.now()), [piano])
   const wait = useMemo(() => createWaitMode(transport), [transport])
   const waitState = useSyncExternalStore(wait.subscribe, () => wait.state)
-  const grader = useMemo(() => createGrader(transport, () => piano.now()), [transport, piano])
+  const grader = useMemo(
+    () =>
+      createGrader(transport, () => piano.now(), {
+        strictness: settings.state.settings.strictness,
+      }),
+    [transport, piano, settings],
+  )
+  // However strictness changes — the report's buttons or a level's preset —
+  // the settings follow, so it is where it was left at the next launch.
+  useEffect(
+    () =>
+      grader.subscribe(() => {
+        const now = grader.state.strictness
+        if (now !== settings.state.settings.strictness) {
+          settings.update({ strictness: now })
+        }
+      }),
+    [grader, settings],
+  )
   // The drill drives the transport itself and hands the keyboard back when it
   // stops, so the parts view follows it rather than the other way round.
   const progress = useMemo(() => createProgress(grader, transport), [grader, transport])
@@ -535,9 +565,26 @@ export function App() {
     }
   }, [full])
 
+  /**
+   * Every setting back to its default. The ones held in this window's state
+   * go back with them, so the reset is seen now rather than at the next launch.
+   */
+  async function resetSettings(): Promise<void> {
+    await settings.reset()
+    setLevel(null)
+    setPartsView(NOTHING_TOUCHED)
+    setWaiting(false)
+    transport.setTempoScale(1)
+    grader.setStrictness(settings.state.settings.strictness)
+  }
+
+  // The theme the settings hold is the one on screen, whoever changed it.
+  useEffect(() => {
+    setTheme(theme)
+  }, [theme])
+
   function chooseTheme(next: ThemeName) {
-    setTheme(next)
-    setThemeState(next)
+    settings.update({ theme: next })
   }
 
   function chooseLoop(range: LoopRange | null) {
@@ -572,6 +619,7 @@ export function App() {
   function chooseLevel(next: Level) {
     const preset = LEVEL_PRESETS[next]
     setLevel(next)
+    settings.update({ level: next })
     setPartsView((view) => viewFor(preset, view))
     setWaiting(preset.waiting)
     grader.setStrictness(preset.strictness)
@@ -676,9 +724,13 @@ export function App() {
           timing={timing}
           lastTick={lastTick}
           leadSeconds={leadSeconds}
-          onLeadSeconds={setLeadSeconds}
+          onLeadSeconds={(seconds) => {
+            settings.update({ leadSeconds: seconds })
+          }}
           effects={effects}
-          onEffects={setEffects}
+          onEffects={(on) => {
+            settings.update({ effects: on })
+          }}
           theme={theme}
           onTheme={chooseTheme}
           full={full}
@@ -701,8 +753,7 @@ export function App() {
           calibrator={calibrator}
           latencySetup={device ?? 'the typing keyboard'}
           onMeasuredLatency={(seconds) => {
-            setMeasured((held) => ({ ...held, [latencyKey]: seconds }))
-            saveInputLatency(latencyKey, seconds)
+            saveInputLatency(settings, latencyKey, seconds)
           }}
           onStart={() => {
             void piano.resume()
@@ -716,6 +767,11 @@ export function App() {
 
           <footer className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
             <SoundStatus state={soundState} />
+            <SettingsStatus
+              notice={remembered.notice}
+              onDismiss={settings.dismiss}
+              onReset={resetSettings}
+            />
             <span>Score format v{info?.scoreFormatVersion ?? FORMAT_VERSION}</span>
             <span>Electron {info?.electron ?? 'unavailable'}</span>
             <span>Chromium {info?.chrome ?? 'unavailable'}</span>

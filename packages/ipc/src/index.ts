@@ -15,6 +15,9 @@ export {
   recentEntrySchema,
   scoreOpen,
   scoreRecent,
+  settingsRead,
+  settingsReset,
+  settingsWrite,
   windowSetTitle,
   type AppInfoRequest,
   type AppInfoResponse,
@@ -30,10 +33,22 @@ export {
   type PackFileResponse,
   type PackManifestResponse,
   type RecentEntry,
+  type SettingsReadResponse,
   type WindowSetTitleRequest,
   type WindowSetTitleResponse,
 } from './channels'
 export { LIBRARY_DIRECTORY, libraryFileName, safeName, SCORE_SUFFIX } from './library'
+export {
+  DEFAULT_SETTINGS,
+  readSettings,
+  SETTINGS_VERSION,
+  settingsPatchSchema,
+  settingsSchema,
+  storedSettings,
+  type Settings,
+  type SettingsPatch,
+  type SettingsRead,
+} from './settings'
 export {
   APP_RECORD,
   appRecordSchema,

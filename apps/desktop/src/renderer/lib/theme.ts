@@ -52,32 +52,23 @@ export function readCanvasPalette(element: HTMLElement = document.documentElemen
   return palette
 }
 
-const STORAGE_KEY = 'piano.theme'
-
 /** Dark is the default, as the app is meant to be used in a dim room. */
 export function getTheme(): ThemeName {
   return document.documentElement.dataset['theme'] === 'light' ? 'light' : 'dark'
 }
 
+/** Show a theme. Remembering it is the settings' business, not this function's. */
 export function setTheme(name: ThemeName): void {
   document.documentElement.dataset['theme'] = name
-  try {
-    localStorage.setItem(STORAGE_KEY, name)
-  } catch {
-    // Private windows and cleared site data both throw here. A theme that does
-    // not persist is a small loss; a renderer that fails to start is not.
-  }
 }
 
-/** Apply whatever was chosen last, before the first paint. */
-export function restoreTheme(): ThemeName {
-  let stored: string | null
-  try {
-    stored = localStorage.getItem(STORAGE_KEY)
-  } catch {
-    stored = null
-  }
-  const theme: ThemeName = stored === 'light' ? 'light' : 'dark'
-  document.documentElement.dataset['theme'] = theme
+/**
+ * Apply the theme chosen last, before the first paint. Main reads it from the
+ * settings and puts it in the page's address, which is the one thing a page
+ * can read before anything has had time to arrive.
+ */
+export function restoreTheme(search: string = window.location.search): ThemeName {
+  const theme: ThemeName = new URLSearchParams(search).get('theme') === 'light' ? 'light' : 'dark'
+  setTheme(theme)
   return theme
 }
