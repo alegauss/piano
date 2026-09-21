@@ -16,8 +16,6 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI79** (deps: —) **Eighth notes and shorter are drawn with a flag each, so the page shows no beat grouping** — Beaming is how a reader sees the beat, and eight flagged eighths read as eight separate notes rather than two groups of four. → §PI79
-
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,

@@ -115,6 +115,69 @@ describe('SheetMusic', () => {
     )
   })
 
+  it('beams the eighths of a 4/4 bar by the beat, rather than flagging each', async () => {
+    const eighths: readonly Note[] = Array.from({ length: 8 }, (_unused, index) => ({
+      pitch: 60,
+      start: index * (QUARTER / 2),
+      duration: QUARTER / 2,
+      velocity: 80,
+    }))
+    const { svg } = await mount(eighths)
+    // Four beams, one a beat, and no flag left over: a flag beside a beam
+    // would mean a group VexFlow could not close.
+    expect(svg?.querySelectorAll('.vf-beam').length).toBe(4)
+    expect(svg?.querySelectorAll('.vf-flag').length).toBe(0)
+  })
+
+  it('beams 6/8 in threes, since the beat there is dotted', async () => {
+    const six = resolveTiming({ timeSignatures: [{ tick: 0, numerator: 6, denominator: 8 }] })
+    const eighths: readonly Note[] = Array.from({ length: 6 }, (_unused, index) => ({
+      pitch: 60,
+      start: index * (QUARTER / 2),
+      duration: QUARTER / 2,
+      velocity: 80,
+    }))
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <SheetMusic timing={six} notes={eighths} />
+      </div>,
+    )
+    await drawn()
+    // Two groups of three, not three of two: the meter decides.
+    expect(container.querySelectorAll('.vf-beam').length).toBe(2)
+  })
+
+  it('leaves an odd meter unbeamed rather than asserting a beat it cannot know', async () => {
+    const seven = resolveTiming({ timeSignatures: [{ tick: 0, numerator: 7, denominator: 8 }] })
+    const eighths: readonly Note[] = Array.from({ length: 7 }, (_unused, index) => ({
+      pitch: 60,
+      start: index * (QUARTER / 2),
+      duration: QUARTER / 2,
+      velocity: 80,
+    }))
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <SheetMusic timing={seven} notes={eighths} />
+      </div>,
+    )
+    await drawn()
+    expect(container.querySelectorAll('.vf-beam').length).toBe(0)
+    expect(container.querySelectorAll('.vf-flag').length).toBeGreaterThan(0)
+  })
+
+  it('breaks a beam group where a rest breaks the music', async () => {
+    // Two eighths, an eighth of silence, then one more: the first pair beams
+    // and the lone eighth after the gap cannot.
+    const broken: readonly Note[] = [
+      { pitch: 60, start: 0, duration: QUARTER / 2, velocity: 80 },
+      { pitch: 62, start: QUARTER / 2, duration: QUARTER / 2, velocity: 80 },
+      { pitch: 64, start: QUARTER * 1.5, duration: QUARTER / 2, velocity: 80 },
+    ]
+    const { svg } = await mount(broken)
+    expect(svg?.querySelectorAll('.vf-beam').length).toBe(1)
+    expect(svg?.querySelectorAll('.vf-flag').length).toBeGreaterThan(0)
+  })
+
   it('says on the page which readings are its own, not the score’s', async () => {
     // No spellings and no key in TWO_BARS, so there is something to own up to.
     const { container } = await mount(TWO_BARS)

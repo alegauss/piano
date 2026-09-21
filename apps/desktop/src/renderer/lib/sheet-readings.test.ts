@@ -143,6 +143,19 @@ describe('readings', () => {
     expect(plain.filter((one) => one.includes('under other notes'))).toEqual([])
   })
 
+  it('says an odd meter was left unbeamed, so loose flags are not an oversight', () => {
+    const seven = resolveTiming({ timeSignatures: [{ tick: 0, numerator: 7, denominator: 8 }] })
+    const notes = [note(0, QUARTER, { spelling: 'C4' })]
+    const plan = planSheet({ timing: seven, notes, width: WIDTH })
+    const out = readings({ timing: seven, notes, plan })
+    expect(about(out, 'Nothing in 7/8 is beamed')).toContain('flags claim less')
+  })
+
+  it('says nothing about beaming in a meter that has a beat', () => {
+    const plain = said([note(0, BAR, { spelling: 'C4' })])
+    expect(plain.filter((one) => one.includes('beamed'))).toEqual([])
+  })
+
   it('reads a score with no key, mixed hands and a short bar', () => {
     // The case the whole thing exists for: three separate inferences at once.
     const messy = said([

@@ -144,6 +144,12 @@ export type SheetBar = {
   readonly head: boolean
   /** Shown where a system opens or the meter changes, and left off otherwise. */
   readonly meter?: string
+  /**
+   * The meter in force here whether or not the bar shows it, because beam
+   * groups come from it and every bar has them, not only the ones that
+   * announce a change.
+   */
+  readonly signature: { readonly numerator: number; readonly denominator: number }
   readonly key?: string
   readonly x: number
   readonly width: number
@@ -176,6 +182,35 @@ export type SheetInput = {
   readonly key?: string
   /** The panel's width in CSS pixels, which is what decides the wrapping. */
   readonly width: number
+}
+
+/**
+ * How long one beam group lasts, as a fraction of a whole note, or nothing
+ * where the meter does not say.
+ *
+ * A group is one beat, and which note value that is depends on the meter:
+ * simple time counts a quarter, compound time a dotted quarter, and the two
+ * cannot be told apart from the denominator alone — 6/8 is two dotted beats
+ * and 7/8 is nobody's business to guess at.
+ *
+ * So an odd meter gets nothing. A row of flags says truthfully that the page
+ * does not know where the beat falls, where beams grouped wrongly would assert
+ * a beat the music has not got.
+ *
+ * Here rather than beside the drawing, because it is arithmetic about a meter
+ * and the page has to be able to say it left a bar unbeamed.
+ */
+export function beamGroup(
+  signature: SheetBar['signature'],
+): { readonly numerator: number; readonly denominator: number } | null {
+  const { numerator, denominator } = signature
+  if (denominator === 2 || denominator === 4) {
+    return { numerator: 1, denominator: 4 }
+  }
+  if (denominator === 8 && numerator % 3 === 0) {
+    return { numerator: 3, denominator: 8 }
+  }
+  return null
 }
 
 /**
@@ -298,6 +333,7 @@ export function planSheet({ timing, notes, key, width }: SheetInput): SheetPlan 
         x,
         width: barWidth,
         staves,
+        signature: { numerator: meter.numerator, denominator: meter.denominator },
         ...(head || changed
           ? { meter: `${String(meter.numerator)}/${String(meter.denominator)}` }
           : {}),

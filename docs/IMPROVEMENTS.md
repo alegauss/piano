@@ -33,29 +33,3 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 ## Block G — Score library and distribution
 
 ## Block H — Sheet music view
-
-### §PI79 Beams, so the beat is visible
-
-Measured on the page as it stands: eight eighth notes in a 4/4 bar draw eight flags and
-no beams. The figures are right — PI72 spells them correctly — but beaming is how a
-reader sees where the beat is, and a row of flags leaves them to work the grouping out.
-
-VexFlow does this and is not being asked. sheet-draw.ts uses Formatter.format with a
-voice it draws itself, so no Beam is ever built. Beam.generateBeams(notes, groups) is
-the call, per stave per bar, with the beams drawn after the voice.
-
-The groups come from the meter, never assumed: 4/4 beams in twos or fours, 6/8 in
-threes, and 7/8 has no obvious answer. Take them from the bar's own time signature,
-which the plan carries, and leave an odd meter unbeamed rather than grouped wrongly.
-
-Beams are their own SVG elements, class vf-beam, and styles/sheet.css has no rule for
-them: without one they draw in VexFlow's default black and are invisible in the dark
-theme, which is the defect PI76 closed arriving by a new door. Add the rule with the
-code.
-
-Two things not to do. Beaming across a barline is not on: PI75 clips a note at the line
-and the two halves are separate figures. And a rest breaks a beam group, so a group is
-the run of figures between rests rather than the whole beat.
-
-A browser test counts vf-beam for a bar of eighths, and asserts a 6/8 bar beams in
-threes.

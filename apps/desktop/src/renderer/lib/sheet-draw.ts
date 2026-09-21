@@ -1,7 +1,9 @@
 import {
   Accidental,
+  Beam,
   Dot,
   Formatter,
+  Fraction,
   Renderer,
   Stave,
   StaveNote,
@@ -9,7 +11,7 @@ import {
   VoiceMode,
 } from 'vexflow/bravura'
 
-import { STAVE_HEIGHT, type SheetPlan, type SheetStave } from './sheet'
+import { beamGroup, STAVE_HEIGHT, type SheetBar, type SheetPlan, type SheetStave } from './sheet'
 
 /**
  * The plan, put on staves by VexFlow.
@@ -32,6 +34,12 @@ import { STAVE_HEIGHT, type SheetPlan, type SheetStave } from './sheet'
 
 /** Room inside a bar, so the last note is not drawn on the barline. */
 const PADDING = 12
+
+/** The plan's beam group, in the vocabulary VexFlow wants it in. */
+function beamGroups(signature: SheetBar['signature']): Fraction[] | null {
+  const group = beamGroup(signature)
+  return group === null ? null : [new Fraction(group.numerator, group.denominator)]
+}
 
 /**
  * Voices are soft, never strict.
@@ -97,6 +105,8 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): SheetPage {
       const staves: Stave[] = []
       const voices: Voice[] = []
       const drawn: StaveNote[][] = []
+      const beams: Beam[][] = []
+      const groups = beamGroups(bar.signature)
 
       bar.staves.forEach((line, at) => {
         const stave = new Stave(bar.x, system.y + at * STAVE_HEIGHT, bar.width)
@@ -114,6 +124,10 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): SheetPage {
         const built = voiceOf(line)
         voices.push(built.voice)
         drawn.push(built.notes)
+        // Built before formatting, so the spacing accounts for the beams, and
+        // drawn after the voices, so they sit over the stems. Rests are left
+        // out, which is what breaks a group where the music breaks.
+        beams.push(groups === null ? [] : Beam.generateBeams(built.notes, { groups }))
       })
 
       // Joined stave by stave and formatted together, so the hands line up
@@ -129,6 +143,9 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): SheetPage {
           voice.draw(context, stave)
         }
       })
+      for (const beam of beams.flat()) {
+        beam.setContext(context).draw()
+      }
 
       // After drawing, not before: the element exists once the glyph is on
       // the page.

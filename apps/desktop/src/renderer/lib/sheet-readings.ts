@@ -1,6 +1,6 @@
 import { noteEnd, type Hand, type Note, type ResolvedTiming } from '@piano/score-format'
 
-import { keySignature, type SheetPlan } from './sheet'
+import { beamGroup, keySignature, type SheetPlan } from './sheet'
 
 /**
  * What on the page came from the score, and what came from reading it.
@@ -70,6 +70,15 @@ function crossings(plan: SheetPlan): number {
     }
   }
   return held.size
+}
+
+/** The meters on this page that no beam group fits, each named once. */
+function unbeamed(plan: SheetPlan): string[] {
+  const meters = plan.systems
+    .flatMap((system) => system.bars)
+    .filter((bar) => beamGroup(bar.signature) === null)
+    .map((bar) => `${String(bar.signature.numerator)}/${String(bar.signature.denominator)}`)
+  return [...new Set(meters)]
 }
 
 const plural = (many: number, one: string, more: string) => (many === 1 ? one : more)
@@ -149,6 +158,15 @@ export function readings({ notes, key, plan }: ReadingsInput): string[] {
   if (plan.leftovers > 0) {
     said.push(
       `${String(plan.leftovers)} ${plural(plan.leftovers, 'figure', 'figures')} ${plural(plan.leftovers, 'is', 'are')} the nearest note value to what the score holds, the remainder rounded away: a triplet reads this way.`,
+    )
+  }
+
+  // A meter whose beat no denominator settles, so nothing was beamed. Said
+  // because a page of loose flags otherwise looks like an oversight.
+  const odd = unbeamed(plan)
+  if (odd.length > 0) {
+    said.push(
+      `Nothing in ${odd.join(' or ')} is beamed: the beat of that meter is a decision the score does not record, and flags claim less than the wrong grouping would.`,
     )
   }
 

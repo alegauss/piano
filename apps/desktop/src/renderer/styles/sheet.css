@@ -26,14 +26,19 @@
   stroke: var(--sheet-bar-line);
 }
 
-/* Clefs, key signatures and meters are read like notes, so they are ink. */
+/*
+ * Clefs, key signatures and meters are read like notes, so they are ink. So is
+ * a beam: it is drawn outside the stave group, and without a rule of its own it
+ * would keep VexFlow's black and disappear into the dark theme.
+ */
 .vf-stave .vf-clef path,
 .vf-stave .vf-keysignature path,
 .vf-stave .vf-timesignature path,
 .vf-stavenote path,
 .vf-notehead path,
 .vf-stem path,
-.vf-flag path {
+.vf-flag path,
+.vf-beam path {
   fill: var(--sheet-ink);
   stroke: var(--sheet-ink);
 }
