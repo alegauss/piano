@@ -92,33 +92,42 @@ export type PlaybackFilter = {
   readonly voices?: readonly number[]
 }
 
-export function audibleNotes(notes: readonly Note[], filter: PlaybackFilter = {}): Note[] {
-  const solo =
-    filter.soloParts !== undefined && filter.soloParts.length > 0 ? new Set(filter.soloParts) : null
-  const muted = new Set(filter.mutedParts ?? [])
-  const hands = filter.hands !== undefined && filter.hands.length > 0 ? new Set(filter.hands) : null
-  const voices =
-    filter.voices !== undefined && filter.voices.length > 0 ? new Set(filter.voices) : null
+/**
+ * Whether one note sounds under a filter.
+ *
+ * The scheduler asks this per note as it hands events to the engine, so a
+ * mute takes effect at the next note rather than by reloading the piece and
+ * cutting what is already sounding. audibleNotes is the same question asked
+ * of a whole list, and both go through here so the two can never drift.
+ */
+export function noteAudible(
+  note: Pick<Note, 'part' | 'hand' | 'voice'>,
+  filter: PlaybackFilter = {},
+): boolean {
+  const part = partOf(note as Note)
+  const solo = filter.soloParts ?? []
+  if (solo.length > 0) {
+    if (!solo.includes(part)) {
+      return false
+    }
+  } else if ((filter.mutedParts ?? []).includes(part)) {
+    return false
+  }
+  // A note with no hand is played by whoever is playing: it is not excluded
+  // by a hand filter, because the score never said it belonged to one.
+  const hands = filter.hands ?? []
+  if (hands.length > 0 && note.hand !== undefined && !hands.includes(note.hand)) {
+    return false
+  }
+  const voices = filter.voices ?? []
+  if (voices.length > 0 && !voices.includes(voiceOf(note as Note))) {
+    return false
+  }
+  return true
+}
 
-  return notes.filter((note) => {
-    const part = partOf(note)
-    if (solo !== null) {
-      if (!solo.has(part)) {
-        return false
-      }
-    } else if (muted.has(part)) {
-      return false
-    }
-    // A note with no hand is played by whoever is playing: it is not excluded
-    // by a hand filter, because the score never said it belonged to one.
-    if (hands !== null && note.hand !== undefined && !hands.has(note.hand)) {
-      return false
-    }
-    if (voices !== null && !voices.has(voiceOf(note))) {
-      return false
-    }
-    return true
-  })
+export function audibleNotes(notes: readonly Note[], filter: PlaybackFilter = {}): Note[] {
+  return notes.filter((note) => noteAudible(note, filter))
 }
 
 /** Problems in the part table itself, and in what the notes reference. */

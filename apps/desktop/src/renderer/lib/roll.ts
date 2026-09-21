@@ -132,13 +132,23 @@ export type RollScore = {
   readonly colours: ReadonlyMap<string, CanvasToken>
 }
 
-export function prepareRoll(notes: readonly Note[]): RollScore {
+/**
+ * Sort the score and settle its colours.
+ *
+ * The colours can be given rather than derived, because a part hidden from
+ * the roll must not recolour the parts that are left: the map is made once
+ * from the whole piece and handed in.
+ */
+export function prepareRoll(
+  notes: readonly Note[],
+  colours: ReadonlyMap<string, CanvasToken> = partColours(notes),
+): RollScore {
   const sorted = [...notes].sort((a, b) => a.start - b.start)
   let longest = 0
   for (const note of sorted) {
     longest = Math.max(longest, note.duration)
   }
-  return { notes: sorted, longest, colours: partColours(sorted) }
+  return { notes: sorted, longest, colours }
 }
 
 /** The first note that could still be sounding at a tick, by binary search. */
@@ -223,7 +233,8 @@ export const PART_TOKENS = [
   '--note-part-4',
 ] as const satisfies readonly CanvasToken[]
 
-function partColours(notes: readonly Note[]): Map<string, CanvasToken> {
+/** The colour each part is drawn in, handed out as the parts first appear. */
+export function partColours(notes: readonly Note[]): Map<string, CanvasToken> {
   const colours = new Map<string, CanvasToken>()
   for (const note of notes) {
     const part = partOf(note)

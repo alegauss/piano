@@ -4,19 +4,23 @@ import {
   FORMAT_VERSION,
   noteEnd,
   notesOf,
+  partsOf,
   timingOf,
+  type Note,
   type Score,
 } from '@piano/score-format'
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
+import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
 import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { TransportBar } from './components/TransportBar'
 import { cn } from './lib/cn'
-import { DEFAULT_LEAD_SECONDS } from './lib/roll'
+import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from './lib/parts'
+import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
 import { appPiano, appSound } from './lib/sound'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
 
@@ -25,18 +29,35 @@ import { getTheme, setTheme, type ThemeName } from './lib/theme'
  * the score format from the shared package rather than describing a score its
  * own way, which is the drift PI2 exists to prevent.
  *
- * It carries a few notes so there is something to play and something to draw
- * before there is anything to open: a C major arpeggio over two bars.
+ * It carries a few notes in two parts so there is something to play, draw
+ * and take apart before there is anything to open: an arpeggio in the right
+ * hand over a walking bass in the left.
  */
 const placeholder: Score = {
   formatVersion: FORMAT_VERSION,
   metadata: { title: 'Nothing loaded', composer: 'no composer yet' },
-  notes: [60, 64, 67, 72, 76, 79, 84, 88].map((pitch, index) => ({
-    pitch,
-    start: index * 240,
-    duration: 220,
-    velocity: 72,
-  })),
+  parts: [
+    { id: 'right', name: 'Melody', colour: 'note-part-1', role: 'melody' },
+    { id: 'left', name: 'Bass', colour: 'note-part-2', role: 'bass' },
+  ],
+  notes: [
+    ...[72, 76, 79, 84, 79, 76, 72, 76].map((pitch, index): Note => ({
+      pitch,
+      start: index * 240,
+      duration: 220,
+      velocity: 72,
+      part: 'right',
+      hand: 'right',
+    })),
+    ...[36, 43, 40, 43].map((pitch, index): Note => ({
+      pitch,
+      start: index * 480,
+      duration: 460,
+      velocity: 64,
+      part: 'left',
+      hand: 'left',
+    })),
+  ],
 }
 
 export function App() {
@@ -52,11 +73,21 @@ export function App() {
   const [effects, setEffects] = useState(true)
   const [full, setFull] = useState(false)
   const [loop, setLoop] = useState<LoopRange | null>(null)
+  const [partsView, setPartsView] = useState<PartsView>(NOTHING_TOUCHED)
   const sound = appSound()
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
 
   const timing = useMemo(() => timingOf(placeholder), [])
   const notes = useMemo(() => notesOf(placeholder), [])
+  const parts = useMemo(() => partsOf(placeholder), [])
+  // Settled once from the whole piece, so hiding a part leaves the others
+  // the colour they had.
+  const colours = useMemo(() => partColours(notes), [notes])
+  const hands = useMemo(
+    () => [...new Set(notes.map((note) => note.hand).filter((hand) => hand !== undefined))],
+    [notes],
+  )
+  const drawn = useMemo(() => visibleNotes(notes, partsView), [notes, partsView])
   const lastTick = useMemo(
     () => notes.reduce((last, note) => Math.max(last, noteEnd(note)), 0),
     [notes],
@@ -69,6 +100,12 @@ export function App() {
     made.load({ timing, notes })
     return made
   }, [piano, timing, notes])
+
+  // What is heard follows the panel. The transport takes it at the next note
+  // it schedules, so nothing already sounding is cut.
+  useEffect(() => {
+    transport.setFilter(playbackFilter(partsView))
+  }, [transport, partsView])
 
   // The piano starts synthesised and moves onto the installed pack as its
   // recordings arrive; nothing waits for that.
@@ -160,18 +197,31 @@ export function App() {
           </p>
         )}
 
-        <PianoRoll
-          timing={timing}
-          notes={notes}
-          position={() => transport.position()}
-          tempoScale={() => transport.tempoScale}
-          leadSeconds={leadSeconds}
-          strikes={transport.strikes}
-          effects={effects}
-          loop={loop}
-          onSelectLoop={chooseLoop}
-          className="min-h-0 flex-1"
-        />
+        <div className="flex min-h-0 flex-1">
+          {full ? null : (
+            <PartsPanel
+              parts={parts}
+              colours={colours}
+              hands={hands}
+              view={partsView}
+              onView={setPartsView}
+            />
+          )}
+
+          <PianoRoll
+            timing={timing}
+            notes={drawn}
+            colours={colours}
+            position={() => transport.position()}
+            tempoScale={() => transport.tempoScale}
+            leadSeconds={leadSeconds}
+            strikes={transport.strikes}
+            effects={effects}
+            loop={loop}
+            onSelectLoop={chooseLoop}
+            className="min-h-0 flex-1"
+          />
+        </div>
 
         <TransportBar
           className="shrink-0"

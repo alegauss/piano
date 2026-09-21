@@ -13,7 +13,6 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
-- 📋 **PI31** (deps: PI9 ✅, PI26 ✅) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
 - 📋 **PI32** (deps: PI4 ✅, PI26 ✅) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
 
 ## Block E — Practice mode and difficulty levels
@@ -48,15 +47,6 @@
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI31
-
-- **Mute and hide are independent per part** Hiding a hand while still hearing it, and
-  hearing it while watching both, are each reachable in one click and behave
-  independently of each other.
-- **A mute takes effect without a click in the audio** Toggling a part mid-chord
-  suppresses the next scheduled note rather than cutting one that is already sounding,
-  verified on rendered output.
 
 ## Done when — PI32
 

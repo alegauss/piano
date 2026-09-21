@@ -1,6 +1,7 @@
 import {
   ticksToSeconds,
   type PedalKind,
+  type PlaybackFilter,
   type ResolvedTiming,
   type Score,
 } from '@piano/score-format'
@@ -151,6 +152,21 @@ export class Transport {
 
   get loop(): LoopRange | null {
     return this.scheduler.loop
+  }
+
+  /** Which parts, hands and voices sound. */
+  get filter(): PlaybackFilter {
+    return this.scheduler.playbackFilter
+  }
+
+  /**
+   * Choose what sounds. A part muted here stops at its next note rather than
+   * being cut off, and a note already struck is still released, so nothing
+   * clicks and nothing hangs.
+   */
+  setFilter(filter: PlaybackFilter): void {
+    this.scheduler.setFilter(filter)
+    this.changed()
   }
 
   get metronome(): boolean {

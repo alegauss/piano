@@ -58,20 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI31 Taking the recording apart
-
-The PARTS panel down the left edge of the reference image is how a listener stops being
-only a listener. Each part gets a row carrying its name, a colour swatch, and mute, solo
-and hide. Mute and hide are separate on purpose: following the left hand visually while
-hearing both is a real way to practise, and so is hearing one hand while watching both.
-Solo is exclusive by convention and additive with a modifier, as in every audio tool
-anyone has used. The panel also offers hands and not only parts, since hand is a
-property of the note rather than of the part, and left hand only is the thing a learner
-asks for most often. Changes take effect at the next scheduled note rather than cutting
-what is already sounding, which avoids a click in the middle of a chord. The state
-belongs to the session and never to the file, because muting a part is a way of
-listening and not an edit to somebody's score.
-
 ### §PI32 One palette, two themes, readable by everyone
 
 The roll is drawn on a canvas and the rest of the interface is DOM, and the failure mode

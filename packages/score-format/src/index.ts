@@ -33,6 +33,7 @@ export {
 export {
   audibleNotes,
   IMPLICIT_PART_ID,
+  noteAudible,
   notesByPart,
   partOf,
   partsOf,

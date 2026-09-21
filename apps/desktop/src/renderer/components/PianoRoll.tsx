@@ -16,6 +16,7 @@ import {
 } from '../lib/roll'
 import { drawRoll } from '../lib/roll-draw'
 import { StrikeField } from '../lib/strikes'
+import type { CanvasToken } from '../lib/theme'
 import { useCanvasPalette } from '../lib/useCanvasPalette'
 import { PianoKeyboard, type KeyState } from './PianoKeyboard'
 
@@ -57,6 +58,11 @@ export type PianoRollProps = {
   readonly strikes?: StrikeSource
   /** The burst and the flash at the moment of contact. Off draws and costs nothing. */
   readonly effects?: boolean
+  /**
+   * The colour each part is drawn in. Given from outside so that hiding a
+   * part does not recolour the ones still on the field.
+   */
+  readonly colours?: ReadonlyMap<string, CanvasToken>
   /** The stretch marked for repeat, drawn behind the notes. */
   readonly loop?: LoopRange | null
   /**
@@ -89,6 +95,7 @@ export function PianoRoll({
   leadSeconds = DEFAULT_LEAD_SECONDS,
   strikes,
   effects = true,
+  colours,
   loop = null,
   onSelectLoop,
   meter = import.meta.env.DEV,
@@ -99,7 +106,7 @@ export function PianoRoll({
   const [sounding, setSounding] = useState<ReadonlyMap<number, KeyState>>(new Map())
   const [frameTime, setFrameTime] = useState<{ worst: number; typical: number } | null>(null)
   // Sorted once per score rather than per frame.
-  const score = useMemo(() => prepareRoll(notes), [notes])
+  const score = useMemo(() => prepareRoll(notes, colours), [notes, colours])
   // Bar numbers are rendered once each and blitted after that.
   const labels = useRef(new LabelCache())
   /**

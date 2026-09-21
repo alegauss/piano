@@ -1,12 +1,15 @@
 import {
+  noteAudible,
   pedalValueAt,
   secondsToTicks,
   soundingNote,
   ticksToSeconds,
   type Expression,
+  type Hand,
   type Note,
   type PedalEvent,
   type PedalKind,
+  type PlaybackFilter,
   type ResolvedTiming,
 } from '@piano/score-format'
 
@@ -69,15 +72,19 @@ export type TimelineEvent =
     }
   | {
       readonly tick: number
-      readonly kind: 'pedal'
-      readonly pedal: PedalKind
-      readonly value: number
-    }
-  | {
-      readonly tick: number
       readonly kind: 'on'
       readonly pitch: number
       readonly velocity: number
+      /** Who plays it, so a mute or a solo can be answered per note as it is handed over. */
+      readonly part?: string
+      readonly hand?: Hand
+      readonly voice?: number
+    }
+  | {
+      readonly tick: number
+      readonly kind: 'pedal'
+      readonly pedal: PedalKind
+      readonly value: number
     }
   | { readonly tick: number; readonly kind: 'click'; readonly accent: boolean }
 
@@ -106,7 +113,15 @@ export function timelineOf(
   for (const note of performance.notes) {
     const sounding = soundingNote(note, performance.expression, note.articulation)
     events.push(
-      { tick: note.start, kind: 'on', pitch: note.pitch, velocity: sounding.velocity },
+      {
+        tick: note.start,
+        kind: 'on',
+        pitch: note.pitch,
+        velocity: sounding.velocity,
+        part: note.part,
+        hand: note.hand,
+        voice: note.voice,
+      },
       { tick: note.start + sounding.duration, kind: 'off', pitch: note.pitch, struck: note.start },
     )
   }
@@ -183,6 +198,12 @@ export class Scheduler {
   private cancel: (() => void) | null = null
   /** Where the clicks go while the metronome is on. */
   private clicker: Clicker | null = null
+  /**
+   * Which parts, hands and voices sound. Asked per note as it is handed
+   * over, so a mute lands on the next note and never cuts a chord that is
+   * already sounding: the release of a note already struck still goes.
+   */
+  private filter: PlaybackFilter = {}
 
   constructor(
     private readonly engine: PianoEngine,
@@ -219,6 +240,15 @@ export class Scheduler {
 
   get loop(): LoopRange | null {
     return this.loopRange
+  }
+
+  /** What sounds. Takes effect at the next note handed over, not at the next chord cut off. */
+  setFilter(filter: PlaybackFilter): void {
+    this.filter = filter
+  }
+
+  get playbackFilter(): PlaybackFilter {
+    return this.filter
   }
 
   /** Click the beats through a clicker, or stop clicking with null. Takes effect from the next wake. */
@@ -431,6 +461,9 @@ export class Scheduler {
     this.lastAt = Math.max(this.lastAt, at)
     switch (event.kind) {
       case 'on':
+        if (!noteAudible(event, this.filter)) {
+          return
+        }
         this.open.set(event.pitch, (this.open.get(event.pitch) ?? 0) + 1)
         this.engine.noteOn(event.pitch, event.velocity, at)
         this.onStrike({ kind: 'strike', pitch: event.pitch, velocity: event.velocity, at })

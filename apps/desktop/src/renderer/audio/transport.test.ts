@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { LOOK_AHEAD_SECONDS } from './scheduler'
 import { FakeTime, Listener, note, performance } from './test-doubles'
 import { START_LEAD_SECONDS, Transport } from './transport'
 
@@ -243,5 +244,90 @@ describe('the strikes a view draws', () => {
     const { time, transport } = setup()
     time.now = 3.5
     expect(transport.strikes.now()).toBe(3.5)
+  })
+})
+
+describe('muting a part while it plays', () => {
+  /** A long left-hand note under a run of short right-hand ones. */
+  function twoParts() {
+    const time = new FakeTime()
+    const engine = new Listener(time)
+    const transport = new Transport(engine, time.clock, time.ticker)
+    transport.load(
+      performance([
+        { pitch: 36, start: 0, duration: 1920, velocity: 64, part: 'left', hand: 'left' },
+        ...Array.from({ length: 8 }, (_, index) => ({
+          pitch: 72 + index,
+          start: index * 240,
+          duration: 220,
+          velocity: 80,
+          part: 'right',
+          hand: 'right' as const,
+        })),
+      ]),
+    )
+    return { time, engine, transport }
+  }
+
+  it('takes effect at the next note and leaves the sounding one alone', () => {
+    const { time, engine, transport } = twoParts()
+    transport.play()
+    time.run(0.5)
+    const before = engine.heard.length
+    const silencedBefore = engine.stopped
+    expect(engine.times().some(([call]) => call.startsWith('on 36'))).toBe(true)
+
+    transport.setFilter({ mutedParts: ['right'] })
+    time.run(2.2)
+
+    // Nothing was cut: the mute silenced nothing that was sounding, and the
+    // long left note was released at its own time, two seconds after the
+    // start lead, rather than at the mute.
+    expect(engine.stopped).toBe(silencedBefore)
+    expect(engine.heard.length).toBeGreaterThan(before)
+    expect(engine.times()).toContainEqual(['off 36', 2.05])
+
+    // The right hand stopped being struck. What was already inside the
+    // scheduler's look-ahead still sounds, which is what "at the next note
+    // scheduled" means; nothing beyond it does.
+    const struck = engine.heard.filter((call) => call.call.startsWith('on 7'))
+    expect(struck.some((call) => call.at < 0.5)).toBe(true)
+    expect(struck.filter((call) => call.at > 0.5 + LOOK_AHEAD_SECONDS)).toEqual([])
+  })
+
+  it('releases a note struck before the mute, so nothing hangs', () => {
+    const { time, engine, transport } = twoParts()
+    transport.play()
+    // Far enough in that a right-hand note is sounding.
+    time.run(0.1)
+    transport.setFilter({ mutedParts: ['right'] })
+    time.run(2.5)
+
+    const ons = engine.heard.filter((call) => call.call.startsWith('on ')).length
+    const offs = engine.heard.filter((call) => call.call.startsWith('off ')).length
+    expect(offs).toBe(ons)
+  })
+
+  it('hears a soloed part only, and puts the rest back when solo ends', () => {
+    const { time, engine, transport } = twoParts()
+    transport.setFilter({ soloParts: ['left'] })
+    transport.play()
+    time.run(1)
+    expect(engine.heard.every((call) => !call.call.startsWith('on 7'))).toBe(true)
+
+    transport.setFilter({})
+    time.run(2)
+    expect(engine.heard.some((call) => call.call.startsWith('on 7'))).toBe(true)
+  })
+
+  it('tells a view that what sounds has changed', () => {
+    const { transport } = twoParts()
+    let told = 0
+    transport.subscribe(() => {
+      told += 1
+    })
+    transport.setFilter({ mutedParts: ['left'] })
+    expect(told).toBe(1)
+    expect(transport.filter).toEqual({ mutedParts: ['left'] })
   })
 })

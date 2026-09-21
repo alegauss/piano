@@ -99,6 +99,9 @@
 - ✅ **PI30** **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One bar carries play, restart, loop, time, tempo, transpose, zoom, effects and full screen, showing what the transport did (design recorded in `apps/desktop/src/renderer/components/TransportBar.tsx`).
   checked **Controls reflect the transport, not an optimistic guess** Pause, seek and loop update the bar from transport state, and a seek that is clamped or rejected shows the position that actually took effect rather than the one requested.
   checked **The app is playable from the keyboard alone** Space, slower, faster, loop and restart all work without touching the mouse, which is what somebody with both hands on a piano actually needs.
+- ✅ **PI31** **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A panel mutes, solos and hides each part and each hand, and the scheduler applies it per note as it hands one over (design recorded in `apps/desktop/src/renderer/lib/parts.ts`).
+  checked **Mute and hide are independent per part** Hiding a hand while still hearing it, and hearing it while watching both, are each reachable in one click and behave independently of each other.
+  checked **A mute takes effect without a click in the audio** Toggling a part mid-chord suppresses the next scheduled note rather than cutting one that is already sounding, verified on rendered output.
 
 ## Block E — Practice mode and difficulty levels
 
