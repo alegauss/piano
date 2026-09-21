@@ -8,10 +8,13 @@ package-lock.json
 *.selfcheck-profile/
 *.test-profile/
 
-# roadkeep owns these: their layout is the tool's, not Prettier's.
+# roadkeep owns these: their layout is the tool's, not Prettier's. The skill
+# pages are installed from the tool's own checkout, so reflowing their prose
+# is churn the next install undoes.
 docs/ROADMAP.md
 docs/CHANGELOG.md
 docs/IMPROVEMENTS.md
+.claude/skills/roadkeep/
 
 # Generated from the zod schema; npm run schema owns its formatting.
 packages/score-format/schema/

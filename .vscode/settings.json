@@ -1,3 +1,4 @@
-{    // Identify this worktree in the window title / taskbar
-    "window.title": "Piano ${separator} ${dirty}${activeEditorShort} ${separator} ${appName}",
+{
+  // Identify this worktree in the window title / taskbar
+  "window.title": "Piano ${separator} ${dirty}${activeEditorShort} ${separator} ${appName}"
 }
