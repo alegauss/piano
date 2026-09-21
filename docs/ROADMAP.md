@@ -16,6 +16,8 @@
 
 ## Block H — Sheet music view
 
+- 📋 **PI86** (deps: —) **The transport bar is a row of icons, and a pointer resting on one is told nothing** — Every button carries an accessible name a screen reader gets and a sighted reader never sees. → §PI86
+
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,

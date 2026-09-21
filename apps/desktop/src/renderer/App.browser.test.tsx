@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS, type OpenRequest, type OpenResult, type PianoBridge } from '@piano/ipc'
 import { isRulesWork, keepArrangement, type Arrangement, type Score } from '@piano/score-format'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { App } from './App'
@@ -97,6 +97,51 @@ describe('the app', () => {
     await new Promise((resolve) => requestAnimationFrame(resolve))
     expect(parts().roll).not.toBeNull()
     expect(parts().sheet).toBeNull()
+  })
+
+  it('magnifies the page from the bar’s own slider', async () => {
+    // The whole path, which is the one nothing else covers: the control at one
+    // end, the glyphs at the other, the settings store in between. The stave
+    // magnified correctly all along and App never told it to.
+    render(<App />)
+    screen.getByLabelText('Show the sheet music').click()
+    const panel = await screen.findByLabelText('Sheet music')
+    // The panel arrives before the page is on it: the width is measured, then
+    // planned, then drawn, which is a few frames after the panel mounts.
+    const width = () => Number(panel.querySelector('svg')?.getAttribute('width'))
+    await waitFor(() => {
+      expect(width()).toBeGreaterThan(0)
+    })
+    const before = width()
+
+    // Radix answers to the keyboard on its thumb, as the scrubber test does,
+    // which is steadier than dragging.
+    const slider = screen.getByLabelText('How large the stave is drawn')
+    const thumb = slider.querySelector('[role="slider"]') ?? slider
+    act(() => {
+      thumb.dispatchEvent(new FocusEvent('focus', { bubbles: true }))
+    })
+    for (let press = 0; press < 10; press += 1) {
+      act(() => {
+        thumb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      })
+    }
+    await waitFor(() => {
+      expect(width()).toBeGreaterThan(before)
+    })
+  })
+
+  it('shows the roll its own slider, not the stave’s', async () => {
+    // One magnifier serves both views, so which slider is under it is a thing
+    // that can swap quietly.
+    render(<App />)
+    expect(screen.queryByLabelText('Seconds of music on screen')).not.toBeNull()
+    expect(screen.queryByLabelText('How large the stave is drawn')).toBeNull()
+
+    screen.getByLabelText('Show the sheet music').click()
+    await screen.findByLabelText('Sheet music')
+    expect(screen.queryByLabelText('How large the stave is drawn')).not.toBeNull()
+    expect(screen.queryByLabelText('Seconds of music on screen')).toBeNull()
   })
 
   it('takes the reading from the settings rather than starting fresh', async () => {

@@ -33,3 +33,28 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 ## Block G — Score library and distribution
 
 ## Block H — Sheet music view
+
+### §PI86 Say what a button does, on hover
+
+Every control in the transport bar is an icon with an accessible name and nothing a
+sighted reader sees. The names are already written and already good — "Show the sheet
+music", "Wait for me", "Back to the start (Home)" — so the answer exists and has no way
+out.
+
+A tooltip on hover and on keyboard focus, showing the same string the button already
+carries as its accessible name. Same string, read from the same place: a tooltip that
+repeats a name in its own words is a second thing to keep in step, and they drift.
+
+Radix already supplies the popovers, dialogs and sliders here and its tooltip composes
+the same way. A title attribute is the other option and is worse: it cannot be styled,
+cannot be triggered by focus, and waits a second before appearing.
+
+The bar is the place to start and probably the place to stop: the parts panel's rows
+carry visible names already, and a tooltip on something that is labelled is noise.
+
+Two things to get right. It must not swallow the click, which is what a badly placed
+trigger does to the button under it. And the delay wants to be short but not absent: a
+bar of icons all speaking as the pointer crosses them is worse than silence.
+
+The test asserts a tooltip appears on focus with the button's own name, since focus is
+the half a keyboard reader needs and is what a jsdom test can drive.
