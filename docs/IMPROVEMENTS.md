@@ -93,22 +93,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI46 Teaching the model to write a score that is right
-
-A model asked for a piece will produce something that parses and is musically wrong in
-predictable ways, and preventing that is what this skill is for. It states the format
-concretely, with one small complete example rather than a field list, because an example
-is what actually gets followed. It states the musical conventions: middle C is MIDI 60,
-ticks run 480 to the quarter, a bar of four four is 1920 ticks, and velocity should
-range like dynamics instead of sitting at a flat 100 throughout. And it states the
-mistakes no schema catches: overlapping notes inside one voice, a left hand written
-above the right, chords spanning more than a hand reaches, a melody that never leaves
-one octave, and a beginner arrangement identical to the advanced one. It lives in the
-plugin as plugin/skills/, and the compose command, which today leans only on validation,
-should reach for it first. It also says when to stop, because a request for a
-copyrighted song deserves an honest answer rather than a fabricated approximation
-presented as the real thing.
-
 ### §PI47 Errors written for the thing that will read them
 
 The main reader of a validation error here is not a person, it is a model about to try
@@ -168,6 +152,23 @@ assertion is on properties that must hold: it validates, the key and meter are r
 the note count is in a sane range, and it plays. Kept in CI with a recorded model
 response as the default and a live run available on demand, this is the test that fails
 the day the premise breaks.
+
+### §PI65 Warnings for music that validates
+
+The skill lists the mistakes that pass validation and still make a bad score, and asks
+the model to read its own work against the list before saving. That is a request, and a
+request is what a model skips when it is sure of itself. Three of the seven are
+arithmetic rather than taste, so the format package can check them: the left hand's
+highest note against the right hand's lowest in each bar, the span of what one hand
+strikes at once, and whether each hand's notes and gaps fill the bar the meter says.
+They come back as warnings beside a valid result, never as refusals, because each one
+has a legitimate exception — hands do cross, and a rest is a gap nobody wrote down — and
+a validator that refuses music it does not understand teaches the model to write around
+it. A warning names the bar and the notes, in the same shape the repair loop already
+reads, so a model can decide in one step whether the warning is the music or a mistake.
+The other four stay in the skill, because a melody's range and a beginner version being
+easier enough are judgements, not sums. The warnings live in score-format beside
+validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 

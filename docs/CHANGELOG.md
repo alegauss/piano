@@ -149,6 +149,9 @@
 - ✅ **PI45** **There is no plugin: the tools only work for someone who wires an MCP server by hand** — The repository is a plugin marketplace whose plugin carries its own bundled server and four commands, and a missing app is answered with where to get it.
   checked **Installing the plugin is a single step** A fresh Claude Code install adds the plugin and its tools and commands become available with no hand-edited configuration file anywhere.
   checked **A missing app gives install guidance, not a socket error** Running a command with the desktop app not installed explains how to install it, rather than reporting a failed connection the user cannot interpret.
+- ✅ **PI46** **A model writing a score guesses at the format and produces files that almost validate** — The plugin's piano-score skill teaches the format by a complete example that validates, and names the musical mistakes no validator catches.
+  checked **A score written from the skill validates first time** Across a scripted evaluation over several pieces the generated JSON passes the validator with no repair round in the large majority of runs.
+  checked **The skill names the mistakes a schema cannot catch** Overlapping voices, hands crossed by accident, chord spans no hand reaches and a beginner arrangement identical to the advanced one are each called out with an example.
 
 ## Block G — Score library and distribution
 
