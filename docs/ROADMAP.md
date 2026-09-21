@@ -8,8 +8,8 @@
 
 ## Block C — Audio engine and transport
 
-- 📋 **PI21** (deps: PI18 ✅, PI20 ✅) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Lazy loading by register with a memory budget, and a synthesised fallback while samples arrive, let the first note sound immediately. → §PI21
-- 📋 **PI22** (deps: PI10 ✅, PI21) **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity layers, release samples and a real sustain model are what separate a piano from a sine wave, and they are cheap once the pack is indexed. → §PI22
+- ⏳ **PI21** (deps: PI18 ✅, PI20 ✅) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Main does not yet serve an installed pack to the sandboxed renderer, so the app never loads one or shows its credit. → §PI21
+- 📋 **PI22** (deps: PI10 ✅, PI21 ⏳) **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity layers, release samples and a real sustain model are what separate a piano from a sine wave, and they are cheap once the pack is indexed. → §PI22
 - 📋 **PI23** (deps: PI19 ✅) **There is no transport: nothing plays, pauses, seeks, loops or changes tempo** — One clock and one state machine driving play, pause, seek, loop, tempo and transpose keep the audio and the roll from disagreeing. → §PI23
 - 📋 **PI24** (deps: PI19 ✅) **Practising without a beat reference is guesswork, and playback starts with no warning** — A metronome driven by the same clock plus a count-in bar give the learner somewhere to put the first note. → §PI24
 - 📋 **PI59** (deps: PI19 ✅, PI23) **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — The app is driven from a terminal, so it plays behind another window more often than not, and a throttled wake-up misses the look-ahead. → §PI59

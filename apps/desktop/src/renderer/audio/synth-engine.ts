@@ -29,6 +29,41 @@ function decaySeconds(pitch: number): number {
 }
 
 /**
+ * One synthesised note: three partials under a struck-string envelope.
+ *
+ * A function rather than a method, because the sampled engine plays it too,
+ * for any key whose recordings have not arrived yet.
+ */
+export function synthVoice(
+  context: BaseAudioContext,
+  pitch: number,
+  velocity: number,
+  at: AudioTime,
+  into: AudioNode,
+): VoiceNodes {
+  const frequency = pitchToFrequency(pitch)
+  const envelope = context.createGain()
+  const peak = VOICE_PEAK * velocityGain(velocity)
+  envelope.gain.setValueAtTime(0, at)
+  envelope.gain.linearRampToValueAtTime(peak, at + ATTACK_SECONDS)
+  envelope.gain.setTargetAtTime(0, at + ATTACK_SECONDS, decaySeconds(pitch))
+  envelope.connect(into)
+
+  const sources = PARTIALS.map(({ multiple, type, level }) => {
+    const oscillator = context.createOscillator()
+    oscillator.type = type
+    oscillator.frequency.value = frequency * multiple
+    const partial = context.createGain()
+    partial.gain.value = level
+    oscillator.connect(partial).connect(envelope)
+    oscillator.start(at)
+    return oscillator
+  })
+
+  return { sources, envelope, releaseSeconds: 0.08 }
+}
+
+/**
  * A piano made of oscillators.
  *
  * Small, always available and needing nothing loaded, which is why it exists
@@ -44,26 +79,6 @@ export class SynthEngine extends WebAudioEngine {
   }
 
   protected voice(pitch: number, velocity: number, at: AudioTime, into: AudioNode): VoiceNodes {
-    const { context } = this
-    const frequency = pitchToFrequency(pitch)
-    const envelope = context.createGain()
-    const peak = VOICE_PEAK * velocityGain(velocity)
-    envelope.gain.setValueAtTime(0, at)
-    envelope.gain.linearRampToValueAtTime(peak, at + ATTACK_SECONDS)
-    envelope.gain.setTargetAtTime(0, at + ATTACK_SECONDS, decaySeconds(pitch))
-    envelope.connect(into)
-
-    const sources = PARTIALS.map(({ multiple, type, level }) => {
-      const oscillator = context.createOscillator()
-      oscillator.type = type
-      oscillator.frequency.value = frequency * multiple
-      const partial = context.createGain()
-      partial.gain.value = level
-      oscillator.connect(partial).connect(envelope)
-      oscillator.start(at)
-      return oscillator
-    })
-
-    return { sources, envelope, releaseSeconds: 0.08 }
+    return synthVoice(this.context, pitch, velocity, at, into)
   }
 }

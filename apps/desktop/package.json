@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@piano/ipc": "*",
+    "@piano/sample-pack": "*",
     "@piano/score-format": "*",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-popover": "^1.1.23",

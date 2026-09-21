@@ -1,12 +1,25 @@
 import { notesOf, type Score } from '@piano/score-format'
 
 import { velocityGain, type AudioTime, type EngineKind } from './engine'
+import { synthVoice } from './synth-engine'
 import { WebAudioEngine, type VoiceNodes } from './web-audio-engine'
 
 /** One recording of one key, and the pitch it was recorded at. */
 export type Sample = {
   readonly pitch: number
   readonly buffer: AudioBuffer
+  /** A tuning correction the library states for this recording, in cents. */
+  readonly tuneCents?: number
+}
+
+export type SampledEngineOptions = {
+  readonly destination?: AudioNode
+  /**
+   * Play a synthesised note for any key the bank has no recording for yet,
+   * rather than nothing: the engine then takes over key by key as the
+   * recordings arrive instead of waiting for all of them.
+   */
+  readonly fallback?: boolean
 }
 
 /**
@@ -60,16 +73,28 @@ const VOICE_PEAK = 0.5
 export class SampledEngine extends WebAudioEngine {
   readonly kind: EngineKind = 'sampled'
 
+  private readonly fallback: boolean
+
   constructor(
     context: BaseAudioContext,
     private readonly bank: SampleBank,
-    destination?: AudioNode,
+    options: SampledEngineOptions = {},
   ) {
-    super(context, destination)
+    super(context, options.destination)
+    this.fallback = options.fallback ?? false
   }
 
+  /**
+   * Load what the score needs. With a fallback the engine can already play
+   * all of it, so it is ready at once and the recordings arrive behind it.
+   */
   prepare(score: Score): Promise<void> {
-    return this.bank.load(new Set(notesOf(score).map((note) => note.pitch)))
+    const loading = this.bank.load(new Set(notesOf(score).map((note) => note.pitch)))
+    if (this.fallback) {
+      loading.catch(() => {})
+      return Promise.resolve()
+    }
+    return loading
   }
 
   protected voice(
@@ -78,14 +103,15 @@ export class SampledEngine extends WebAudioEngine {
     at: AudioTime,
     into: AudioNode,
   ): VoiceNodes | null {
+    const { context } = this
     const sample = this.bank.sampleFor(pitch, velocity)
     if (sample === null) {
-      return null
+      return this.fallback ? synthVoice(context, pitch, velocity, at, into) : null
     }
-    const { context } = this
     const source = context.createBufferSource()
     source.buffer = sample.buffer
-    source.playbackRate.value = 2 ** ((pitch - sample.pitch) / 12)
+    const semitones = pitch - sample.pitch + (sample.tuneCents ?? 0) / 100
+    source.playbackRate.value = 2 ** (semitones / 12)
 
     const envelope = context.createGain()
     envelope.gain.setValueAtTime(VOICE_PEAK * velocityGain(velocity), at)
