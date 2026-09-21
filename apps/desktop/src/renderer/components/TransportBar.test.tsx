@@ -26,6 +26,7 @@ function setup(over: Partial<React.ComponentProps<typeof TransportBar>> = {}) {
   const onEffects = vi.fn()
   const onFull = vi.fn()
   const onTheme = vi.fn()
+  const onView = vi.fn()
   render(
     <TransportBar
       transport={transport}
@@ -39,10 +40,12 @@ function setup(over: Partial<React.ComponentProps<typeof TransportBar>> = {}) {
       onTheme={onTheme}
       full={false}
       onFull={onFull}
+      view="roll"
+      onView={onView}
       {...over}
     />,
   )
-  return { time, transport, onLeadSeconds, onEffects, onFull, onTheme }
+  return { time, transport, onLeadSeconds, onEffects, onFull, onTheme, onView }
 }
 
 describe('TransportBar', () => {
@@ -144,6 +147,22 @@ describe('TransportBar', () => {
     expect(onTheme).toHaveBeenCalledWith('light')
     fireEvent.click(screen.getByLabelText('Full screen'))
     expect(onFull).toHaveBeenCalledWith(true)
+  })
+
+  it('offers the stave while the roll is showing', () => {
+    const { onView } = setup()
+    const button = screen.getByLabelText('Show the sheet music')
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(button)
+    expect(onView).toHaveBeenCalledWith('sheet')
+  })
+
+  it('offers the roll back while the stave is showing', () => {
+    const { onView } = setup({ view: 'sheet' })
+    const button = screen.getByLabelText('Show the falling notes')
+    expect(button.getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(button)
+    expect(onView).toHaveBeenCalledWith('roll')
   })
 })
 

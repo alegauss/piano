@@ -44,4 +44,20 @@ describe('reading the settings file', () => {
     expect(settingsPatchSchema.safeParse({ token: 'x' }).success).toBe(false)
     expect(settingsPatchSchema.safeParse({ leadSeconds: 100 }).success).toBe(false)
   })
+
+  it('round-trips which reading of the piece the window was left on', () => {
+    const settings = { ...DEFAULT_SETTINGS, view: 'sheet' as const }
+    const written = JSON.parse(JSON.stringify(storedSettings(settings)))
+    expect(readSettings(written).settings.view).toBe('sheet')
+    expect(settingsPatchSchema.safeParse({ view: 'sheet' }).success).toBe(true)
+    expect(settingsPatchSchema.safeParse({ view: 'stave' }).success).toBe(false)
+  })
+
+  it('opens a file written before there were two readings on the roll', () => {
+    // No migration: a key the file does not carry is the key at its default,
+    // which is why adding one does not change SETTINGS_VERSION.
+    const read = readSettings({ version: SETTINGS_VERSION, theme: 'light' })
+    expect(read.settings.view).toBe('roll')
+    expect(read.invalid).toEqual([])
+  })
 })

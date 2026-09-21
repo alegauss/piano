@@ -200,3 +200,4 @@
 
 - ✅ **PI72** **Durations are ticks, so nothing says whether a note is a dotted quarter or what fills the gap after it** — Ticks now read as a figure and its dots, and one bar of one hand as the figures and rests that tile it, each with its leftover (design recorded in `packages/score-format/src/time.ts`).
 - ✅ **PI73** **The piece has no written form: the falling roll is the only way to read what comes next** — The open piece now reads as staves, one per hand, wrapped to the panel and drawn by VexFlow (design recorded in `apps/desktop/src/renderer/components/SheetMusic.tsx`).
+- ✅ **PI74** **Nothing on screen reaches the sheet view: the roll owns the centre of the window** — A button in the bar swaps the centre of the window between the roll and the stave, and the window reopens on whichever was last read.

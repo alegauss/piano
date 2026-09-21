@@ -17,6 +17,13 @@ import { getTheme } from './theme'
  * calibrates twice because the place they were kept moved.
  */
 
+/**
+ * Which reading of the piece the window shows, named as ThemeName is. Taken
+ * from the setting rather than declared again, so the button and the file
+ * cannot come to disagree about what the choices are.
+ */
+export type ViewName = Settings['view']
+
 export type SettingsState = {
   readonly settings: Settings
   /** Whether the file has been read; until then the defaults stand in. */

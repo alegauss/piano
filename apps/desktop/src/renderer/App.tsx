@@ -34,6 +34,7 @@ import { OpenReport, type Report } from './components/OpenReport'
 import { PackDownloadStatus } from './components/PackDownloadStatus'
 import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
+import { SheetMusic } from './components/SheetMusic'
 import { HistoryStatus } from './components/HistoryStatus'
 import { SettingsStatus } from './components/SettingsStatus'
 import { SoundStatus } from './components/SoundStatus'
@@ -136,7 +137,7 @@ export function App() {
   // so each is where its control starts rather than a correction after it.
   const settings = appSettings()
   const remembered = useSyncExternalStore(settings.subscribe, () => settings.state)
-  const { theme, leadSeconds, effects } = remembered.settings
+  const { theme, leadSeconds, effects, view } = remembered.settings
   const [full, setFull] = useState(false)
   const [loop, setLoop] = useState<LoopRange | null>(null)
   /** Null for the piece as written; otherwise the level chosen, last time or since. */
@@ -835,24 +836,40 @@ export function App() {
             />
           )}
 
-          <PianoRoll
-            timing={timing}
-            notes={drawn}
-            colours={colours}
-            position={() => transport.position()}
-            tempoScale={() => transport.tempoScale}
-            leadSeconds={leadSeconds}
-            strikes={transport.strikes}
-            effects={effects}
-            expected={() => waitState.outstanding}
-            /* Read straight from the grader rather than through React: it
-               changes on every note played and the roll reads it every frame,
-               which is not a reason to re-render the app. */
-            feedback={() => grader.state.feedback}
-            loop={loop}
-            onSelectLoop={chooseLoop}
-            className="min-h-0 flex-1"
-          />
+          {/*
+            One reading or the other, never both: side by side at this window
+            width each would be squeezed to illegibility, and a reader wants
+            the roll to see what is coming or the stave to read what is
+            written. The parts panel stays put through the swap, since hiding
+            a part is about the piece rather than about how it is drawn.
+          */}
+          {view === 'sheet' ? (
+            <SheetMusic
+              timing={timing}
+              notes={drawn}
+              musicKey={score.metadata.key}
+              className="min-h-0 flex-1"
+            />
+          ) : (
+            <PianoRoll
+              timing={timing}
+              notes={drawn}
+              colours={colours}
+              position={() => transport.position()}
+              tempoScale={() => transport.tempoScale}
+              leadSeconds={leadSeconds}
+              strikes={transport.strikes}
+              effects={effects}
+              expected={() => waitState.outstanding}
+              /* Read straight from the grader rather than through React: it
+                 changes on every note played and the roll reads it every frame,
+                 which is not a reason to re-render the app. */
+              feedback={() => grader.state.feedback}
+              loop={loop}
+              onSelectLoop={chooseLoop}
+              className="min-h-0 flex-1"
+            />
+          )}
         </div>
 
         <TransportBar
@@ -872,6 +889,10 @@ export function App() {
           onTheme={chooseTheme}
           full={full}
           onFull={setFull}
+          view={view}
+          onView={(next) => {
+            settings.update({ view: next })
+          }}
           midi={midi}
           keys={keys}
           waiting={waiting}

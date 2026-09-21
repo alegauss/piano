@@ -40,6 +40,12 @@ export const settingsSchema = z.object({
   leadSeconds: z.number().min(0.5).max(12),
   /** How strictly an attempt's timing is judged. */
   strictness: z.enum(['gentle', 'steady', 'strict']),
+  /**
+   * Which reading of the piece the window opens on: the falling roll, or the
+   * stave. Remembered because somebody who reads music reads every piece that
+   * way, and being handed the roll at each launch is being asked again.
+   */
+  view: z.enum(['roll', 'sheet']),
 })
 
 export type Settings = z.infer<typeof settingsSchema>
@@ -52,6 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
   effects: true,
   leadSeconds: 3,
   strictness: 'steady',
+  view: 'roll',
 }
 
 /** Some settings changed at once; the rest stay as they are. Anything not a setting is refused. */

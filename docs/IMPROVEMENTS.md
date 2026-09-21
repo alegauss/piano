@@ -34,31 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI74 The button, and where the choice is kept
-
-There is no tab system here, and this should not be the task that introduces one. The
-only view state today is full: a useState in App.tsx, toggled from TransportBar, left
-with Escape. Follow that shape.
-
-A button in TransportBar, beside the ones that open the level and drill panels, swaps
-the centre of the main row between PianoRoll and SheetMusic. It carries a pressed state
-and an accessible name, so a browser test can click it by name and assert which panel is
-mounted. PartsPanel stays where it is through the swap; only the pane to its right
-changes.
-
-The two are alternatives rather than neighbours. Side by side at this window width, each
-would be squeezed to illegibility, and the reader wants one or the other anyway: the
-roll to see what is coming, the stave to read what is written.
-
-Keep the choice in appSettings, the way the level and the sound are kept, so reopening a
-piece reopens it in the view the player last read it in. That is one key in the settings
-schema and whatever migration the store expects. Give it a shortcut in the KeysPanel
-table if a free key is left, but do not invent a chord for it.
-
-Tests: a browser test that toggles and asserts the swap, and a settings test that the
-key round-trips. It does not cross "Transcribing MP3, YouTube or PDF sheet music into
-JSON": this shows a score the app already holds.
-
 ### §PI75 Following the playhead without re-engraving
 
 Take the position the way PianoRoll takes it: a position callback prop read inside
@@ -129,3 +104,29 @@ written and from the sharps-upward fallback where it was not, and that a bar whi
 not add up was filled with rests.
 
 A test asserts the sentence for a score with no key, mixed hands and a short bar.
+
+### §PI78 Loading the engraver when somebody asks for it
+
+Measured across PI73 and PI74: the renderer bundle was 595 kB before the sheet view and
+is 1,728 kB after it. VexFlow carries Bravura, and a music font is most of that. Nothing
+was done wrong; the whole of it simply arrives in the first chunk.
+
+This is about start-up rather than download. The app is installed from disk and ships a
+sample bank of several hundred megabytes, so a megabyte on disk is nothing. What it
+costs is parse and compile on every launch, paid by everyone, including a player who
+only ever watches the roll.
+
+The seam is already in the right place. SheetMusic.tsx is the only importer of
+sheet-draw.ts, which is the only importer of vexflow, so a lazy import of the component
+alone moves the library out of the first chunk: React.lazy with a Suspense fallback
+around the branch in App.tsx that chooses between PianoRoll and SheetMusic. The fallback
+is a line of text in the panel, not a spinner.
+
+Confirm it rather than assume it: the build prints the chunk sizes, so the claim is that
+the entry chunk drops by about a megabyte and a second chunk appears. A test asserting a
+byte count would be a test about esbuild, so do not write one.
+
+Watch two existing tests. SheetMusic.browser.test.tsx mounts the component directly and
+is unaffected. App.browser.test.tsx presses the button and expects the panel at once, so
+it needs to await the lazy load; findByLabelText rather than queryByLabelText is the
+change.

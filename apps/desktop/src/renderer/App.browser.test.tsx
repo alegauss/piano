@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS, type OpenRequest, type OpenResult, type PianoBridge } from '@piano/ipc'
 import { isRulesWork, keepArrangement, type Arrangement, type Score } from '@piano/score-format'
-import { act, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { App } from './App'
@@ -22,10 +22,12 @@ afterEach(async () => {
 function parts() {
   return {
     roll: screen.queryByLabelText('Falling notes'),
+    sheet: screen.queryByLabelText('Sheet music'),
     keyboard: screen.queryByLabelText('Piano keyboard, 88 keys'),
     bar: screen.queryByLabelText('Transport'),
     heading: screen.queryByRole('heading', { name: 'Piano' }),
     footer: screen.queryByTestId('app-version'),
+    panel: screen.queryByLabelText('Parts'),
   }
 }
 
@@ -72,6 +74,44 @@ describe('the app', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await new Promise((resolve) => requestAnimationFrame(resolve))
     expect(parts().heading).not.toBeNull()
+  })
+
+  it('swaps the centre of the window between the roll and the stave', async () => {
+    render(<App />)
+    expect(parts().roll).not.toBeNull()
+    expect(parts().sheet).toBeNull()
+
+    screen.getByLabelText('Show the sheet music').click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
+    const reading = parts()
+    expect(reading.sheet).not.toBeNull()
+    expect(reading.roll).toBeNull()
+    // The parts panel and the bar belong to the piece, not to how it is drawn.
+    expect(reading.panel).not.toBeNull()
+    expect(reading.bar).not.toBeNull()
+
+    screen.getByLabelText('Show the falling notes').click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(parts().roll).not.toBeNull()
+    expect(parts().sheet).toBeNull()
+  })
+
+  it('takes the reading from the settings rather than starting fresh', async () => {
+    render(<App />)
+    screen.getByLabelText('Show the sheet music').click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(parts().sheet).not.toBeNull()
+
+    // Mounted again, the window reads the setting instead of its own initial
+    // state, which is the half of "reopens as you left it" that is here. That
+    // the setting survives the file is settled in the ipc suite, since this
+    // page has no bridge to write one.
+    cleanup()
+    render(<App />)
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(parts().sheet).not.toBeNull()
+    expect(parts().roll).toBeNull()
   })
 })
 

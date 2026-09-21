@@ -1,8 +1,10 @@
 import { ticksToSeconds, type Level, type ResolvedTiming, type Section } from '@piano/score-format'
 import {
+  ClefTreble,
   Maximize2,
   Minimize2,
   Moon,
+  Music4,
   Pause,
   Play,
   PauseCircle,
@@ -25,6 +27,7 @@ import type { Progress } from '../lib/progress'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
 import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
+import type { ViewName } from '../lib/settings'
 import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
 import { DrillPanel } from './DrillPanel'
@@ -71,6 +74,9 @@ export type TransportBarProps = {
   readonly onTheme: (theme: ThemeName) => void
   readonly full: boolean
   readonly onFull: (full: boolean) => void
+  /** Which reading of the piece fills the centre of the window. */
+  readonly view: ViewName
+  readonly onView: (view: ViewName) => void
   /** The MIDI input, for the monitor that says what a controller is sending. */
   readonly midi?: MidiInput
   /** The typing keyboard as an instrument, for the panel that switches it on. */
@@ -124,6 +130,8 @@ export function TransportBar({
   theme,
   onTheme,
   full,
+  view,
+  onView,
   onFull,
   midi,
   keys,
@@ -206,6 +214,10 @@ export function TransportBar({
         // that plays F sharp in one mode and jumps to the start in another
         // is worse than a key somebody has to learn once.
         Home: restart,
+        // The roll-or-stave button has no key here on purpose. S and V are
+        // notes, and of the five letters the two rows leave free not one says
+        // stave: an arbitrary letter is a shortcut nobody guesses and nothing
+        // in this app documents, which is worse than the button alone.
       }
       const act = handled[event.key]
       if (act !== undefined) {
@@ -342,6 +354,17 @@ export function TransportBar({
           )}
           {keys === undefined ? null : <KeysPanel keys={keys} />}
           {midi === undefined ? null : <MidiMonitor midi={midi} />}
+          <Button
+            variant={view === 'sheet' ? 'secondary' : 'ghost'}
+            size="icon"
+            onClick={() => {
+              onView(view === 'sheet' ? 'roll' : 'sheet')
+            }}
+            aria-label={view === 'sheet' ? 'Show the falling notes' : 'Show the sheet music'}
+            aria-pressed={view === 'sheet'}
+          >
+            {view === 'sheet' ? <Music4 /> : <ClefTreble />}
+          </Button>
           <Button
             variant={effects ? 'secondary' : 'ghost'}
             size="icon"
