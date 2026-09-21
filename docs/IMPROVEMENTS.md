@@ -112,20 +112,6 @@ validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 
-### §PI52 A collection that stays usable as it grows
-
-One score in a folder needs no library. Two hundred, which is roughly what a month of
-asking Claude Code for pieces produces, needs an index. The library watches a directory,
-reads the metadata block out of each score and keeps a small index it can search without
-parsing everything on every keystroke. Listing shows title, composer, difficulty and
-duration, and filters on level, tag and composer, with search covering title and
-composer at minimum. The index is a cache and never the truth: the files on disk are the
-truth, so a score dropped in by hand outside the app appears, and a corrupted index is
-rebuilt rather than repaired. This is also what the MCP library tools read, so the same
-index answers a question asked in chat and a list shown on screen. Sorting by when
-something was added matters more than it sounds, because the piece somebody wants is
-usually the one they just generated.
-
 ### §PI53 Asking once
 
 A handful of things must survive a restart or the app feels amnesiac: the chosen MIDI

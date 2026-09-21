@@ -18,6 +18,7 @@ export const CHANNEL_NAMES = {
   linkListening: 'link:listening',
   scoreOpen: 'score:open',
   scoreRecent: 'score:recent',
+  libraryList: 'library:list',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
@@ -29,9 +30,10 @@ export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
  * renderer asking and main answering, and a push is main telling: a command
  * from Claude Code for the window, and a score main opened because somebody
  * asked it to from outside the page — the menu, the file manager, a second
- * launch.
+ * launch — and word that the library folder changed under it.
  */
 export const PUSH_NAMES = {
   linkCommand: 'link:command',
   scoreOpened: 'score:opened',
+  libraryChanged: 'library:changed',
 } as const

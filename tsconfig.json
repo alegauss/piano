@@ -8,6 +8,9 @@
       "path": "packages/ipc"
     },
     {
+      "path": "packages/library"
+    },
+    {
       "path": "packages/sample-pack"
     },
     {

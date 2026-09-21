@@ -5,6 +5,7 @@ import {
   allChannels,
   appInfo,
   formatIssues,
+  libraryList,
   packFile,
   packManifest,
   scoreOpen,
@@ -145,6 +146,30 @@ describe('score:recent', () => {
     expect(scoreRecent.response.safeParse([{ path: '', name: 'a.json', title: 'A' }]).success).toBe(
       false,
     )
+  })
+})
+
+describe('library:list', () => {
+  it('takes a search, a level, tags, a composer and an order, all optional', () => {
+    expect(libraryList.request.safeParse({}).success).toBe(true)
+    expect(
+      libraryList.request.safeParse({
+        text: 'ode',
+        level: 'beginner',
+        tags: ['classical'],
+        composer: 'Beethoven',
+        order: 'newest',
+      }).success,
+    ).toBe(true)
+  })
+
+  it.each([
+    ['a level nobody declared', { level: 'expert' }],
+    ['an order nobody declared', { order: 'loudest' }],
+    ['a search longer than anybody types', { text: 'x'.repeat(201) }],
+    ['nothing', null],
+  ])('refuses %s', (_label, query) => {
+    expect(libraryList.request.safeParse(query).success).toBe(false)
   })
 })
 

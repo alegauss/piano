@@ -2,7 +2,8 @@ import { readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, extname, join, resolve } from 'node:path'
 
-import { LIBRARY_DIRECTORY, libraryFileName, type OpenResult } from '@piano/ipc'
+import { LIBRARY_DIRECTORY, libraryFileName, type LibraryItem, type OpenResult } from '@piano/ipc'
+import type { LibraryEntry } from '@piano/library'
 import { importMidi, parseScore, type Score } from '@piano/score-format'
 
 /**
@@ -125,6 +126,21 @@ export async function openScoreFile(path: string): Promise<Opened | Refused> {
 export function libraryRoot(env: NodeJS.ProcessEnv = process.env): string {
   const named = env['PIANO_LIBRARY']
   return named !== undefined && named.trim() !== '' ? named : join(homedir(), ...LIBRARY_DIRECTORY)
+}
+
+/** A library entry as the window lists it: the metadata a row shows, and nothing the row does not. */
+export function libraryItem(entry: LibraryEntry): LibraryItem {
+  const { metadata } = entry
+  return {
+    id: entry.id,
+    title: metadata.title,
+    ...(metadata.composer === undefined ? {} : { composer: metadata.composer }),
+    ...(metadata.level === undefined ? {} : { level: metadata.level }),
+    ...(metadata.difficulty === undefined ? {} : { difficulty: metadata.difficulty }),
+    tags: [...(metadata.tags ?? [])],
+    seconds: entry.seconds,
+    added: entry.added,
+  }
 }
 
 /** The file a library id names, which is inside the library whatever the id says. */

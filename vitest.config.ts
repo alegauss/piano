@@ -22,6 +22,7 @@ export default defineConfig({
     projects: [
       'packages/score-format/vitest.config.ts',
       'packages/ipc/vitest.config.ts',
+      'packages/library/vitest.config.ts',
       'packages/sample-pack/vitest.config.ts',
       'apps/mcp-server/vitest.config.ts',
       'apps/desktop/vitest.config.ts',

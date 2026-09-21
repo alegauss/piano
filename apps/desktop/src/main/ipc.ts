@@ -2,6 +2,7 @@ import {
   allChannels,
   appInfo,
   formatIssues,
+  libraryList,
   linkAnswer,
   linkListening,
   packFile,
@@ -10,6 +11,8 @@ import {
   scoreRecent,
   windowSetTitle,
   type Channel,
+  type LibraryItem,
+  type LibraryQuery,
   type LinkResult,
   type OpenRequest,
   type OpenResult,
@@ -76,6 +79,7 @@ export function registerIpcHandlers(options: {
   /** Open a score, through the one road every source takes. */
   readonly openScore: (request: OpenRequest) => Promise<OpenResult>
   readonly recentScores: () => Promise<RecentEntry[]>
+  readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -110,6 +114,8 @@ export function registerIpcHandlers(options: {
   handle(scoreOpen, (request) => options.openScore(request))
 
   handle(scoreRecent, () => options.recentScores())
+
+  handle(libraryList, (query) => options.libraryScores(query))
 }
 
 /**

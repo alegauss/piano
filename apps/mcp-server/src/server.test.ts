@@ -1,9 +1,9 @@
+import { createLibrary, memoryFiles } from '@piano/library'
 import { VALID_FIXTURES } from '@piano/score-format'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { describe, expect, it } from 'vitest'
 
-import { createLibrary, type Files } from './library'
 import { createServer } from './server'
 
 /**
@@ -14,30 +14,9 @@ import { createServer } from './server'
  * one thing a table of functions cannot prove about itself.
  */
 
-function memory(): Files {
-  const held = new Map<string, string>()
-  return {
-    read: (path) => {
-      const text = held.get(path)
-      return text === undefined ? Promise.reject(new Error('no')) : Promise.resolve(text)
-    },
-    write: (path, text) => {
-      held.set(path, text)
-      return Promise.resolve()
-    },
-    list: (dir) =>
-      Promise.resolve(
-        [...held.keys()]
-          .filter((path) => path.startsWith(`${dir}/`))
-          .map((path) => path.slice(dir.length + 1)),
-      ),
-    ensure: () => Promise.resolve(),
-  }
-}
-
 async function connected() {
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair()
-  const server = createServer({ library: createLibrary('/library', memory()) })
+  const server = createServer({ library: createLibrary('/library', memoryFiles()) })
   const client = new Client({ name: 'test', version: '0.0.0' })
   await Promise.all([server.connect(serverSide), client.connect(clientSide)])
   return { client, close: () => Promise.all([client.close(), server.close()]) }

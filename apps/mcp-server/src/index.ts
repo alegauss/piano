@@ -1,7 +1,8 @@
 import { describeScore, FORMAT_VERSION, isSupportedVersion, type Score } from '@piano/score-format'
 
-export { createLibrary, libraryId, safeName, SCORE_SUFFIX } from './library'
-export type { Files, Library, LibraryEntry, Saved } from './library'
+export { safeName, SCORE_SUFFIX } from '@piano/ipc'
+export { createLibrary, libraryId, nodeFiles } from '@piano/library'
+export type { Files, Library, LibraryEntry, Order, Saved } from '@piano/library'
 export { candidates, findApp, isPianoApp, whereLooked } from './launch'
 export type { Candidate, Found, Place } from './launch'
 export {
@@ -20,7 +21,6 @@ export {
   createServer,
   defaultLibraryRoot,
   defaultPresenceDirectory,
-  nodeFiles,
   nodeLaunch,
   nodeLink,
   nodePlace,

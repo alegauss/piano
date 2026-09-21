@@ -93,6 +93,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
         listener = null
       }
     },
+    libraryScores: () => Promise.resolve([]),
+    onLibraryChanged: () => () => {},
   }
   Object.defineProperty(window, 'piano', { value: bridge, configurable: true })
   return {

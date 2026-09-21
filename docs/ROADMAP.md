@@ -22,22 +22,12 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI52** (deps: PI13 ✅, PI51 ✅) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51 ✅) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 - 📋 **PI63** (deps: PI51 ✅) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
 - 📋 **PI66** (deps: PI51 ✅) **Double-clicking a score in the file manager never reaches the piano: no file type is registered** — A .score.json cannot be registered without claiming every .json, so the extension a score is saved under has to be settled before packaging can claim it. → §PI66
-
-## Done when — PI52
-
-- **A score added outside the app appears in the library** Dropping a file into the
-  watched directory lists it without a restart, because the index is a cache and the
-  files on disk are the truth.
-- **A corrupted index rebuilds rather than failing** Deleting or damaging the index
-  makes the app rebuild it from the directory, with no score lost and no manual repair
-  step asked of the user.
 
 ## Done when — PI53
 

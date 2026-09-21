@@ -26,6 +26,8 @@ function bridge(overrides: Partial<PianoBridge> = {}): PianoBridge {
     openDroppedFile: () => Promise.resolve({ kind: 'none' }),
     recentScores: () => Promise.resolve([]),
     onScoreOpened: () => () => {},
+    libraryScores: () => Promise.resolve([]),
+    onLibraryChanged: () => () => {},
     ...overrides,
   }
 }

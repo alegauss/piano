@@ -191,6 +191,43 @@ export const scoreRecent = {
   response: z.array(recentEntrySchema),
 } as const satisfies Channel<'score:recent', z.ZodType, z.ZodType>
 
+const LEVEL = z.enum(['beginner', 'intermediate', 'advanced'])
+
+/** What somebody is looking for in the library, and which way round to list it. */
+export const libraryQuerySchema = z.object({
+  /** Words from the title or the composer. */
+  text: z.string().max(200).optional(),
+  level: LEVEL.optional(),
+  composer: z.string().max(200).optional(),
+  /** All of them, not any: a tag added to a search narrows it. */
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  order: z.enum(['easiest', 'newest']).optional(),
+})
+
+/** One score as a list shows it: what it is, how hard, how long, and when it arrived. */
+export const libraryItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  composer: z.string().optional(),
+  level: LEVEL.optional(),
+  difficulty: z.number().optional(),
+  tags: z.array(z.string()),
+  seconds: z.number(),
+  /** When it first appeared in the library, in epoch milliseconds. */
+  added: z.number(),
+})
+
+/**
+ * The library, searched. Answered from the same index the MCP server's list
+ * and search tools read, so the window and a chat never disagree about what
+ * is there.
+ */
+export const libraryList = {
+  channel: CHANNEL_NAMES.libraryList,
+  request: libraryQuerySchema,
+  response: z.array(libraryItemSchema),
+} as const satisfies Channel<'library:list', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
 export const allChannels = [
   appInfo,
@@ -201,6 +238,7 @@ export const allChannels = [
   linkListening,
   scoreOpen,
   scoreRecent,
+  libraryList,
 ] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
@@ -215,6 +253,8 @@ export type OpenRequest = z.infer<typeof openRequestSchema>
 export type OpenProblem = z.infer<typeof openProblemSchema>
 export type OpenResult = z.infer<typeof openResultSchema>
 export type RecentEntry = z.infer<typeof recentEntrySchema>
+export type LibraryQuery = z.infer<typeof libraryQuerySchema>
+export type LibraryItem = z.infer<typeof libraryItemSchema>
 
 /** What main pushes the window: a command, and the id its answer must carry. */
 export type LinkCommandPush = {

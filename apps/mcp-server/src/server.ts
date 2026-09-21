@@ -1,15 +1,15 @@
 import { LIBRARY_DIRECTORY, PRESENCE_DIRECTORY } from '@piano/ipc'
+import { createLibrary, nodeFiles, type Library } from '@piano/library'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import { findApp, whereLooked, type Place } from './launch'
-import { createLibrary, type Files, type Library } from './library'
 import { createLink, noWindow, type Launched, type Link } from './link'
 import { toolsFor, type Tool } from './tools'
 import { PLUGIN_VERSION } from './version'
@@ -27,16 +27,6 @@ import { PLUGIN_VERSION } from './version'
 export function defaultLibraryRoot(): string {
   const named = process.env['PIANO_LIBRARY']
   return named !== undefined && named.trim() !== '' ? named : join(homedir(), ...LIBRARY_DIRECTORY)
-}
-
-/** Node's filesystem, as the library asks for it. */
-export const nodeFiles: Files = {
-  read: (path) => readFile(path, 'utf8'),
-  write: (path, text) => writeFile(path, text, 'utf8'),
-  list: (dir) => readdir(dir),
-  ensure: async (dir) => {
-    await mkdir(dir, { recursive: true })
-  },
 }
 
 /**

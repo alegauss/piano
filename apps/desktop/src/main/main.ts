@@ -12,15 +12,17 @@ import {
   type OpenResult,
   type RecentEntry,
 } from '@piano/ipc'
+import { createLibrary, nodeFiles } from '@piano/library'
 import { app, BrowserWindow, dialog, Menu, session, type OpenDialogOptions } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
+import { watchLibrary } from './library-watch'
 import { startLinkHost, type LinkHost } from './link-host'
 import { createRelay } from './link-relay'
 import { menuTemplate } from './menu'
 import { createOpener } from './opener'
 import { createRecent } from './recent'
-import { launchPath, libraryRoot, openScoreFile } from './score-files'
+import { launchPath, libraryItem, libraryRoot, openScoreFile } from './score-files'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
 import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
 
@@ -95,6 +97,9 @@ let listening = false
 
 /** The scores opened lately, kept in this profile. */
 const recent = createRecent(join(app.getPath('userData'), 'recent-scores.json'))
+
+/** The library Claude Code saves into, read through the same index its tools read. */
+const library = createLibrary(libraryRoot(), nodeFiles)
 
 /**
  * What the app was started to open, held until the window asks for it: a
@@ -372,11 +377,22 @@ if (firstInstance) {
           return opener.open(request)
         },
         recentScores: () => recent.list(),
+        libraryScores: async ({ order, ...filter }) =>
+          (await library.search(filter, order)).map(libraryItem),
       })
 
       setMenu([])
       void recent.list().then(setMenu)
       createWindow()
+      if (!isSmokeRun && !isSelfCheckRun) {
+        void watchLibrary(library.root, () => {
+          if (mainWindow !== null && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send(PUSH_NAMES.libraryChanged)
+          }
+        }).catch((error: unknown) => {
+          process.stderr.write(`piano: not watching the library: ${String(error)}\n`)
+        })
+      }
       void recordInstallation()
 
       app.on('activate', () => {

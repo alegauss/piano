@@ -1,6 +1,8 @@
 import type {
   AppInfoResponse,
   LinkAnswerRequest,
+  LibraryItem,
+  LibraryQuery,
   LinkCommandPush,
   OpenRequest,
   OpenResult,
@@ -53,4 +55,8 @@ export type PianoBridge = {
   readonly recentScores: () => Promise<RecentEntry[]>
   /** Be told when main opened a score: from the menu, the file manager or a second launch. */
   readonly onScoreOpened: (listener: (result: OpenResult) => void) => () => void
+  /** The library, searched and in the order asked for. */
+  readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
+  /** Be told when a score arrives in the library folder, or leaves it. */
+  readonly onLibraryChanged: (listener: () => void) => () => void
 }

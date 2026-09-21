@@ -1,7 +1,7 @@
+import type { Library, LibraryEntry } from '@piano/library'
 import { describeScore, formatProblems, LEVELS, parseScore } from '@piano/score-format'
 import { z } from 'zod'
 
-import type { Library, LibraryEntry } from './library'
 import type { Link, PassageAsk } from './link'
 
 /**
@@ -79,17 +79,30 @@ const scoreArgument = z
   .record(z.string(), z.unknown())
   .describe('A score, as the JSON object the piano score format describes.')
 
+/** Minutes and seconds, as a listing says how long something lasts. */
+function clock(seconds: number): string {
+  const whole = Math.round(seconds)
+  return `${String(Math.floor(whole / 60))}:${String(whole % 60).padStart(2, '0')}`
+}
+
 function listing(entries: readonly LibraryEntry[]): ToolResult {
   if (entries.length === 0) {
     return { ok: true, text: 'The library is empty.', data: [] }
   }
   const lines = entries.map((entry) => {
     const composer = entry.metadata.composer === undefined ? '' : ` — ${entry.metadata.composer}`
-    const level = entry.metadata.level === undefined ? '' : ` (${entry.metadata.level})`
-    return `${entry.id}: ${entry.metadata.title}${composer}${level}`
+    const level = entry.metadata.level === undefined ? '' : `${entry.metadata.level}, `
+    return `${entry.id}: ${entry.metadata.title}${composer} (${level}${clock(entry.seconds)})`
   })
   return { ok: true, text: lines.join('\n'), data: entries }
 }
+
+const order = z
+  .enum(['easiest', 'newest'])
+  .optional()
+  .describe(
+    'easiest first, the default; or newest first, which is where a score just saved is found.',
+  )
 
 /** The passage a drill was asked for, named one way or the other but not both. */
 function passageOf(
@@ -174,10 +187,11 @@ export function toolsFor(library: Library, link: Link): Tool[] {
       name: 'list_scores',
       title: 'List the library',
       description:
-        'Every score in the local library, easiest first, with the id each one is ' +
-        'addressed by. Takes no arguments; use search_scores to narrow it.',
-      shape: {},
-      run: async () => listing(await library.list()),
+        'Every score in the local library, with the id each one is addressed by and how ' +
+        'long it lasts: easiest first, or newest first when asked. A score copied into the ' +
+        'library folder by hand is listed too. Use search_scores to narrow it.',
+      shape: { order },
+      run: async ({ order: sort }) => listing(await library.list(sort)),
     }),
 
     tool({
@@ -192,8 +206,9 @@ export function toolsFor(library: Library, link: Link): Tool[] {
         level: levels.optional(),
         composer: z.string().optional(),
         tags: z.array(z.string()).optional(),
+        order,
       },
-      run: async (filter) => listing(await library.search(filter)),
+      run: async ({ order: sort, ...filter }) => listing(await library.search(filter, sort)),
     }),
 
     tool({

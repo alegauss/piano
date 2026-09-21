@@ -1,7 +1,7 @@
+import { createLibrary, memoryFiles } from '@piano/library'
 import { VALID_FIXTURES } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
-import { createLibrary, type Files } from './library'
 import { noWindow, type Command, type Link } from './link'
 import { toolsFor, type Tool } from './tools'
 
@@ -10,27 +10,6 @@ import { toolsFor, type Tool } from './tools'
  * every tool say what it does, does a bad call come back repairable, and does
  * anything here reach past the library.
  */
-
-function memory(): Files {
-  const held = new Map<string, string>()
-  return {
-    read: (path) => {
-      const text = held.get(path)
-      return text === undefined ? Promise.reject(new Error('no')) : Promise.resolve(text)
-    },
-    write: (path, text) => {
-      held.set(path, text)
-      return Promise.resolve()
-    },
-    list: (dir) =>
-      Promise.resolve(
-        [...held.keys()]
-          .filter((path) => path.startsWith(`${dir}/`))
-          .map((path) => path.slice(dir.length + 1)),
-      ),
-    ensure: () => Promise.resolve(),
-  }
-}
 
 /** A window that writes down what it was asked and agrees to everything. */
 function listening(): Link & { readonly heard: Command[] } {
@@ -45,7 +24,7 @@ function listening(): Link & { readonly heard: Command[] } {
 }
 
 function setup(link: Link = listening()) {
-  const tools = toolsFor(createLibrary('/library', memory()), link)
+  const tools = toolsFor(createLibrary('/library', memoryFiles()), link)
   const by = (name: string): Tool => {
     const found = tools.find((one) => one.name === name)
     if (found === undefined) {
@@ -137,6 +116,27 @@ describe('the score tools', () => {
   it('says the library is empty rather than answering with nothing', async () => {
     const { by } = setup()
     expect((await by('list_scores').run({})).text).toContain('empty')
+  })
+
+  it('lists newest first when asked, saying how long each piece lasts', async () => {
+    const { by } = setup()
+    const piece = (id: string, level: string) => ({
+      formatVersion: 1,
+      metadata: { id, title: id, level },
+      notes: [{ pitch: 60, start: 0, duration: 960, velocity: 80 }],
+    })
+    await by('save_score').run({ score: piece('later-and-harder', 'advanced') })
+    await by('save_score').run({ score: piece('just-written', 'advanced') })
+    await by('save_score').run({ score: piece('easy', 'beginner') })
+
+    const newest = await by('list_scores').run({ order: 'newest' })
+    expect(newest.text.split('\n')[0]).toBe('easy: easy (beginner, 0:01)')
+    const found = await by('search_scores').run({ level: 'advanced', order: 'newest' })
+    expect(found.text.split('\n').map((line) => line.split(':')[0])).toEqual([
+      'just-written',
+      'later-and-harder',
+    ])
+    expect((await by('list_scores').run({ order: 'loudest' })).ok).toBe(false)
   })
 })
 

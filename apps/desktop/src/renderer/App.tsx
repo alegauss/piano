@@ -1,4 +1,10 @@
-import type { AppInfoResponse, OpenRequest, OpenResult } from '@piano/ipc'
+import type {
+  AppInfoResponse,
+  LibraryItem,
+  LibraryQuery,
+  OpenRequest,
+  OpenResult,
+} from '@piano/ipc'
 import {
   arrangementForLevel,
   arrangementsOf,
@@ -18,6 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
+import { LibraryPanel } from './components/LibraryPanel'
 import { OpenControls } from './components/OpenControls'
 import { OpenReport, type Report } from './components/OpenReport'
 import { PartsPanel } from './components/PartsPanel'
@@ -60,6 +67,15 @@ import { outcomeOf, type Opened } from './lib/open'
 import { appPiano, appSound } from './lib/sound'
 import { createWaitMode } from './lib/wait-mode'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
+
+/** The library as main answers it; nothing when there is no bridge to ask. */
+function searchLibrary(query: LibraryQuery): Promise<LibraryItem[]> {
+  return readBridge()?.libraryScores(query) ?? Promise.resolve([])
+}
+
+function libraryChanges(listener: () => void): () => void {
+  return readBridge()?.onLibraryChanged(listener) ?? (() => {})
+}
 
 /**
  * What the window shows before anything is opened. A score like any other,
@@ -576,10 +592,19 @@ export function App() {
             <p className="text-sm text-text-muted">{describeScore(score)}</p>
           </div>
           {readBridge() === null ? null : (
-            <OpenControls
-              open={openFrom}
-              recent={() => readBridge()?.recentScores() ?? Promise.resolve([])}
-            />
+            <div className="flex items-center gap-2">
+              <LibraryPanel
+                search={searchLibrary}
+                changes={libraryChanges}
+                onOpen={(id) => {
+                  openFrom({ from: 'library', id })
+                }}
+              />
+              <OpenControls
+                open={openFrom}
+                recent={() => readBridge()?.recentScores() ?? Promise.resolve([])}
+              />
+            </div>
           )}
         </header>
       )}

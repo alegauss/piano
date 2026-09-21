@@ -68,6 +68,16 @@ const bridge: PianoBridge = {
     return invoke(CHANNEL_NAMES.scoreOpen, { from: 'dropped', path })
   },
   recentScores: async () => invoke(CHANNEL_NAMES.scoreRecent, null),
+  libraryScores: async (query) => invoke(CHANNEL_NAMES.libraryList, query),
+  onLibraryChanged: (listener) => {
+    const forward = () => {
+      listener()
+    }
+    ipcRenderer.on(PUSH_NAMES.libraryChanged, forward)
+    return () => {
+      ipcRenderer.removeListener(PUSH_NAMES.libraryChanged, forward)
+    }
+  },
   onScoreOpened: (listener) => {
     const forward = (_event: IpcRendererEvent, result: OpenResult) => {
       listener(result)

@@ -1,0 +1,27 @@
+{
+  "name": "@piano/library",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The scores on disk and the index that keeps them quick to list, read by the MCP server and the app alike.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@piano/ipc": "*",
+    "@piano/score-format": "*",
+    "zod": "^4.1.12"
+  }
+}
