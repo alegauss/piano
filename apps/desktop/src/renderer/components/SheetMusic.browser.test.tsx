@@ -1,7 +1,10 @@
 import { render } from '@testing-library/react'
 import { resolveTiming, type Note } from '@piano/score-format'
+import { Profiler } from 'react'
 import { describe, expect, it } from 'vitest'
 
+import { FakeTime, Listener } from '../audio/test-doubles'
+import { Transport } from '../audio/transport'
 import { SheetMusic } from './SheetMusic'
 
 /**
@@ -114,5 +117,131 @@ describe('SheetMusic', () => {
     const { container, svg } = await mount([])
     expect(svg).toBeNull()
     expect(container.textContent).toContain('Nothing is open to read')
+  })
+})
+
+/** The transport on a clock the test moves by hand, as the roll's suite drives it. */
+function driven(notes: readonly Note[]) {
+  const time = new FakeTime()
+  const transport = new Transport(new Listener(time), time.clock, time.ticker)
+  transport.load({ timing, notes })
+  return { time, transport }
+}
+
+describe('SheetMusic, following the playhead', () => {
+  it('marks the bar that is sounding, and moves the mark as the piece goes on', async () => {
+    const { transport } = driven(TWO_BARS)
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <SheetMusic timing={timing} notes={TWO_BARS} position={() => transport.position()} />
+      </div>,
+    )
+    await drawn()
+    const band = () => container.querySelector('[data-testid="sheet-band"]')
+    expect(band()?.getAttribute('data-bar')).toBe('1')
+
+    // Seeking is the transport's own arithmetic; the page follows it.
+    transport.seek(BAR + QUARTER)
+    await drawn()
+    expect(band()?.getAttribute('data-bar')).toBe('2')
+    expect((band() as HTMLElement | null)?.style.display).toBe('block')
+  })
+
+  it('colours the figure that is sounding, and lets go of it after', async () => {
+    // A note in bar 1 and another in bar 3, so bar 2 is silence: a tick where
+    // nothing at all should carry the mark.
+    const spaced: readonly Note[] = [
+      { pitch: 60, start: 0, duration: QUARTER, velocity: 80 },
+      { pitch: 64, start: 2 * BAR, duration: QUARTER, velocity: 80 },
+    ]
+    const { transport } = driven(spaced)
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <SheetMusic timing={timing} notes={spaced} position={() => transport.position()} />
+      </div>,
+    )
+    await drawn()
+
+    // The accent as the stylesheet resolves it, which is what the page paints
+    // with; matching the attribute against anything else would pass on
+    // VexFlow's own fills, which every glyph already carries.
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+    expect(accent).not.toBe('')
+    const marked = () => container.querySelectorAll(`[fill="${accent}"]`).length
+
+    expect(marked()).toBeGreaterThan(0)
+
+    transport.seek(BAR)
+    await drawn()
+    expect(marked()).toBe(0)
+
+    transport.seek(2 * BAR)
+    await drawn()
+    expect(marked()).toBeGreaterThan(0)
+  })
+
+  it('turns the page when the sounding bar drops off the bottom', async () => {
+    // Sixteen bars in a narrow, short panel: several systems, few in view.
+    const long = Array.from({ length: 16 }, (_unused, index) => ({
+      pitch: 60,
+      start: index * BAR,
+      duration: QUARTER,
+      velocity: 80,
+    }))
+    const { transport } = driven(long)
+    // A flex row, as App mounts it: min-h-0 and flex-1 are what bound the
+    // panel's height, and an unbounded one grows to its content and scrolls
+    // nothing.
+    const { container } = render(
+      <div style={{ width: 520, height: 260, display: 'flex' }}>
+        <SheetMusic timing={timing} notes={long} position={() => transport.position()} />
+      </div>,
+    )
+    await drawn()
+    const panel = container.querySelector('section')
+    expect(panel?.scrollTop).toBe(0)
+
+    transport.seek(14 * BAR)
+    await drawn()
+    const turned = panel?.scrollTop ?? 0
+    expect(turned).toBeGreaterThan(0)
+
+    // Back to the top, and the page comes back with it.
+    transport.seek(0)
+    await drawn()
+    expect(panel?.scrollTop ?? 0).toBeLessThan(turned)
+  })
+
+  it('engraves once and never again while the piece plays', async () => {
+    const { time, transport } = driven(TWO_BARS)
+    let commits = 0
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <Profiler
+          id="sheet"
+          onRender={() => {
+            commits += 1
+          }}
+        >
+          <SheetMusic timing={timing} notes={TWO_BARS} position={() => transport.position()} />
+        </Profiler>
+      </div>,
+    )
+    await drawn()
+    const settled = commits
+    const svg = container.querySelector('svg')
+
+    transport.play()
+    time.run(1)
+    await drawn()
+    await drawn()
+
+    // A second of music, sixty-odd frames, and React committed nothing: the
+    // page is followed through the DOM, not re-rendered.
+    expect(commits).toBe(settled)
+    // The same SVG, so nothing was engraved a second time either.
+    expect(container.querySelector('svg')).toBe(svg)
+    // And the mark did move, so the loop was running throughout.
+    expect(container.querySelector('[data-testid="sheet-band"]')).not.toBeNull()
   })
 })

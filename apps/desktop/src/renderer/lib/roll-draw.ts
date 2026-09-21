@@ -41,7 +41,7 @@ const LABEL_HEIGHT = 15
  * have in common is the note being right and the moment being wrong, and a
  * fourth colour to tell two halves of that apart is a legend nobody reads.
  */
-const JUDGED: Readonly<Record<Exclude<Outcome, 'missed'>, CanvasToken>> = {
+export const JUDGED_TOKENS: Readonly<Record<Exclude<Outcome, 'missed'>, CanvasToken>> = {
   correct: '--judge-correct',
   early: '--judge-late',
   late: '--judge-late',
@@ -118,7 +118,9 @@ export function drawRoll(
       return
     }
     const colour =
-      palette[look === null ? (score.colours.get(partOf(note)) ?? '--note-part-1') : JUDGED[look]]
+      palette[
+        look === null ? (score.colours.get(partOf(note)) ?? '--note-part-1') : JUDGED_TOKENS[look]
+      ]
     let path = paths.get(colour)
     if (path === undefined) {
       path = new Path2D()

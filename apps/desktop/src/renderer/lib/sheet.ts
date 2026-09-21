@@ -105,8 +105,24 @@ const SYSTEM_GAP = 28
 export const STAVE_HEIGHT = 92
 
 export type SheetNote = {
+  /**
+   * Where it sits on the page, which is how a highlight reaches the glyph the
+   * engraver drew for it. Kept by the plan so following playback is a lookup
+   * rather than a DOM query, and never re-engraves anything.
+   */
+  readonly id: string
+  /** Ticks from the start of the piece, the figure's own start. */
+  readonly start: number
   /** Pitches as VexFlow spells them, such as `c#/4`; a rest carries its line. */
   readonly keys: readonly string[]
+  /**
+   * The score's own notes behind the glyph, empty for a rest.
+   *
+   * Carried rather than reduced to pitches because the grader knows a note by
+   * its own start, and a note tied over a barline starts before the figure
+   * that shows its far end.
+   */
+  readonly shows: readonly Note[]
   readonly duration: string
   readonly dots: number
   /** One per key, empty where the spelling asks for no accidental. */
@@ -204,16 +220,23 @@ function spell(note: Note): { readonly key: string; readonly accidental: string 
   return { key: `${letter.toLowerCase()}${accidental}/${octave}`, accidental }
 }
 
-function written(figure: BarFigure, clef: Clef): SheetNote {
+function written(figure: BarFigure, clef: Clef, id: string): SheetNote {
   const duration = DURATIONS[figure.figure.denominator] ?? 'q'
-  const shared = { duration, dots: figure.figure.dots, leftover: figure.remainder }
+  const shared = {
+    id,
+    start: figure.start,
+    duration,
+    dots: figure.figure.dots,
+    leftover: figure.remainder,
+  }
   if (figure.notes.length === 0) {
-    return { ...shared, keys: [REST_KEY[clef]], accidentals: [], rest: true }
+    return { ...shared, keys: [REST_KEY[clef]], shows: [], accidentals: [], rest: true }
   }
   const spelled = figure.notes.map((note) => spell(note))
   return {
     ...shared,
     keys: spelled.map((one) => one.key),
+    shows: figure.notes,
     accidentals: spelled.map((one) => one.accidental),
     rest: false,
   }
@@ -259,10 +282,10 @@ export function planSheet({ timing, notes, key, width }: SheetInput): SheetPlan 
         before.numerator !== meter.numerator ||
         before.denominator !== meter.denominator
       const barWidth = head ? HEAD_WIDTH + share : share
-      const staves = lines.map((line) => ({
+      const staves = lines.map((line, at) => ({
         clef: line.clef,
-        notes: barFigures(timing, notes, bar, line.hand).map((figure) =>
-          written(figure, line.clef),
+        notes: barFigures(timing, notes, bar, line.hand).map((figure, index) =>
+          written(figure, line.clef, `${String(bar)}:${String(at)}:${String(index)}`),
         ),
       }))
       leftovers += staves.reduce(

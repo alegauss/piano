@@ -848,6 +848,11 @@ export function App() {
               timing={timing}
               notes={drawn}
               musicKey={score.metadata.key}
+              position={() => transport.position()}
+              tempoScale={() => transport.tempoScale}
+              /* Read straight from the grader, as the roll does: it changes on
+                 every note played and the page reads it every frame. */
+              feedback={() => grader.state.feedback}
               className="min-h-0 flex-1"
             />
           ) : (

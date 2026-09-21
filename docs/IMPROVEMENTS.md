@@ -34,28 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI75 Following the playhead without re-engraving
-
-Take the position the way PianoRoll takes it: a position callback prop read inside
-requestAnimationFrame, never a state update at sixty hertz. App.tsx already passes the
-position, the tempo scale and the grader feedback that way, and a sheet view that
-renders per frame would be the first thing in this app to do so.
-
-Re-engraving per frame is out of the question, so VexFlow draws once per layout and the
-highlight sits over it: a band on the sounding bar and a colour swap on the note heads
-soundingPitches reports, addressed through ids the adapter kept when it built each bar.
-Laying out again belongs to a resize or a new piece, not to playback.
-
-Turning the page follows the same reading. When the sounding bar leaves the visible
-systems, scroll to the system holding it — a jump per system rather than a smooth crawl,
-because that is how a reader's eye moves down a page.
-
-The grader and wait mode already colour notes in the roll through noteLook. Reuse those
-verdicts here, so a wrong note looks wrong in whichever view is open.
-
-A browser test seeks the transport to a known tick and asserts which bar carries the
-highlight; a second asserts that playing for a second causes no React render.
-
 ### §PI76 Ink for a theme that is not paper
 
 check-colour-tokens.mjs refuses any colour literal and any palette class under
@@ -66,7 +44,9 @@ than sit beside it.
 So declare tokens for what the engraving draws — stave lines, note heads and stems, bar
 lines, the highlight band — in tokens.css for both themes, and hand them to VexFlow as
 explicit styles as the adapter builds each element. Nothing in SheetMusic.tsx should
-name a colour.
+name a colour. PI75 paints a sounding note by setting fill on its glyph and restores it
+with removeAttribute, so an engraving styled by attribute needs a restore that puts the
+token back.
 
 Reading matters more than fidelity here. Engraving convention wants black on paper and a
 dark theme cannot have it, so invert the relationship instead of the colours: stave

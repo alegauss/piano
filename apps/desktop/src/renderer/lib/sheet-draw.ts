@@ -27,7 +27,7 @@ const PADDING = 12
  * missing a beat. Strict mode throws on both, which would turn a score worth
  * reading into a blank panel.
  */
-function voiceOf(stave: SheetStave): Voice {
+function voiceOf(stave: SheetStave): { readonly voice: Voice; readonly notes: StaveNote[] } {
   const notes = stave.notes.map((one) => {
     const note = new StaveNote({
       keys: [...one.keys],
@@ -51,14 +51,27 @@ function voiceOf(stave: SheetStave): Voice {
   const voice = new Voice()
   voice.setMode(VoiceMode.SOFT)
   voice.addTickables(notes)
-  return voice
+  return { voice, notes }
+}
+
+/**
+ * What a drawn page leaves behind: each figure's glyph, by the id its plan
+ * gave it.
+ *
+ * Handed back rather than looked up later, because following playback touches
+ * these sixty times a second and a query selector per frame is a DOM read the
+ * loop can do without.
+ */
+export type SheetPage = {
+  readonly glyphs: ReadonlyMap<string, SVGElement>
 }
 
 /** Draw a planned page into an element, replacing whatever was there. */
-export function drawSheet(host: HTMLDivElement, plan: SheetPlan): void {
+export function drawSheet(host: HTMLDivElement, plan: SheetPlan): SheetPage {
   host.replaceChildren()
+  const glyphs = new Map<string, SVGElement>()
   if (plan.systems.length === 0) {
-    return
+    return { glyphs }
   }
 
   const renderer = new Renderer(host, Renderer.Backends.SVG)
@@ -69,6 +82,7 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): void {
     for (const bar of system.bars) {
       const staves: Stave[] = []
       const voices: Voice[] = []
+      const drawn: StaveNote[][] = []
 
       bar.staves.forEach((line, at) => {
         const stave = new Stave(bar.x, system.y + at * STAVE_HEIGHT, bar.width)
@@ -83,7 +97,9 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): void {
         }
         stave.setContext(context).draw()
         staves.push(stave)
-        voices.push(voiceOf(line))
+        const built = voiceOf(line)
+        voices.push(built.voice)
+        drawn.push(built.notes)
       })
 
       // Joined stave by stave and formatted together, so the hands line up
@@ -99,6 +115,19 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): void {
           voice.draw(context, stave)
         }
       })
+
+      // After drawing, not before: the element exists once the glyph is on
+      // the page.
+      bar.staves.forEach((line, at) => {
+        line.notes.forEach((one, index) => {
+          const element = drawn[at]?.[index]?.getSVGElement()
+          if (element !== undefined) {
+            glyphs.set(one.id, element)
+          }
+        })
+      })
     }
   }
+
+  return { glyphs }
 }
