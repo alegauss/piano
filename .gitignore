@@ -19,6 +19,9 @@ Thumbs.db
 # machine-local Claude Code settings (absolute paths)
 .claude/settings.local.json
 
+# Screenshots and attachments a failing browser test leaves behind
+.vitest/
+
 # TypeScript project-reference build info
 .tsbuild/
 *.tsbuildinfo
