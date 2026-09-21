@@ -49,11 +49,18 @@ function wav(frequency: number, seconds: number): ArrayBuffer {
 
 type Layer = { readonly upTo: number; readonly hz: number }
 
+/** The recording of a key coming up, when the pack is to have them. */
+type ReleaseSound = { readonly hz: number; readonly decayDbPerSecond: number }
+
 /**
  * Thirty registers, a minor third apart from A0 to C8, each with the velocity
- * layers asked for: by default one, a 1000 Hz sine.
+ * layers asked for: by default one, a 1000 Hz sine. Key releases, when asked
+ * for, are a short sine of their own at full level.
  */
-function syntheticPack(layers: readonly Layer[] = [{ upTo: 127, hz: RECORDED_HZ }]): {
+function syntheticPack(
+  layers: readonly Layer[] = [{ upTo: 127, hz: RECORDED_HZ }],
+  releases?: ReleaseSound,
+): {
   manifest: PackManifest
   files: Map<string, ArrayBuffer>
 } {
@@ -78,7 +85,25 @@ function syntheticPack(layers: readonly Layer[] = [{ upTo: 127, hz: RECORDED_HZ 
       from = layer.upTo + 1
     }
   }
+  const releaseSamples = Array.from({ length: 88 }, (_, index) => {
+    const key = 21 + index
+    const file = `releases/${String(key)}.wav`
+    if (releases !== undefined) {
+      files.set(file, wav(releases.hz, 0.3))
+    }
+    return { file, key, seconds: 0.3, bytes: 1, sha256: '0'.repeat(64) }
+  })
   const manifest: PackManifest = {
+    ...(releases === undefined
+      ? {}
+      : {
+          releases: {
+            gainDb: 0,
+            velocityTracking: 0,
+            decayDbPerSecond: releases.decayDbPerSecond,
+            samples: releaseSamples,
+          },
+        }),
     format: 1,
     id: 'test-pack',
     version: 1,
@@ -182,6 +207,51 @@ describe('velocity layers', () => {
     const [below] = bank.samplesFor(60, 63)
     const [above] = bank.samplesFor(60, 64)
     expect(below?.gain).toBeCloseTo(above?.gain ?? 0, 6)
+  })
+})
+
+describe('key releases', () => {
+  async function letGo(
+    releases: ReleaseSound | undefined,
+    held: number,
+  ): Promise<{ data: Float32Array; at: number }> {
+    const { manifest, files } = syntheticPack(undefined, releases)
+    const context = offline(2)
+    const pack = source(manifest, files)
+    pack.open()
+    const bank = await PackBank.open(context, pack)
+    await bank.load(new Set([60]))
+    const engine = new SampledEngine(context, bank)
+    // The note's own recording lasts half a second; the key comes up after it.
+    engine.noteOn(60, 100, 0.1)
+    engine.noteOff(60, 0.1 + held)
+    return { data: (await context.startRendering()).getChannelData(0), at: 0.1 + held }
+  }
+
+  it('sounds the key coming up, where the pack has the recording of it', async () => {
+    const withRelease = await letGo({ hz: 3000, decayDbPerSecond: 0 }, 0.8)
+    const without = await letGo(undefined, 0.8)
+    const window = (run: { data: Float32Array; at: number }) =>
+      [run.data, run.at + 0.03, run.at + 0.25] as const
+    expect(frequency(...window(withRelease))).toBeCloseTo(3000, -2)
+    expect(frequency(...window(without))).toBe(0)
+  })
+
+  it('makes a long-held key come up more quietly than a short one', async () => {
+    const decay = { hz: 3000, decayDbPerSecond: 20 }
+    const rms = (run: { data: Float32Array; at: number }) => {
+      let sum = 0
+      const from = Math.round((run.at + 0.03) * RATE)
+      const to = Math.round((run.at + 0.25) * RATE)
+      for (let index = from; index < to; index += 1) {
+        sum += (run.data[index] ?? 0) ** 2
+      }
+      return Math.sqrt(sum / (to - from))
+    }
+    const short = rms(await letGo(decay, 0.6))
+    const long = rms(await letGo(decay, 1.5))
+    // 0.9 seconds longer at 20 dB a second is 18 dB quieter.
+    expect(long / short).toBeCloseTo(10 ** (-18 / 20), 2)
   })
 })
 

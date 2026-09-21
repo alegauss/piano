@@ -58,11 +58,13 @@ export function parseRegions(text: string): SfzRegion[] {
         throw new Error(`an SFZ region names no sample: ${line.trim()}`)
       }
       const tune = found.get('tune')
+      // `key=` is shorthand for a region of one key, recorded on that key.
+      const key = found.get('key')
       return {
         sample,
-        pitch: integer(found.get('pitch_keycenter'), 'pitch_keycenter', line),
-        lowKey: integer(found.get('lokey'), 'lokey', line),
-        highKey: integer(found.get('hikey'), 'hikey', line),
+        pitch: integer(key ?? found.get('pitch_keycenter'), 'pitch_keycenter', line),
+        lowKey: integer(key ?? found.get('lokey'), 'lokey', line),
+        highKey: integer(key ?? found.get('hikey'), 'hikey', line),
         ...(tune !== undefined ? { tune } : {}),
         undamped: found.has('ampeg_release'),
       }
@@ -80,6 +82,20 @@ export function parseVelocityLayers(text: string): VelocityLayer[] {
     })
   }
   return layers.sort((a, b) => a.lowVelocity - b.lowVelocity)
+}
+
+/** A numeric opcode set on a line of its own, as a group header sets it: `volume=-37`. */
+export function groupOpcode(text: string, name: string): number | undefined {
+  for (const line of text.split(/\r?\n/)) {
+    const [opcode, value, ...rest] = line.trim().split('=')
+    if (opcode === name && value !== undefined && rest.length === 0) {
+      const parsed = Number(value)
+      if (value.trim() !== '' && Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
+  }
+  return undefined
 }
 
 /** `#define $NAME value` lines, as numbers by name. */

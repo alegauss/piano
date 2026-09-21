@@ -19,6 +19,8 @@ export type VoiceNodes = {
   readonly ringSeconds?: number
   /** A string with no damper: the key coming up does not stop it. */
   readonly undamped?: boolean
+  /** The key coming up at `at`, which may sound of its own: the damper landing, the action returning. */
+  readonly keyUp?: (at: AudioTime) => void
 }
 
 /** A stop that does not click: fast, but a fade rather than a cut. */
@@ -106,7 +108,7 @@ export abstract class WebAudioEngine implements PianoEngine {
     if (nodes === null) {
       return null
     }
-    const { sources, envelope, releaseSeconds, ringSeconds, undamped } = nodes
+    const { sources, envelope, releaseSeconds, ringSeconds, undamped, keyUp } = nodes
     this.sounding += 1
     // A note of two crossfaded layers has two sources of different lengths,
     // and it is over when the last of them is.
@@ -125,6 +127,7 @@ export abstract class WebAudioEngine implements PianoEngine {
     const gain = envelope.gain
     return {
       ...(undamped === true ? { undamped } : {}),
+      ...(keyUp !== undefined ? { keyUp } : {}),
       damp: (when, amount) => {
         const from = Math.max(when, this.context.currentTime)
         gain.cancelAndHoldAtTime(from)

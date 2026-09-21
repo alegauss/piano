@@ -131,6 +131,22 @@ describe('Keyboard', () => {
     ])
   })
 
+  it('tells the voice every time its key comes up, whatever the pedal does to the string', () => {
+    const risen: number[] = []
+    const keys = new Keyboard(() => ({
+      release: () => {},
+      damp: () => {},
+      stop: () => {},
+      keyUp: (at) => risen.push(at),
+    }))
+    keys.noteOn(60, 90, 0)
+    keys.noteOff(60, 1)
+    keys.pedal('sustain', 127, 1.5)
+    keys.noteOn(62, 90, 2)
+    keys.noteOff(62, 3)
+    expect(risen).toEqual([1, 3])
+  })
+
   it('holds with the sostenuto only what was down when it was pressed', () => {
     const { keys, played } = keyboard()
     keys.noteOn(48, 80, 0)

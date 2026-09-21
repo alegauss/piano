@@ -78,8 +78,8 @@ export const packFile = {
     path: z
       .string()
       .regex(
-        /^samples\/[A-Za-z0-9_-]+\.(?:ogg|wav)$/,
-        'a recording the manifest names, such as samples/C4-v8.ogg',
+        /^(?:samples|releases)\/[A-Za-z0-9_-]+\.(?:ogg|wav)$/,
+        'a recording the manifest names, such as samples/C4-v8.ogg or releases/60.ogg',
       ),
   }),
   response: z.object({

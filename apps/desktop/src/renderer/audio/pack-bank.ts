@@ -7,7 +7,7 @@ import {
   weightedSamples,
   type Register,
 } from './pack-registers'
-import type { SampleBank, SoundingSample } from './sampled-engine'
+import type { KeyRelease, SampleBank, SoundingSample } from './sampled-engine'
 
 /**
  * A sample pack, loaded as it is needed and no more.
@@ -156,6 +156,30 @@ export class PackBank implements SampleBank {
     }
   }
 
+  /**
+   * The sound of this key coming up, once its register is loaded. Asked when
+   * the key rises, so nothing is started loading for it: by then the note's
+   * own recordings have usually brought it in.
+   */
+  releaseFor(key: number): KeyRelease | null {
+    const releases = this.manifest.releases
+    const release = releases?.samples.find((candidate) => candidate.key === key)
+    const register = registerFor(this.registers, key)
+    if (releases === undefined || release === undefined || register === undefined) {
+      return null
+    }
+    const buffer = this.resident.get(register.pitch)?.buffers.get(release.file)
+    if (buffer === undefined) {
+      return null
+    }
+    return {
+      buffer,
+      gainDb: releases.gainDb,
+      velocityTracking: releases.velocityTracking,
+      decayDbPerSecond: releases.decayDbPerSecond,
+    }
+  }
+
   samplesFor(pitch: number, velocity: number): readonly SoundingSample[] {
     const weighted = weightedSamples(this.manifest, pitch, velocity)
     const [first] = weighted
@@ -223,10 +247,10 @@ export class PackBank implements SampleBank {
     try {
       buffers = new Map(
         await Promise.all(
-          register.samples.map(async (sample) => {
-            const encoded = await this.source.file(sample.file)
+          [...register.samples, ...register.releases].map(async (recording) => {
+            const encoded = await this.source.file(recording.file)
             const decoded = await this.context.decodeAudioData(encoded)
-            return [sample.file, decoded] as const
+            return [recording.file, decoded] as const
           }),
         ),
       )

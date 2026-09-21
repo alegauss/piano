@@ -7,13 +7,18 @@ export {
   manifestSchema,
   packSampleSchema,
   parseManifest,
+  releaseSampleSchema,
+  releasesSchema,
   type Credit,
   type ManifestResult,
   type PackManifest,
   type PackSample,
+  type ReleaseSample,
+  type Releases,
 } from './manifest'
 
 export {
+  groupOpcode,
   parseDefines,
   parseRegions,
   parseVelocityLayers,
@@ -21,7 +26,14 @@ export {
   type VelocityLayer,
 } from './sfz'
 
-export { planSamples, SALAMANDER, velocityRanges, type PlannedSample } from './plan'
+export {
+  planReleases,
+  planSamples,
+  SALAMANDER,
+  velocityRanges,
+  type PlannedRelease,
+  type PlannedSample,
+} from './plan'
 
 export {
   DEFAULT_TRIM,

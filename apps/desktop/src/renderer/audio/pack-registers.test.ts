@@ -40,6 +40,29 @@ describe('registersOf', () => {
   })
 })
 
+describe('releases', () => {
+  it('load with the register that plays their key', () => {
+    const release = (key: number) => ({
+      file: `releases/${String(key)}.ogg`,
+      key,
+      seconds: 0.4,
+      bytes: 10,
+      sha256: '0'.repeat(64),
+    })
+    const withReleases = {
+      ...manifest,
+      releases: {
+        gainDb: -37,
+        velocityTracking: 0.82,
+        decayDbPerSecond: 2,
+        samples: [59, 60, 61, 62].map(release),
+      },
+    } as PackManifest
+    const middle = registersOf(withReleases).find((register) => register.pitch === 60)
+    expect(middle?.releases.map((r) => r.key)).toEqual([59, 60, 61])
+  })
+})
+
 describe('registerFor and sampleFor', () => {
   it('finds the register a key is played from, including the keys shifted to', () => {
     expect(registerFor(registersOf(manifest), 61)?.pitch).toBe(60)

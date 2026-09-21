@@ -55,6 +55,30 @@ export const packSampleSchema = z.object({
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
 })
 
+export const releaseSampleSchema = z.object({
+  /** Relative to the manifest. */
+  file: z.string().min(1),
+  /** The one key whose coming up this recording is. */
+  key: midiNumber,
+  seconds: z.number().positive(),
+  bytes: z.number().int().positive(),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/),
+})
+
+/**
+ * The sound of a key coming up: the damper landing and the action returning.
+ * Quiet, and most of what makes a passage sound played rather than sequenced.
+ */
+export const releasesSchema = z.object({
+  /** How loud against the notes, in decibels: the library's own group volume. */
+  gainDb: z.number(),
+  /** How much of the velocity curve a release follows, 0 to 1. */
+  velocityTracking: z.number().min(0).max(1),
+  /** How much quieter per second the key was held, since the string has died down by then. */
+  decayDbPerSecond: z.number().min(0),
+  samples: z.array(releaseSampleSchema).min(1),
+})
+
 export const manifestSchema = z.object({
   format: z.literal(MANIFEST_FORMAT),
   id: z.string().regex(/^[a-z0-9-]+$/),
@@ -64,9 +88,13 @@ export const manifestSchema = z.object({
   channels: z.number().int().positive(),
   credit: creditSchema,
   samples: z.array(packSampleSchema).min(1),
+  /** Optional: a pack without them releases by fading alone. */
+  releases: releasesSchema.optional(),
 })
 
 export type Credit = z.infer<typeof creditSchema>
+export type ReleaseSample = z.infer<typeof releaseSampleSchema>
+export type Releases = z.infer<typeof releasesSchema>
 export type PackSample = z.infer<typeof packSampleSchema>
 export type PackManifest = z.infer<typeof manifestSchema>
 
@@ -123,6 +151,21 @@ export function manifestProblems(manifest: PackManifest): string[] {
     problems.push(
       `more than one recording plays ${overlaps[0] ?? ''}, and ${String(overlaps.length - 1)} more like it`,
     )
+  }
+
+  // Releases are optional, but a set that covers some keys is a set that
+  // leaves the others silently different.
+  const releases = manifest.releases?.samples ?? []
+  if (releases.length > 0) {
+    for (let key = LOWEST_KEY; key <= HIGHEST_KEY; key += 1) {
+      const count = releases.filter((release) => release.key === key).length
+      if (count !== 1) {
+        problems.push(
+          `key ${String(key)} has ${String(count)} release recordings; a release set has one per key`,
+        )
+        break
+      }
+    }
   }
 
   return problems

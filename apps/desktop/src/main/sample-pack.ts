@@ -78,7 +78,10 @@ function listedFiles(directory: string): Promise<ReadonlySet<string>> {
         if (!checked.ok) {
           throw new Error(`the sample pack's manifest cannot be used: ${checked.problems[0] ?? ''}`)
         }
-        return new Set(checked.manifest.samples.map((sample) => sample.file))
+        return new Set([
+          ...checked.manifest.samples.map((sample) => sample.file),
+          ...(checked.manifest.releases?.samples ?? []).map((release) => release.file),
+        ])
       })
     // A failure is not remembered: a pack being written right now may be
     // whole a moment later.

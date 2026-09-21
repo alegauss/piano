@@ -8,11 +8,10 @@
 
 ## Block C — Audio engine and transport
 
-- ⏳ **PI22** (deps: PI10 ✅, PI21 ✅) **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — The pack carries no key-release recordings, so letting a key go sounds only as a fade and never as a key coming up. → §PI22
 - 📋 **PI23** (deps: PI19 ✅) **There is no transport: nothing plays, pauses, seeks, loops or changes tempo** — One clock and one state machine driving play, pause, seek, loop, tempo and transpose keep the audio and the roll from disagreeing. → §PI23
 - 📋 **PI24** (deps: PI19 ✅) **Practising without a beat reference is guesswork, and playback starts with no warning** — A metronome driven by the same clock plus a count-in bar give the learner somewhere to put the first note. → §PI24
 - 📋 **PI59** (deps: PI19 ✅, PI23) **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — The app is driven from a terminal, so it plays behind another window more often than not, and a throttled wake-up misses the look-ahead. → §PI59
-- 📋 **PI61** (deps: PI21 ✅, PI22 ⏳) **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — A key moves from the synthesiser to its recording mid-phrase as registers arrive, and nothing has measured the two voices against each other. → §PI61
+- 📋 **PI61** (deps: PI21 ✅, PI22 ✅) **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — A key moves from the synthesiser to its recording mid-phrase as registers arrive, and nothing has measured the two voices against each other. → §PI61
 
 ## Block D — Piano roll and on-screen keyboard
 
@@ -57,15 +56,6 @@
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI22
-
-- **Velocity selects a layer, not only a gain** Notes at velocity 20 and 110 draw on
-  different source recordings, verified against the manifest mapping, and a sweep across
-  the boundary shows no audible step.
-- **Pedal up releases exactly what was held** A fixture holding the pedal across a bar
-  line sustains every note struck during it and cuts them all on release, measured on
-  rendered output rather than by ear.
 
 ## Done when — PI23
 

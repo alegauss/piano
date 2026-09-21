@@ -8,12 +8,14 @@ import { parseArgs } from 'node:util'
 import {
   DEFAULT_TRIM,
   gainToPeak,
+  groupOpcode,
   MANIFEST_FORMAT,
   parseDefines,
   parseManifest,
   parseRegions,
   parseVelocityLayers,
   peakOf,
+  planReleases,
   planSamples,
   SALAMANDER,
   secondsOf,
@@ -21,7 +23,7 @@ import {
   withGain,
   type PackSample,
   type Pcm,
-  type PlannedSample,
+  type ReleaseSample,
 } from '@piano/sample-pack'
 
 /**
@@ -220,34 +222,48 @@ async function main(): Promise<void> {
   const layers = parseVelocityLayers(await text(SALAMANDER.layerFile))
   const tuning = parseDefines(await text(SALAMANDER.tuningFile))
   const licence = await text(SALAMANDER.licenceFile)
+  const releaseMap = await text(SALAMANDER.releaseFile)
   const plan = planSamples(regions, layers, SALAMANDER.layers, tuning)
-  process.stdout.write(`sample pack: ${String(plan.length)} recordings to fetch and encode\n`)
+  const releasePlan = planReleases(parseRegions(releaseMap))
+  process.stdout.write(
+    `sample pack: ${String(plan.length)} recordings and ${String(releasePlan.length)} key releases to fetch and encode\n`,
+  )
 
   // First pass: the loudest peak in the whole set, which is what one gain
-  // normalises to, so the layers keep their loudness relative to each other.
-  const trimmed = (planned: PlannedSample) =>
+  // normalises to, so the layers and the releases keep their loudness
+  // relative to each other and to the library's own mapping.
+  const trimmed = (planned: { readonly source: string }) =>
     source(planned.source, lock, recorded)
       .then(decode)
       .then((pcm) => trim(pcm, DEFAULT_TRIM))
-  const peaks = await inParallel(plan, async (planned) => peakOf(await trimmed(planned)))
+  const everything = [...plan, ...releasePlan]
+  const peaks = await inParallel(everything, async (planned) => peakOf(await trimmed(planned)))
   const gain = gainToPeak(Math.max(...peaks), -1)
 
   // Second pass: decoded again rather than held, since the whole set decoded
   // runs to hundreds of megabytes.
   await rm(outRoot, { recursive: true, force: true })
   await mkdir(join(outRoot, 'samples'), { recursive: true })
-  const samples = await inParallel(plan, async (planned): Promise<PackSample> => {
+  await mkdir(join(outRoot, 'releases'), { recursive: true })
+  const encodeInto = async (planned: { readonly source: string; readonly file: string }) => {
     const pcm = withGain(await trimmed(planned), gain)
-    const encoded = await encode(pcm)
-    await writeFile(join(outRoot, planned.file), encoded)
-    const { source: _source, ...described } = planned
+    const bytes = await encode(pcm)
+    await writeFile(join(outRoot, planned.file), bytes)
     return {
-      ...described,
       seconds: Math.round(secondsOf(pcm) * 1000) / 1000,
-      bytes: encoded.byteLength,
-      sha256: sha256(encoded),
+      bytes: bytes.byteLength,
+      sha256: sha256(bytes),
     }
+  }
+  const samples = await inParallel(plan, async (planned): Promise<PackSample> => {
+    const { source: _source, ...described } = planned
+    return { ...described, ...(await encodeInto(planned)) }
   })
+  const releaseSamples = await inParallel(releasePlan, async (planned): Promise<ReleaseSample> => ({
+    file: planned.file,
+    key: planned.key,
+    ...(await encodeInto(planned)),
+  }))
 
   const checked = parseManifest({
     format: MANIFEST_FORMAT,
@@ -257,6 +273,14 @@ async function main(): Promise<void> {
     channels: CHANNELS,
     credit: SALAMANDER.credit,
     samples,
+    releases: {
+      // The library's own settings for these recordings: how quiet, how much
+      // they follow velocity, and how much quieter after a long-held key.
+      gainDb: groupOpcode(releaseMap, 'volume') ?? 0,
+      velocityTracking: (groupOpcode(releaseMap, 'amp_veltrack') ?? 100) / 100,
+      decayDbPerSecond: groupOpcode(releaseMap, 'rt_decay') ?? 0,
+      samples: releaseSamples,
+    },
   })
   if (!checked.ok) {
     throw new Error(`the manifest does not hold together:\n${checked.problems.join('\n')}`)
@@ -272,9 +296,9 @@ async function main(): Promise<void> {
     process.stdout.write(`sample pack: recorded ${String(Object.keys(files).length)} checksums\n`)
   }
 
-  const bytes = samples.reduce((sum, sample) => sum + sample.bytes, 0)
+  const bytes = [...samples, ...releaseSamples].reduce((sum, sample) => sum + sample.bytes, 0)
   process.stdout.write(
-    `sample pack: ${String(samples.length)} recordings, ${(bytes / 1e6).toFixed(1)} MB, in ${outRoot}\n`,
+    `sample pack: ${String(samples.length)} recordings and ${String(releaseSamples.length)} key releases, ${(bytes / 1e6).toFixed(1)} MB, in ${outRoot}\n`,
   )
 }
 

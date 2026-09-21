@@ -79,6 +79,7 @@ describe('pack:manifest', () => {
 describe('pack:file', () => {
   it('accepts a recording path as the manifest spells one', () => {
     expect(packFile.request.safeParse({ path: 'samples/Ds1-v8.ogg' }).success).toBe(true)
+    expect(packFile.request.safeParse({ path: 'releases/60.ogg' }).success).toBe(true)
   })
 
   it.each([

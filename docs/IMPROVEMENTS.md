@@ -24,24 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI22 Velocity layers, release and a sustain model
-
-A sampled piano only convinces when the mapping is right. Velocity chooses a layer
-rather than only a gain: a note struck softly is a different recording, not the same one
-played quieter, and crossfading between adjacent layers avoids an audible step at the
-boundary. Release samples matter more than people expect, because the sound of a key
-being let go is most of what makes a passage sound played rather than sequenced. Sustain
-is modelled rather than faked: pedal down stops the damper cutting the note, notes
-struck while the pedal is down keep ringing past their written end, and pedal up
-releases everything currently held, all driven by the control events the format already
-carries. Half pedal maps to partial damping rather than a switch, since the format
-stores a value and discarding it would waste the one place that nuance was written down.
-The pack from PI20 keeps four of Salamander's sixteen layers, each with its velocity
-range, and marks the undamped top strings and any tuning correction in the manifest;
-release samples are not in it yet, so the pipeline's plan gains the library's release
-regions first. Each of these is verifiable by measuring rendered output offline, which
-is how they get tested at all without a human sitting and listening.
-
 ### §PI23 One clock, one transport state machine
 
 The transport is small and it is the thing everything else reads. It owns a state

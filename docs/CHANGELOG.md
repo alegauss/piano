@@ -73,7 +73,7 @@
 - ✅ **PI20** **There is no piano sound: raw sample libraries are gigabytes of WAV, unusable as they ship** — npm run pack:samples builds a reproducible 16 MB Opus pack from pinned, checksummed Salamander sources, with manifest and licence (design recorded in `packages/sample-pack/scripts/build-pack.mts`).
   checked **The pack builds from scratch with one command** A clean machine runs the script, which fetches the source, verifies its checksum and produces the versioned pack and manifest with no manual step in between.
 - ✅ **PI21** **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — The app reads the installed pack through a checked bridge channel, loads it behind the synthesiser and credits it in the footer (design recorded in `apps/desktop/src/renderer/audio/pack-bank.ts`).
-- ✅ **PI22 (velocity layers and the sustain model)** **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity picks the recording and crossfades layers at their edges; half pedal damps partially, undamped strings ring on, and pedal up frees only what it held.
+- ✅ **PI22** **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity picks and crossfades recordings, half pedal damps partially, and every key coming up plays its release recording (design recorded in `apps/desktop/src/renderer/audio/keyboard.ts`).
 
 ## Block D — Piano roll and on-screen keyboard
 

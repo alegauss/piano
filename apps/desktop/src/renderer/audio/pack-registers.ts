@@ -1,4 +1,4 @@
-import type { PackManifest, PackSample } from '@piano/sample-pack'
+import type { PackManifest, PackSample, ReleaseSample } from '@piano/sample-pack'
 
 /**
  * How a pack is loaded: in registers, nearest middle C first.
@@ -18,6 +18,8 @@ export type Register = {
   readonly lowKey: number
   readonly highKey: number
   readonly samples: readonly PackSample[]
+  /** The key-release recordings of the keys this register plays, loaded with it. */
+  readonly releases: readonly ReleaseSample[]
 }
 
 /** Every register a pack holds, in the order they should load. */
@@ -31,13 +33,19 @@ export function registersOf(manifest: PackManifest): Register[] {
       group.push(sample)
     }
   }
+  const releases = manifest.releases?.samples ?? []
   return [...byPitch.entries()]
-    .map(([pitch, samples]) => ({
-      pitch,
-      lowKey: Math.min(...samples.map((sample) => sample.lowKey)),
-      highKey: Math.max(...samples.map((sample) => sample.highKey)),
-      samples,
-    }))
+    .map(([pitch, samples]) => {
+      const lowKey = Math.min(...samples.map((sample) => sample.lowKey))
+      const highKey = Math.max(...samples.map((sample) => sample.highKey))
+      return {
+        pitch,
+        lowKey,
+        highKey,
+        samples,
+        releases: releases.filter((release) => release.key >= lowKey && release.key <= highKey),
+      }
+    })
     .sort(
       (a, b) => Math.abs(a.pitch - MIDDLE_C) - Math.abs(b.pitch - MIDDLE_C) || a.pitch - b.pitch,
     )
@@ -69,8 +77,8 @@ export function sampleFor(
  * context's rate, so that is the rate that counts.
  */
 export function decodedBytes(register: Register, sampleRate: number, channels: number): number {
-  return register.samples.reduce(
-    (sum, sample) => sum + Math.ceil(sample.seconds * sampleRate) * channels * 4,
+  return [...register.samples, ...register.releases].reduce(
+    (sum, recording) => sum + Math.ceil(recording.seconds * sampleRate) * channels * 4,
     0,
   )
 }

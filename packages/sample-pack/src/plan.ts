@@ -10,19 +10,21 @@ import type { SfzRegion, VelocityLayer } from './sfz'
 export const SALAMANDER = {
   id: 'salamander-grand-v3',
   /** Bump whenever the recordings kept or their processing change. */
-  version: 1,
+  version: 2,
   repository: 'sfzinstruments/SalamanderGrandPiano',
   commit: '3382bf9496bba2486f5ab0de55a264d1dfc38404',
   regionFile: 'Data/region.txt',
   layerFile: 'Data/notes.txt',
   tuningFile: 'Data/tune_nat.txt',
+  /** The key-release recordings, one per key, as the library calls its hammer noise. */
+  releaseFile: 'Data/hammer.txt',
   licenceFile: 'LICENSE',
   sampleDirectory: 'Samples',
   extension: 'flac',
   /**
    * Four of the sixteen velocity layers, spread from soft to loud. Enough for
    * a struck key to change colour with force, and a quarter of the size.
-   * Crossfading between them is PI22's.
+   * The app crossfades between neighbours at their edges.
    */
   layers: [4, 8, 12, 16],
   credit: {
@@ -34,7 +36,7 @@ export const SALAMANDER = {
       'https://github.com/sfzinstruments/SalamanderGrandPiano/tree/3382bf9496bba2486f5ab0de55a264d1dfc38404',
     licenceFile: 'LICENSE.txt',
     notes:
-      'A Yamaha C5 recorded by Alexander Holm; SFZ mapping by kinwie. Trimmed, normalised and re-encoded to Opus for this app; four of the sixteen velocity layers are kept.',
+      'A Yamaha C5 recorded by Alexander Holm; SFZ mapping by kinwie. Trimmed, normalised and re-encoded to Opus for this app; four of the sixteen velocity layers are kept, with the key-release recordings.',
   } satisfies Credit,
 } as const
 
@@ -119,4 +121,20 @@ export function planSamples(
       }
     }),
   )
+}
+
+/** One key-release recording to fetch and encode. */
+export type PlannedRelease = {
+  readonly source: string
+  readonly file: string
+  readonly key: number
+}
+
+/** Every key-release recording, one per key, as the library maps them. */
+export function planReleases(regions: readonly SfzRegion[]): PlannedRelease[] {
+  return regions.map((region) => ({
+    source: `${SALAMANDER.sampleDirectory}/${region.sample.replace('$EXT', SALAMANDER.extension)}`,
+    file: `releases/${String(region.lowKey)}.ogg`,
+    key: region.lowKey,
+  }))
 }

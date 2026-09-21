@@ -20,6 +20,17 @@ export type SoundingSample = {
   readonly gain: number
 }
 
+/** The recording of a key coming up, and the rules it plays by. */
+export type KeyRelease = {
+  readonly buffer: AudioBuffer
+  /** How loud against the notes, in decibels. */
+  readonly gainDb: number
+  /** How much of the velocity curve it follows, 0 to 1. */
+  readonly velocityTracking: number
+  /** How much quieter for each second the key was held. */
+  readonly decayDbPerSecond: number
+}
+
 export type SampledEngineOptions = {
   readonly destination?: AudioNode
   /**
@@ -42,6 +53,8 @@ export interface SampleBank {
   load(pitches: ReadonlySet<number>): Promise<void>
   /** The loaded recordings to play a note from, with their gains; none when nothing covers it yet. */
   samplesFor(pitch: number, velocity: number): readonly SoundingSample[]
+  /** The sound of a key coming up, when the bank has one loaded. */
+  releaseFor?(key: number): KeyRelease | null
 }
 
 /**
@@ -149,6 +162,41 @@ export class SampledEngine extends WebAudioEngine {
       envelope,
       releaseSeconds: 0.12,
       ...(undamped ? { undamped: true } : {}),
+      keyUp: (when) => {
+        this.keyRelease(pitch, velocity, at, when, into)
+      },
     }
+  }
+
+  /**
+   * Play the sound of the key coming up: quiet, following velocity less than
+   * the note does, and quieter the longer the key was held, since the string
+   * under the damper has died down by then. It plays whatever the pedal is
+   * doing, because the key rises either way.
+   */
+  private keyRelease(
+    pitch: number,
+    velocity: number,
+    struck: AudioTime,
+    at: AudioTime,
+    into: AudioNode,
+  ): void {
+    const release = this.bank.releaseFor?.(pitch) ?? null
+    if (release === null) {
+      return
+    }
+    const held = Math.max(0, at - struck)
+    const db = release.gainDb - release.decayDbPerSecond * held
+    const level = VOICE_PEAK * 10 ** (db / 20) * velocityGain(velocity) ** release.velocityTracking
+    const { context } = this
+    const source = context.createBufferSource()
+    source.buffer = release.buffer
+    const gain = context.createGain()
+    gain.gain.value = level
+    source.connect(gain).connect(into)
+    source.onended = () => {
+      gain.disconnect()
+    }
+    source.start(Math.max(at, context.currentTime))
   }
 }

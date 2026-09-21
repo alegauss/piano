@@ -61,6 +61,35 @@ describe('parseManifest', () => {
     expect(!result.ok && result.problems.join('\n')).toMatch(/credit/)
   })
 
+  it('accepts a release recording for every key', () => {
+    const releases = {
+      gainDb: -37,
+      velocityTracking: 0.82,
+      decayDbPerSecond: 2,
+      samples: Array.from({ length: 88 }, (_, index) => ({
+        file: `releases/${String(21 + index)}.ogg`,
+        key: 21 + index,
+        seconds: 0.5,
+        bytes: 10,
+        sha256: 'b'.repeat(64),
+      })),
+    }
+    expect(parseManifest({ ...manifest([sample()]), releases }).ok).toBe(true)
+  })
+
+  it('refuses a release set that leaves a key out', () => {
+    const releases = {
+      gainDb: -37,
+      velocityTracking: 0.82,
+      decayDbPerSecond: 2,
+      samples: [
+        { file: 'releases/21.ogg', key: 21, seconds: 0.5, bytes: 10, sha256: 'b'.repeat(64) },
+      ],
+    }
+    const result = parseManifest({ ...manifest([sample()]), releases })
+    expect(!result.ok && result.problems.join('\n')).toMatch(/key 22 has 0 release recordings/)
+  })
+
   it('refuses a checksum that is not one', () => {
     const result = parseManifest(manifest([sample({ sha256: 'not-a-digest' })]))
     expect(!result.ok && result.problems.join('\n')).toMatch(/sha256/)

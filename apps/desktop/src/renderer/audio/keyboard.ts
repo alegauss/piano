@@ -33,6 +33,8 @@ export type Voice = {
   stop(): void
   /** A string with no damper, as the top of a piano has: letting the key up does not stop it. */
   readonly undamped?: boolean
+  /** The key coming up, whatever the pedals do with the string: it may make a sound of its own. */
+  readonly keyUp?: (at: AudioTime) => void
 }
 
 /** Make a voice, or answer null when this engine has nothing to play the pitch with. */
@@ -110,6 +112,7 @@ export class Keyboard {
       return
     }
     strike.keyDown = false
+    strike.voice?.keyUp?.(at)
     if (!strike.sounding) {
       this.forget(strike)
       return

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { HIGHEST_KEY, LOWEST_KEY, manifestProblems, type PackManifest } from './manifest'
-import { planSamples, SALAMANDER, velocityRanges } from './plan'
-import { parseDefines, parseRegions, parseVelocityLayers } from './sfz'
+import { planReleases, planSamples, SALAMANDER, velocityRanges } from './plan'
+import { groupOpcode, parseDefines, parseRegions, parseVelocityLayers } from './sfz'
 
 /** The notes file as Salamander writes it: sixteen layers, each a velocity range. */
 const NOTES = `master_label=Notes
@@ -68,6 +68,45 @@ describe('parseRegions', () => {
     expect(() => parseRegions('<region> lokey=21 hikey=22 sample=A0$VEL.$EXT')).toThrow(
       /pitch_keycenter/,
     )
+  })
+})
+
+describe('the key-release map', () => {
+  const HAMMER = `master_label=HammerNoise
+group=3
+
+<group>
+group_label=rel
+amp_veltrack=82
+volume=-37
+rt_decay=2
+
+<region> region_label=01 key=21 sample=rel1.$EXT
+<region> region_label=02 key=22 sample=rel2.$EXT
+`
+
+  it('reads a one-key region as recorded on that key and playing only it', () => {
+    expect(parseRegions(HAMMER)[1]).toEqual({
+      sample: 'rel2.$EXT',
+      pitch: 22,
+      lowKey: 22,
+      highKey: 22,
+      undamped: false,
+    })
+  })
+
+  it('reads the group settings a release plays by', () => {
+    expect(groupOpcode(HAMMER, 'volume')).toBe(-37)
+    expect(groupOpcode(HAMMER, 'amp_veltrack')).toBe(82)
+    expect(groupOpcode(HAMMER, 'rt_decay')).toBe(2)
+    expect(groupOpcode(HAMMER, 'missing')).toBeUndefined()
+  })
+
+  it('plans one release recording per key, fetched by the library name', () => {
+    expect(planReleases(parseRegions(HAMMER))).toEqual([
+      { source: 'Samples/rel1.flac', file: 'releases/21.ogg', key: 21 },
+      { source: 'Samples/rel2.flac', file: 'releases/22.ogg', key: 22 },
+    ])
   })
 })
 
