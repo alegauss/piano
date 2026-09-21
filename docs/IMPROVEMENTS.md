@@ -105,7 +105,8 @@ expected times. Model output is the one part that cannot be asserted exactly, so
 assertion is on properties that must hold: it validates, the key and meter are right,
 the note count is in a sane range, and it plays. Kept in CI with a recorded model
 response as the default and a live run available on demand, this is the test that fails
-the day the premise breaks.
+the day the premise breaks. It waits for PI51: until then the window plays only its
+placeholder and refuses a library id, so no run can end in the piece that was asked for.
 
 ### §PI65 Warnings for music that validates
 

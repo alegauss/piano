@@ -18,7 +18,7 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI50** (deps: PI26 ✅, PI46 ✅, PI48 ✅) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
+- 📋 **PI50** (deps: PI26 ✅, PI46 ✅, PI48 ✅, PI51) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 - 📋 **PI65** (deps: PI46 ✅) **validate_score passes a score with the left hand above the right, a chord no hand can reach, or a bar half full** — The arithmetic half of the skill's list, returned as warnings beside a valid result, is what a model acts on when it would skip rereading. → §PI65
 
 ## Block G — Score library and distribution
