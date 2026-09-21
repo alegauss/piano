@@ -87,6 +87,9 @@
   checked **Black key offsets match a real keyboard** A rendered octave matches reference geometry: black keys narrower, shorter and correctly offset, with the C D E group spaced differently from F G A B.
 - ✅ **PI26** **Notes do not fall: there is nothing between the score and the screen** — Notes fall onto the keyboard from the audio clock, each in its own key's column, and the keys they strike light up (design recorded in `apps/desktop/src/renderer/lib/roll.ts`).
   checked **The roll and the sound never disagree** Across a minute of playback the note drawn at the strike line is the note being sounded, measured against the audio clock rather than trusting the frame loop.
+- ✅ **PI27** **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — The roll binary-searches its visible notes and fills them by colour in one path, holding 0.2ms for the 95th frame of a dense fixture (design recorded in `apps/desktop/src/renderer/lib/roll-draw.ts`).
+  checked **A dense fixture holds the frame budget** A performance test plays the densest reference score with effects on and fails when the ninety-fifth percentile frame time exceeds budget on the target machine.
+  checked **Only visible notes are drawn** Draw call count scales with the visible window rather than with score length, so a ten-minute piece costs the same per frame as a one-minute one.
 
 ## Block E — Practice mode and difficulty levels
 

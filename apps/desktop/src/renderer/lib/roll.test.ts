@@ -5,9 +5,10 @@ import { keyRect } from './keyboard-geometry'
 import {
   clampLead,
   DEFAULT_LEAD_SECONDS,
+  forEachVisible,
   MAX_LEAD_SECONDS,
   noteBox,
-  partColours,
+  prepareRoll,
   soundingPitches,
   visibleNotes,
   visibleTicks,
@@ -118,26 +119,68 @@ describe('a note on the field', () => {
 })
 
 describe('what the roll asks for', () => {
-  const notes = [note(60, 0), note(62, 4 * QUARTER), note(64, 20 * QUARTER)]
+  const score = prepareRoll([note(60, 0), note(62, 4 * QUARTER), note(64, 20 * QUARTER)])
 
   it('takes the notes inside the window and leaves the rest', () => {
-    expect(visibleNotes(notes, view()).map((n) => n.pitch)).toEqual([60, 62])
+    expect(visibleNotes(score, view()).map((n) => n.pitch)).toEqual([60, 62])
   })
 
   it('names the pitches sounding at a tick, and none at their release', () => {
-    expect(soundingPitches(notes, 0)).toEqual([60])
-    expect(soundingPitches(notes, QUARTER - 1)).toEqual([60])
-    expect(soundingPitches(notes, QUARTER)).toEqual([])
-    expect(soundingPitches([note(60, 0), note(64, 0)], 10)).toEqual([60, 64])
+    expect(soundingPitches(score, 0)).toEqual([60])
+    expect(soundingPitches(score, QUARTER - 1)).toEqual([60])
+    expect(soundingPitches(score, QUARTER)).toEqual([])
+    expect(soundingPitches(prepareRoll([note(60, 0), note(64, 0)]), 10)).toEqual([60, 64])
   })
 
   it('gives each part its own colour, in the order the parts appear', () => {
-    const colours = partColours([
+    const colours = prepareRoll([
       { ...note(60, 0), part: 'left' },
       { ...note(72, 0), part: 'right' },
       { ...note(74, QUARTER), part: 'right' },
-    ])
+    ]).colours
     expect(colours.get('left')).toBe('--note-part-1')
     expect(colours.get('right')).toBe('--note-part-2')
+  })
+})
+
+describe('finding the visible notes in a long piece', () => {
+  /** Ten thousand notes, one a beat, with a held note under every bar. */
+  const long = prepareRoll([
+    ...Array.from({ length: 10_000 }, (_, index) => note(60 + (index % 12), index * QUARTER)),
+    ...Array.from({ length: 2_500 }, (_, index) => note(36, index * 4 * QUARTER, 4 * QUARTER)),
+  ])
+
+  it('sorts the score by tick and remembers the longest note', () => {
+    expect(long.notes.every((n, i) => i === 0 || n.start >= (long.notes[i - 1]?.start ?? 0))).toBe(
+      true,
+    )
+    expect(long.longest).toBe(4 * QUARTER)
+  })
+
+  it('looks at a handful of notes a frame, not at the whole piece', () => {
+    const stats = forEachVisible(long, view({ position: 5_000 * QUARTER }), () => {})
+    expect(stats.drawn).toBeLessThan(20)
+    // Whatever it looked at, it was the window and the slack, not 12,500 notes.
+    expect(stats.considered).toBeLessThan(30)
+  })
+
+  it('still finds a note that began before the window and is sounding inside it', () => {
+    // The held note under this bar started two beats before the position.
+    const at = 1_000 * 4 * QUARTER + 2 * QUARTER
+    expect(visibleNotes(long, view({ position: at })).some((n) => n.pitch === 36)).toBe(true)
+    expect(soundingPitches(long, at)).toContain(36)
+  })
+
+  it('answers the same as a plain scan, wherever it is asked', () => {
+    for (const position of [0, QUARTER, 999 * QUARTER, 5_000 * QUARTER, 9_999 * QUARTER]) {
+      const at = view({ position })
+      const { from, to } = visibleTicks(at)
+      const scanned = long.notes
+        .filter((n) => n.start <= to && n.start + n.duration >= from)
+        .map((n) => `${String(n.pitch)}@${String(n.start)}`)
+      expect(visibleNotes(long, at).map((n) => `${String(n.pitch)}@${String(n.start)}`)).toEqual(
+        scanned,
+      )
+    }
   })
 })

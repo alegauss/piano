@@ -140,6 +140,33 @@ describe('PianoRoll, drawing', () => {
     expect(after - (before ?? 0)).toBeCloseTo(drawn(canvas).height / 6, 0)
   })
 
+  it('reports what a frame is costing, for anyone watching it', async () => {
+    const notes = [{ pitch: 60, start: 0, duration: 2 * QUARTER, velocity: 80 }]
+    transport.load({ timing, notes })
+    const { container } = mount(notes, transport)
+    // The overlay speaks twice a second, so this waits rather than counting frames.
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    const meter = container.querySelector('[data-testid="frame-meter"]')
+    expect(meter?.textContent).toMatch(/^\d+\.\d ms · worst \d+\.\d ms$/)
+  })
+
+  it('follows the window: the backing store tracks the box it is given', async () => {
+    const notes = [{ pitch: 60, start: 0, duration: QUARTER, velocity: 80 }]
+    transport.load({ timing, notes })
+    const { canvas, container } = mount(notes, transport)
+    await frames()
+    const before = canvas.width
+    const outer = container.firstElementChild as HTMLElement
+    outer.style.width = '600px'
+    // A ResizeObserver reports after layout, so the next frames pick it up.
+    await frames(5)
+    expect(canvas.width).toBeLessThan(before)
+    expect(canvas.width / canvas.getBoundingClientRect().width).toBeCloseTo(
+      Math.min(window.devicePixelRatio, 2),
+      1,
+    )
+  })
+
   it('lights the key a note is sounding on, and puts it out at the release', async () => {
     // A note far ahead keeps the piece going, so the release is a release
     // rather than the transport reaching the end and rewinding to the start.

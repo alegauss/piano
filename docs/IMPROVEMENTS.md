@@ -58,22 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI27 Sixty frames a second when the music is dense
-
-The worst moment for the renderer is the best moment in the music: a dense passage with
-the pedal down, dozens of notes visible and particles firing. It has to hold 60fps
-there, because a stutter at that exact moment is the one people remember. The approach
-is a canvas rather than DOM elements, since hundreds of absolutely positioned divs is
-the wrong shape for this problem. Notes are held in an array sorted by tick, so the
-visible range is found by binary search instead of scanning the whole score every frame,
-and only that window is drawn. Static layers, the keyboard and the bar lines, are
-rendered once to an offscreen canvas and blitted rather than redrawn. Everything else is
-measured: a development overlay reports frame time, and a performance test plays a
-deliberately dense fixture and fails when the ninety-fifth percentile frame exceeds
-budget. If canvas 2D cannot hold the target on a modest machine a WebGL path is the
-fallback, but it is not the starting point, because the simpler thing is probably enough
-and far easier to get right.
-
 ### §PI28 The moment of contact
 
 In the reference image a note reaching the keyboard throws a burst of bright particles
@@ -98,7 +82,10 @@ the left edge, as in the reference image, and they are the vocabulary everything
 uses: the loop selector, the practice tools and the MCP transport commands all speak in
 bars. Beat subdivisions are drawn more faintly than bar lines, because that hierarchy is
 what makes the field readable at a glance instead of a grid of equal lines. The current
-bar is highlighted, which is the cheapest possible answer to where am I. And bars are
+bar is highlighted, which is the cheapest possible answer to where am I. Lines and
+numbers change only with the meter, the zoom and the size, so they are drawn to an
+offscreen canvas and blitted per frame rather than laid out again: that is PI27's cached
+static layer, which had nothing to cache while the field held only notes. And bars are
 selectable directly on the roll by dragging across a range to set a loop, because the
 alternative is typing numbers into a field, and nobody practising wants to do that
 between attempts.

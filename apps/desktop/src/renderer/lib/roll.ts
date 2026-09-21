@@ -106,19 +106,100 @@ export function noteBox(note: Note, view: RollView): NoteBox | null {
   }
 }
 
-/** The notes on screen, in the order they are drawn: the nearest last, so it reads on top. */
-export function visibleNotes(notes: readonly Note[], view: RollView): Note[] {
+/**
+ * The score, arranged once for a draw loop to ask questions of.
+ *
+ * Sorted by tick with the longest note remembered, which is what lets the
+ * visible window be found by binary search rather than by walking every note
+ * in the piece on every frame. The longest note is the slack: a note that
+ * started before the window can still be sounding inside it, and no note
+ * starting earlier than a whole longest-note back can be.
+ */
+export type RollScore = {
+  /** Every note, by tick. */
+  readonly notes: readonly Note[]
+  /** The longest duration in the piece, in ticks. */
+  readonly longest: number
+  readonly colours: ReadonlyMap<string, CanvasToken>
+}
+
+export function prepareRoll(notes: readonly Note[]): RollScore {
+  const sorted = [...notes].sort((a, b) => a.start - b.start)
+  let longest = 0
+  for (const note of sorted) {
+    longest = Math.max(longest, note.duration)
+  }
+  return { notes: sorted, longest, colours: partColours(sorted) }
+}
+
+/** The first note that could still be sounding at a tick, by binary search. */
+function firstFrom(score: RollScore, tick: number): number {
+  const earliest = tick - score.longest
+  let low = 0
+  let high = score.notes.length
+  while (low < high) {
+    const middle = (low + high) >> 1
+    if ((score.notes[middle]?.start ?? 0) < earliest) {
+      low = middle + 1
+    } else {
+      high = middle
+    }
+  }
+  return low
+}
+
+/** What one frame touched: drawn notes, and notes looked at to find them. */
+export type RollStats = {
+  readonly drawn: number
+  readonly considered: number
+}
+
+/**
+ * Visit the notes on screen, in tick order, without allocating: a draw loop
+ * runs sixty times a second, and an array per frame is sixty arrays a second
+ * for the collector to take back.
+ */
+export function forEachVisible(
+  score: RollScore,
+  view: RollView,
+  visit: (note: Note) => void,
+): RollStats {
   const { from, to } = visibleTicks(view)
+  let considered = 0
+  let drawn = 0
+  for (let index = firstFrom(score, from); index < score.notes.length; index += 1) {
+    const note = score.notes[index]
+    if (note === undefined) {
+      break
+    }
+    considered += 1
+    if (note.start > to) {
+      break
+    }
+    if (note.start + note.duration >= from) {
+      drawn += 1
+      visit(note)
+    }
+  }
+  return { drawn, considered }
+}
+
+/** The notes on screen, for a caller that wants them in hand rather than one at a time. */
+export function visibleNotes(score: RollScore, view: RollView): Note[] {
+  const notes: Note[] = []
+  forEachVisible(score, view, (note) => notes.push(note))
   return notes
-    .filter((note) => note.start <= to && note.start + note.duration >= from)
-    .sort((a, b) => a.start - b.start)
 }
 
 /** The pitches sounding at a tick: what the keyboard lights up. */
-export function soundingPitches(notes: readonly Note[], position: number): number[] {
+export function soundingPitches(score: RollScore, position: number): number[] {
   const sounding = new Set<number>()
-  for (const note of notes) {
-    if (note.start <= position && position < note.start + note.duration) {
+  for (let index = firstFrom(score, position); index < score.notes.length; index += 1) {
+    const note = score.notes[index]
+    if (note === undefined || note.start > position) {
+      break
+    }
+    if (position < note.start + note.duration) {
       sounding.add(note.pitch)
     }
   }
@@ -133,7 +214,7 @@ export const PART_TOKENS = [
   '--note-part-4',
 ] as const satisfies readonly CanvasToken[]
 
-export function partColours(notes: readonly Note[]): Map<string, CanvasToken> {
+function partColours(notes: readonly Note[]): Map<string, CanvasToken> {
   const colours = new Map<string, CanvasToken>()
   for (const note of notes) {
     const part = partOf(note)
