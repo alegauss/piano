@@ -15,6 +15,7 @@ import {
 import { milliseconds } from '../lib/latency'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Hint } from './ui/tooltip'
 
 /**
  * How the last attempt went, in the terms a next attempt is made in.
@@ -56,16 +57,18 @@ export function ReportPanel({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={attempt === null ? 'ghost' : 'secondary'}
-          size="icon"
-          aria-label="How it went"
-          className={className}
-        >
-          <ListChecks />
-        </Button>
-      </PopoverTrigger>
+      <Hint>
+        <PopoverTrigger asChild>
+          <Button
+            variant={attempt === null ? 'ghost' : 'secondary'}
+            size="icon"
+            aria-label="How it went"
+            className={className}
+          >
+            <ListChecks />
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent className="w-90" align="end">
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-text-strong">How it went</h2>

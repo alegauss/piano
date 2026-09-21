@@ -13,6 +13,7 @@ import { milliseconds } from '../lib/latency'
 import { WINDOWS } from '../lib/grading'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Hint } from './ui/tooltip'
 
 /**
  * Choosing a level, and seeing what it means.
@@ -59,16 +60,18 @@ export function LevelPanel({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={level === null ? 'ghost' : 'secondary'}
-          size="icon"
-          aria-label="Level"
-          className={className}
-        >
-          <GraduationCap />
-        </Button>
-      </PopoverTrigger>
+      <Hint>
+        <PopoverTrigger asChild>
+          <Button
+            variant={level === null ? 'ghost' : 'secondary'}
+            size="icon"
+            aria-label="Level"
+            className={className}
+          >
+            <GraduationCap />
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent className="w-90" align="end">
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-text-strong">Level</h2>

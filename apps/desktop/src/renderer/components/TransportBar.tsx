@@ -39,6 +39,7 @@ import { MidiMonitor } from './MidiMonitor'
 import { ReportPanel } from './ReportPanel'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
+import { Hint } from './ui/tooltip'
 
 /**
  * Everything the app is driven from, on one row.
@@ -249,27 +250,40 @@ export function TransportBar({
       )}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Button variant="ghost" size="icon" onClick={restart} aria-label="Back to the start (Home)">
-          <SkipBack />
-        </Button>
-        <Button
-          variant="primary"
-          size="icon"
-          onClick={playPause}
-          aria-label={playing ? 'Pause (space)' : 'Play (space)'}
-          aria-pressed={playing}
-        >
-          {playing ? <Pause /> : <Play />}
-        </Button>
-        <Button
-          variant={state.loop === null ? 'ghost' : 'secondary'}
-          size="icon"
-          onClick={toggleLoop}
-          aria-label="Loop (L)"
-          aria-pressed={state.loop !== null}
-        >
-          <Repeat />
-        </Button>
+        <Hint>
+          <Hint>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={restart}
+              aria-label="Back to the start (Home)"
+            >
+              <SkipBack />
+            </Button>
+          </Hint>
+        </Hint>
+        <Hint>
+          <Button
+            variant="primary"
+            size="icon"
+            onClick={playPause}
+            aria-label={playing ? 'Pause (space)' : 'Play (space)'}
+            aria-pressed={playing}
+          >
+            {playing ? <Pause /> : <Play />}
+          </Button>
+        </Hint>
+        <Hint>
+          <Button
+            variant={state.loop === null ? 'ghost' : 'secondary'}
+            size="icon"
+            onClick={toggleLoop}
+            aria-label="Loop (L)"
+            aria-pressed={state.loop !== null}
+          >
+            <Repeat />
+          </Button>
+        </Hint>
 
         <p className="font-mono text-sm text-text-muted tabular-nums" data-testid="elapsed">
           {clockTime(seconds(shown))} / {clockTime(seconds(lastTick))}
@@ -302,11 +316,11 @@ export function TransportBar({
           />
 
           {/*
-            One magnifier, showing whichever view is open. They are different
-            questions — seconds of music on screen against how large the page
-            is drawn — so they are separate settings, and the slider that does
-            nothing for the view somebody is reading is not worth the width.
-          */}
+              One magnifier, showing whichever view is open. They are different
+              questions — seconds of music on screen against how large the page
+              is drawn — so they are separate settings, and the slider that does
+              nothing for the view somebody is reading is not worth the width.
+            */}
           <label className="flex items-center gap-2 text-xs text-text-muted">
             <ZoomIn className="size-4" aria-hidden />
             {view === 'sheet' ? (
@@ -337,17 +351,19 @@ export function TransportBar({
           </label>
 
           {onWaiting === undefined ? null : (
-            <Button
-              variant={waiting ? 'secondary' : 'ghost'}
-              size="icon"
-              aria-label="Wait for me"
-              aria-pressed={waiting}
-              onClick={() => {
-                onWaiting(!waiting)
-              }}
-            >
-              <PauseCircle />
-            </Button>
+            <Hint>
+              <Button
+                variant={waiting ? 'secondary' : 'ghost'}
+                size="icon"
+                aria-label="Wait for me"
+                aria-pressed={waiting}
+                onClick={() => {
+                  onWaiting(!waiting)
+                }}
+              >
+                <PauseCircle />
+              </Button>
+            </Hint>
           )}
           {onLevel === undefined || levelSettings === undefined ? null : (
             <LevelPanel
@@ -380,49 +396,59 @@ export function TransportBar({
           )}
           {keys === undefined ? null : <KeysPanel keys={keys} />}
           {midi === undefined ? null : <MidiMonitor midi={midi} />}
-          <Button
-            variant={view === 'sheet' ? 'secondary' : 'ghost'}
-            size="icon"
-            onClick={() => {
-              onView(view === 'sheet' ? 'roll' : 'sheet')
-            }}
-            aria-label={view === 'sheet' ? 'Show the falling notes' : 'Show the sheet music'}
-            aria-pressed={view === 'sheet'}
-          >
-            {view === 'sheet' ? <Piano /> : <ClefTreble />}
-          </Button>
-          <Button
-            variant={effects ? 'secondary' : 'ghost'}
-            size="icon"
-            onClick={() => {
-              onEffects(!effects)
-            }}
-            aria-label="Effects"
-            aria-pressed={effects}
-          >
-            <Sparkles />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              onTheme(theme === 'dark' ? 'light' : 'dark')
-            }}
-            aria-label={theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
-          >
-            {theme === 'dark' ? <Sun /> : <Moon />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              onFull(!full)
-            }}
-            aria-label={full ? 'Leave full screen' : 'Full screen'}
-            aria-pressed={full}
-          >
-            {full ? <Minimize2 /> : <Maximize2 />}
-          </Button>
+          <Hint>
+            <Button
+              variant={view === 'sheet' ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => {
+                onView(view === 'sheet' ? 'roll' : 'sheet')
+              }}
+              aria-label={view === 'sheet' ? 'Show the falling notes' : 'Show the sheet music'}
+              aria-pressed={view === 'sheet'}
+            >
+              {view === 'sheet' ? <Piano /> : <ClefTreble />}
+            </Button>
+          </Hint>
+          <Hint>
+            <Button
+              variant={effects ? 'secondary' : 'ghost'}
+              size="icon"
+              onClick={() => {
+                onEffects(!effects)
+              }}
+              aria-label="Effects"
+              aria-pressed={effects}
+            >
+              <Sparkles />
+            </Button>
+          </Hint>
+          <Hint>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                onTheme(theme === 'dark' ? 'light' : 'dark')
+              }}
+              aria-label={
+                theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'
+              }
+            >
+              {theme === 'dark' ? <Sun /> : <Moon />}
+            </Button>
+          </Hint>
+          <Hint>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                onFull(!full)
+              }}
+              aria-label={full ? 'Leave full screen' : 'Full screen'}
+              aria-pressed={full}
+            >
+              {full ? <Minimize2 /> : <Maximize2 />}
+            </Button>
+          </Hint>
         </div>
       </div>
 
@@ -462,15 +488,19 @@ function Stepper({
   return (
     <div className="flex items-center gap-1">
       <span className="text-xs text-text-muted">{label}</span>
-      <Button variant="ghost" size="icon" onClick={onDown} aria-label={downLabel}>
-        <span aria-hidden>&minus;</span>
-      </Button>
+      <Hint>
+        <Button variant="ghost" size="icon" onClick={onDown} aria-label={downLabel}>
+          <span aria-hidden>&minus;</span>
+        </Button>
+      </Hint>
       <span className="min-w-14 text-center font-mono text-sm tabular-nums" data-testid={label}>
         {value}
       </span>
-      <Button variant="ghost" size="icon" onClick={onUp} aria-label={upLabel}>
-        <span aria-hidden>+</span>
-      </Button>
+      <Hint>
+        <Button variant="ghost" size="icon" onClick={onUp} aria-label={upLabel}>
+          <span aria-hidden>+</span>
+        </Button>
+      </Hint>
     </div>
   )
 }

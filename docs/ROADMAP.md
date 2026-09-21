@@ -16,7 +16,7 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI86** (deps: —) **The transport bar is a row of icons, and a pointer resting on one is told nothing** — Every button carries an accessible name a screen reader gets and a sighted reader never sees. → §PI86
+- 📋 **PI87** (deps: —) **A parts row shows a speaker, an S and an eye, and nothing says which of them silences and which hides** — The row names the part and not what its buttons do, and muting and hiding are kept apart on purpose. → §PI87
 
 ## Done when — Block A
 

@@ -190,6 +190,37 @@ describe('TransportBar', () => {
     expect(glyph('Show the falling notes')).not.toBe(glyph('Play with the typing keyboard'))
   })
 
+  it('says what a button does, on focus, in the button’s own words', async () => {
+    setup()
+    const button = screen.getByLabelText('Loop (L)')
+    expect(screen.queryByRole('tooltip')).toBeNull()
+
+    // Focus rather than hover: it is the half a keyboard reader needs, and it
+    // is the half jsdom can drive without a pointer.
+    act(() => {
+      button.focus()
+    })
+    const tip = await screen.findByRole('tooltip')
+    // The same string the button carries, not a second copy of it.
+    expect(tip.textContent).toBe('Loop (L)')
+  })
+
+  it('leaves the button underneath clickable', async () => {
+    const { transport } = setup()
+    const button = screen.getByLabelText('Loop (L)')
+    act(() => {
+      transport.setLoop({ start: 0, end: 4 * QUARTER })
+    })
+    act(() => {
+      button.focus()
+    })
+    await screen.findByRole('tooltip')
+
+    // A trigger placed around the button rather than onto it would take this.
+    fireEvent.click(button)
+    expect(transport.loop).toBeNull()
+  })
+
   it('offers the roll back while the stave is showing', () => {
     const { onView } = setup({ view: 'sheet' })
     const button = screen.getByLabelText('Show the falling notes')

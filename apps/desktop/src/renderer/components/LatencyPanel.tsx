@@ -5,6 +5,7 @@ import type { Calibrator, Latency } from '../lib/latency'
 import { milliseconds } from '../lib/latency'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Hint } from './ui/tooltip'
 
 /**
  * What the machine's lag is, and where it came from.
@@ -34,16 +35,18 @@ export function LatencyPanel({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={measured ? 'secondary' : 'ghost'}
-          size="icon"
-          aria-label="Latency"
-          className={className}
-        >
-          <Timer />
-        </Button>
-      </PopoverTrigger>
+      <Hint>
+        <PopoverTrigger asChild>
+          <Button
+            variant={measured ? 'secondary' : 'ghost'}
+            size="icon"
+            aria-label="Latency"
+            className={className}
+          >
+            <Timer />
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent className="w-80" align="end">
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-text-strong">Latency</h2>

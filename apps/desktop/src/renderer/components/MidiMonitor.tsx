@@ -6,6 +6,7 @@ import { describeMidi } from '../lib/midi'
 import type { MidiInput } from '../lib/midi-input'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Hint } from './ui/tooltip'
 
 /**
  * Which keyboard is connected, and what it is actually sending.
@@ -45,16 +46,18 @@ export function MidiMonitor({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={connected ? 'secondary' : 'ghost'}
-          size="icon"
-          aria-label="MIDI input"
-          className={className}
-        >
-          <Music4 />
-        </Button>
-      </PopoverTrigger>
+      <Hint>
+        <PopoverTrigger asChild>
+          <Button
+            variant={connected ? 'secondary' : 'ghost'}
+            size="icon"
+            aria-label="MIDI input"
+            className={className}
+          >
+            <Music4 />
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent className="w-80" align="end">
         <div className="flex flex-col gap-3">
           <div>

@@ -34,27 +34,26 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI86 Say what a button does, on hover
+### §PI87 The same hint, on the parts rows
 
-Every control in the transport bar is an icon with an accessible name and nothing a
-sighted reader sees. The names are already written and already good — "Show the sheet
-music", "Wait for me", "Back to the start (Home)" — so the answer exists and has no way
-out.
+Each row of the parts panel carries the part's name in words and then three icon
+buttons: a speaker, an S and an eye. PI86 put hints on the transport bar and left this
+alone, on the grounds that the rows are labelled — but the label names the part, not
+what the buttons do to it.
 
-A tooltip on hover and on keyboard focus, showing the same string the button already
-carries as its accessible name. Same string, read from the same place: a tooltip that
-repeats a name in its own words is a second thing to keep in step, and they drift.
+Which matters here more than most places, because the two eyes of the thing are
+deliberately different: parts.ts keeps muting and hiding apart on purpose, since
+following one hand on the roll while hearing both is a real way to practise. A speaker
+and an eye side by side are exactly the pair somebody has to guess between, and the
+names that would settle it — "Silence Melody", "Hide Bass", "Solo Melody" — are already
+written as accessible names and already say which part they are about.
 
-Radix already supplies the popovers, dialogs and sliders here and its tooltip composes
-the same way. A title attribute is the other option and is worse: it cannot be styled,
-cannot be triggered by focus, and waits a second before appearing.
+So the same Hint, around the same buttons. It reads the name off the child, so there is
+nothing to write twice and nothing to keep in step.
 
-The bar is the place to start and probably the place to stop: the parts panel's rows
-carry visible names already, and a tooltip on something that is labelled is noise.
+Check the row does not become noisy: three hints in a row, each following the pointer
+along, is the case the delay exists for, and this panel is where a reader's pointer
+travels furthest. If it reads badly, the honest answer is hints on the speaker and the
+eye and none on the S, whose letter is at least a word.
 
-Two things to get right. It must not swallow the click, which is what a badly placed
-trigger does to the button under it. And the delay wants to be short but not absent: a
-bar of icons all speaking as the pointer crosses them is worse than silence.
-
-The test asserts a tooltip appears on focus with the button's own name, since focus is
-the half a keyboard reader needs and is what a jsdom test can drive.
+The test is the bar's: focus a button, assert a tooltip with that button's own name.

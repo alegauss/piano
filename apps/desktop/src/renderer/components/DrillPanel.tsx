@@ -8,6 +8,7 @@ import { describeHands } from '../lib/levels'
 import { HANDS, type OtherHand } from '../lib/parts'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Hint } from './ui/tooltip'
 import { Switch } from './ui/switch'
 
 /**
@@ -58,17 +59,19 @@ export function DrillPanel({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={state.running ? 'secondary' : 'ghost'}
-          size="icon"
-          aria-label="Practice"
-          aria-pressed={state.running}
-          className={className}
-        >
-          <Dumbbell />
-        </Button>
-      </PopoverTrigger>
+      <Hint>
+        <PopoverTrigger asChild>
+          <Button
+            variant={state.running ? 'secondary' : 'ghost'}
+            size="icon"
+            aria-label="Practice"
+            aria-pressed={state.running}
+            className={className}
+          >
+            <Dumbbell />
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent className="w-90" align="end">
         <div className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-text-strong">Practice</h2>

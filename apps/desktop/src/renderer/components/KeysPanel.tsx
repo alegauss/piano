@@ -5,6 +5,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 import type { KeysInput } from '../lib/keys-input'
 import { Button } from './ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Hint } from './ui/tooltip'
 import { Switch } from './ui/switch'
 
 /**
@@ -36,17 +37,19 @@ export function KeysPanel({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant={state.playing ? 'secondary' : 'ghost'}
-          size="icon"
-          aria-label="Play with the typing keyboard"
-          aria-pressed={state.playing}
-          className={className}
-        >
-          <Keyboard />
-        </Button>
-      </PopoverTrigger>
+      <Hint>
+        <PopoverTrigger asChild>
+          <Button
+            variant={state.playing ? 'secondary' : 'ghost'}
+            size="icon"
+            aria-label="Play with the typing keyboard"
+            aria-pressed={state.playing}
+            className={className}
+          >
+            <Keyboard />
+          </Button>
+        </PopoverTrigger>
+      </Hint>
       <PopoverContent className="w-80" align="end">
         <div className="flex flex-col gap-3">
           <label className="flex items-center justify-between gap-3">
