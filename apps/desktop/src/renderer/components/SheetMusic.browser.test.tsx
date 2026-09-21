@@ -342,6 +342,54 @@ describe.each(THEMES)('SheetMusic, engraved for the %s theme', (theme) => {
     setTheme('dark')
   })
 
+  it('inks the glyphs themselves, which are text and not paths', async () => {
+    // The defect this replaces: the rules asked for `path`, so the stems took
+    // their token and every notehead, clef and rest stayed VexFlow's black.
+    // A bar with a rest in it, so all three are on the page at once.
+    const sparse: readonly Note[] = [{ pitch: 60, start: 0, duration: QUARTER, velocity: 80 }]
+    const { svg } = await mount(sparse)
+    const ink = toRgb(token('--sheet-ink'))
+
+    const head = svg?.querySelector('.vf-stavenote:not([data-ink]) .vf-notehead text')
+    const clef = svg?.querySelector('.vf-clef text')
+    expect(head, 'no notehead text').not.toBeNull()
+    expect(clef, 'no clef text').not.toBeNull()
+    expect(toRgb(getComputedStyle(head as Element).fill)).toEqual(ink)
+    expect(toRgb(getComputedStyle(clef as Element).fill)).toEqual(ink)
+
+    // Every node the page is made of carries one of the page's own tokens,
+    // not only the ones a rule was written for. Stated this way round rather
+    // than as "nothing is black": it catches a glyph left at any colour
+    // nobody chose, and it needs no colour written down to say so.
+    const mine = new Set(
+      ['--sheet-ink', '--sheet-stave-line', '--sheet-bar-line', '--accent'].map((name) =>
+        toRgb(token(name)).join(),
+      ),
+    )
+    for (const node of svg?.querySelectorAll('text, path, rect') ?? []) {
+      const style = getComputedStyle(node)
+      if (style.fill === 'none' || style.display === 'none') {
+        continue
+      }
+      expect([...mine], `${node.tagName}.${node.getAttribute('class') ?? ''}`).toContain(
+        toRgb(style.fill).join(),
+      )
+    }
+  })
+
+  it('marks a sounding notehead, not only its stem', async () => {
+    const { transport } = driven(TWO_BARS)
+    const { container } = render(
+      <div style={{ width: WIDTH, height: 600 }}>
+        <SheetMusic timing={timing} notes={TWO_BARS} position={() => transport.position()} />
+      </div>,
+    )
+    await drawn()
+    const head = container.querySelector('.vf-stavenote[data-ink="--accent"] .vf-notehead text')
+    expect(head, 'no marked notehead').not.toBeNull()
+    expect(toRgb(getComputedStyle(head as Element).fill)).toEqual(toRgb(token('--accent')))
+  })
+
   it('draws its ink and its stave lines in this theme’s tokens', async () => {
     const { svg } = await mount(TWO_BARS)
     const line = svg?.querySelector('.vf-stave > path')

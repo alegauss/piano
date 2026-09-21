@@ -2,42 +2,70 @@
  * The engraved page's ink, in whichever theme is on.
  *
  * VexFlow draws black on white and writes its colours as presentation
- * attributes on every path. A stylesheet rule beats a presentation attribute,
- * so the page is themed here rather than by handing colours to the library as
- * it builds each element: the stave is SVG, and SVG can read a token. Passing
- * resolved colours in is the detour the piano roll needs because a canvas
- * cannot see a stylesheet at all, and repeating it here would mean the stave
- * only followed the theme when React happened to redraw it.
+ * attributes. A stylesheet rule beats a presentation attribute, so the page is
+ * themed here rather than by handing colours to the library as it builds each
+ * element: the stave is SVG, and SVG can read a token. Passing resolved colours
+ * in is the detour the piano roll needs because a canvas cannot see a
+ * stylesheet at all, and repeating it here would mean the stave only followed
+ * the theme when React happened to redraw it.
  *
  * Every rule picks a token and none spells a colour, which is the rule for
  * this whole folder.
  *
- * The order matters: the stave's own lines first, then the groups nested
- * inside it, which are more specific by one class and so win.
+ * Three things about VexFlow's output decide the shape of what follows, and
+ * each was measured on a drawn page rather than assumed.
+ *
+ * The groups are siblings, not a tree. A stave, its barlines, its clef and its
+ * meter are all children of the `<svg>`, so a rule written as `.vf-stave
+ * .vf-clef` matches nothing at all. Each group is addressed on its own.
+ *
+ * The glyphs are text, not paths. Noteheads, clefs, key signatures, meters,
+ * rests, flags and dots are each a `<text>` set in Bravura with no fill of
+ * their own; only stems, stave lines and beams are paths. So a rule aimed at
+ * `path` alone reaches half a page, and `fill` on the group is what the text
+ * inherits.
+ *
+ * The paths carry their own fill, as an attribute, which an inherited value
+ * cannot override. So each rule sets fill on the group for the text and fill
+ * again on the path for the path. `stroke` stays off the text, which carries
+ * `stroke="none"`: stroking a glyph at this size thickens it into a blot.
  */
+
+.vf-stave {
+  fill: var(--sheet-stave-line);
+}
 
 .vf-stave path {
   fill: var(--sheet-stave-line);
   stroke: var(--sheet-stave-line);
 }
 
-.vf-stave .vf-stavebarline path {
+.vf-stavebarline {
+  fill: var(--sheet-bar-line);
+}
+
+.vf-stavebarline path {
   fill: var(--sheet-bar-line);
   stroke: var(--sheet-bar-line);
 }
 
 /*
  * Clefs, key signatures and meters are read like notes, so they are ink. So is
- * a beam: it is drawn outside the stave group, and without a rule of its own it
- * would keep VexFlow's black and disappear into the dark theme.
+ * a beam, which would otherwise keep VexFlow's black and disappear into the
+ * dark theme.
  */
-.vf-stave .vf-clef path,
-.vf-stave .vf-keysignature path,
-.vf-stave .vf-timesignature path,
+.vf-clef,
+.vf-keysignature,
+.vf-timesignature,
+.vf-stavenote,
+.vf-beam {
+  fill: var(--sheet-ink);
+}
+
+.vf-clef path,
+.vf-keysignature path,
+.vf-timesignature path,
 .vf-stavenote path,
-.vf-notehead path,
-.vf-stem path,
-.vf-flag path,
 .vf-beam path {
   fill: var(--sheet-ink);
   stroke: var(--sheet-ink);
@@ -51,32 +79,51 @@
  * An attribute rather than a fill written onto the glyph. Removing an
  * attribute puts the figure back to the ink above, where removing a fill would
  * take these rules off with it and leave the note whatever VexFlow drew.
+ *
+ * Set on the figure's own group and nowhere below it, so the notehead inherits
+ * the mark: a rule on the notehead itself would outrank what the group says,
+ * and the head would stay inked while its stem turned.
  */
-.vf-stavenote[data-ink='--accent'],
+.vf-stavenote[data-ink='--accent'] {
+  fill: var(--accent);
+}
+
 .vf-stavenote[data-ink='--accent'] path {
   fill: var(--accent);
   stroke: var(--accent);
 }
 
-.vf-stavenote[data-ink='--judge-correct'],
+.vf-stavenote[data-ink='--judge-correct'] {
+  fill: var(--judge-correct);
+}
+
 .vf-stavenote[data-ink='--judge-correct'] path {
   fill: var(--judge-correct);
   stroke: var(--judge-correct);
 }
 
-.vf-stavenote[data-ink='--judge-late'],
+.vf-stavenote[data-ink='--judge-late'] {
+  fill: var(--judge-late);
+}
+
 .vf-stavenote[data-ink='--judge-late'] path {
   fill: var(--judge-late);
   stroke: var(--judge-late);
 }
 
-.vf-stavenote[data-ink='--judge-wrong'],
+.vf-stavenote[data-ink='--judge-wrong'] {
+  fill: var(--judge-wrong);
+}
+
 .vf-stavenote[data-ink='--judge-wrong'] path {
   fill: var(--judge-wrong);
   stroke: var(--judge-wrong);
 }
 
-.vf-stavenote[data-ink='--judge-expected'],
+.vf-stavenote[data-ink='--judge-expected'] {
+  fill: var(--judge-expected);
+}
+
 .vf-stavenote[data-ink='--judge-expected'] path {
   fill: var(--judge-expected);
   stroke: var(--judge-expected);

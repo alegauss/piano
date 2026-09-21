@@ -16,6 +16,10 @@
 
 ## Block H — Sheet music view
 
+- 📋 **PI81** (deps: —) **Notes in a busy bar are drawn on top of each other, so a page of sixteenths is unreadable** — Every bar is given the same width whatever it holds, and a bar of sixteen figures needs 442 px where the page hands it 208. → §PI81
+- 📋 **PI82** (deps: —) **The button that leaves the stave shows the same note glyph as the MIDI monitor two places along** — Both are Music4, so a row of controls carries two identical icons and neither says which one it is. → §PI82
+- 📋 **PI83** (deps: PI81) **The stave is drawn at one size, and on a dense score its notes are too small to read** — The roll has a zoom and the stave has none, so a reader cannot make the glyphs bigger and move across them. → §PI83
+
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,
