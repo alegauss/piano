@@ -24,23 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI23 One clock, one transport state machine
-
-The transport is small and it is the thing everything else reads. It owns a state
-machine of stopped, playing and paused, a position in ticks, and the operations play,
-pause, stop, seek to tick, set loop range, set tempo scale and set transpose. Two rules
-make it work. There is exactly one clock, the audio clock, and the interface derives its
-position from that rather than keeping a second counter, because anything counting
-frames independently drifts away from the sound inside a minute. And every operation is
-defined in ticks, so seeking to a bar, looping a named section and slowing to 60 percent
-compose without special cases between them. Tempo scale multiplies the tempo map rather
-than editing it, keeping the displayed BPM and the written score separable. Transpose
-shifts pitch at the engine boundary, which keeps the score and the roll honest about
-what is actually written. Seeking while the pedal is held has to restore pedal state,
-and the scheduler already does: its start(fromTick) sends the pedals as they stand at
-that tick, so a seek is a stop and a start. The transport builds on the scheduler's
-start, stop, setTempoScale and tickAt rather than keeping a clock of its own.
-
 ### §PI24 A beat to play against, and a bar before it starts
 
 Two small features the practice mode is unusable without. The metronome is scheduled by

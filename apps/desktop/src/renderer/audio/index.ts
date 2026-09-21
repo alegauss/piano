@@ -7,6 +7,8 @@ import { SynthEngine } from './synth-engine'
 export type { AudioTime, EngineKind, PianoEngine } from './engine'
 export { urlPackSource, type PackProgress, type PackSource } from './pack-bank'
 export type { PackBank } from './pack-bank'
+export type { Clock, LoopRange, Performance } from './scheduler'
+export { Transport, type TransportStatus } from './transport'
 
 /** What the rest of the renderer gets from the audio layer: an engine and the clock it runs on. */
 export type Piano = {

@@ -102,12 +102,20 @@ export function timelineOf(performance: Performance): TimelineEvent[] {
   return events.sort((a, b) => a.tick - b.tick || ORDER[a.kind] - ORDER[b.kind])
 }
 
-/** Where a tick and an audio time were last known to coincide, and how fast they move apart. */
+/** Where a tick and an audio time coincide, and how fast they move apart from there. */
 type Anchor = {
   readonly tick: number
   readonly time: AudioTime
   /** The anchor tick in score seconds, before the tempo scale. */
   readonly seconds: number
+  /** The practice tempo from this anchor on. */
+  readonly scale: number
+}
+
+/** A stretch of the piece to repeat, in ticks, its end not included. */
+export type LoopRange = {
+  readonly start: number
+  readonly end: number
 }
 
 export class Scheduler {
@@ -115,19 +123,33 @@ export class Scheduler {
   private events: TimelineEvent[] = []
   private pedals: readonly PedalEvent[] = []
   private cursor = 0
-  private anchor: Anchor = { tick: 0, time: 0, seconds: 0 }
+  /**
+   * The mappings between ticks and audio time, oldest first. There is more
+   * than one while a tempo change or a loop's jump back has been scheduled
+   * ahead of the clock: until the clock reaches it, the mapping before it is
+   * still the one that says what is sounding.
+   */
+  private anchors: Anchor[] = [{ tick: 0, time: 0, seconds: 0, scale: 1 }]
   private scale = 1
-  /** Where this run began: a note struck before it was never sent, so neither is its release. */
+  private loopRange: LoopRange | null = null
+  /** Where this pass began: a note struck before it was never sent, so neither is its release. */
   private fromTick = 0
   /** Everything before this audio time has been handed to the engine. */
   private scheduledUntil: AudioTime = 0
+  /** When the last event handed over sounds. */
+  private lastAt: AudioTime = 0
+  /** Notes handed to the engine and not yet released, by pitch, for a loop to release at its end. */
+  private readonly open = new Map<number, number>()
   private started = false
+  private ended = false
   private cancel: (() => void) | null = null
 
   constructor(
     private readonly engine: PianoEngine,
     private readonly clock: Clock,
     private readonly ticker: Ticker = intervalTicker,
+    /** Called once when the clock passes the last note of a pass that does not loop. */
+    private readonly onEnd: () => void = () => {},
   ) {}
 
   /** Replace what is to be played. Stops first, since a timeline cannot change under a cursor. */
@@ -143,14 +165,26 @@ export class Scheduler {
     return this.started
   }
 
-  /** Every event has been handed to the engine: nothing is left to wake for. */
+  /** Every event has been handed to the engine and nothing loops back: nothing is left to wake for. */
   get finished(): boolean {
-    return this.cursor >= this.events.length
+    return this.cursor >= this.events.length && this.activeLoop() === null
   }
 
   /** The practice tempo, as a multiple of the written one: 0.5 is half speed. */
   get tempoScale(): number {
     return this.scale
+  }
+
+  get loop(): LoopRange | null {
+    return this.loopRange
+  }
+
+  /**
+   * Repeat a stretch, or stop repeating. A loop takes hold when playing
+   * crosses its end, so a pass that starts after the end plays on through.
+   */
+  setLoop(range: LoopRange | null): void {
+    this.loopRange = range !== null && range.end > range.start && range.start >= 0 ? range : null
   }
 
   /**
@@ -167,38 +201,39 @@ export class Scheduler {
     }
     this.halt()
     this.started = true
-    this.fromTick = fromTick
-    this.anchor = { tick: fromTick, time: at, seconds: ticksToSeconds(timing, fromTick) }
-    this.cursor = this.events.findIndex((event) => event.tick >= fromTick)
-    if (this.cursor === -1) {
-      this.cursor = this.events.length
-    }
+    this.ended = false
+    this.open.clear()
+    this.anchors = [
+      { tick: fromTick, time: at, seconds: ticksToSeconds(timing, fromTick), scale: this.scale },
+    ]
+    this.seekCursor(fromTick)
     this.scheduledUntil = at
+    this.lastAt = at
 
-    const pedals = new Set(this.pedals.map((event) => event.pedal))
-    for (const pedal of pedals) {
+    for (const pedal of new Set(this.pedals.map((event) => event.pedal))) {
       const value = pedalValueAt(this.pedals, pedal, fromTick - 1)
       if (value > 0) {
         this.engine.pedal(pedal, value, at)
       }
     }
 
+    this.cancel = this.ticker(() => {
+      this.wake()
+    }, WAKE_INTERVAL_MS)
     this.wake()
-    if (!this.finished) {
-      this.cancel = this.ticker(() => {
-        this.wake()
-      }, WAKE_INTERVAL_MS)
-    }
   }
 
   /** Stop and silence, answering the tick that was sounding, which is where a resume starts. */
   stop(): number {
     const now = this.clock.now()
-    const tick = this.started ? this.tickAt(now) : this.anchor.tick
+    const tick = this.started ? this.tickAt(now) : this.current().tick
     this.halt()
     this.started = false
+    this.open.clear()
     if (this.timing !== null) {
-      this.anchor = { tick, time: now, seconds: ticksToSeconds(this.timing, tick) }
+      this.anchors = [
+        { tick, time: now, seconds: ticksToSeconds(this.timing, tick), scale: this.scale },
+      ]
     }
     this.engine.stopAll()
     return tick
@@ -215,38 +250,83 @@ export class Scheduler {
     if (!(scale > 0)) {
       return
     }
+    this.scale = scale
     if (this.started && this.timing !== null) {
       const tick = this.tickAt(this.scheduledUntil)
-      this.anchor = {
+      this.anchors.push({
         tick,
         time: this.scheduledUntil,
         seconds: ticksToSeconds(this.timing, tick),
-      }
+        scale,
+      })
     }
-    this.scale = scale
   }
 
-  /** The audio time a tick sounds at, under the current tempo scale. */
+  /** The audio time a tick will sound at, under the mapping now being scheduled. */
   timeAt(tick: number): AudioTime {
+    const anchor = this.current()
     if (this.timing === null) {
-      return this.anchor.time
+      return anchor.time
     }
-    return this.anchor.time + (ticksToSeconds(this.timing, tick) - this.anchor.seconds) / this.scale
+    return anchor.time + (ticksToSeconds(this.timing, tick) - anchor.seconds) / anchor.scale
   }
 
   /** The tick sounding at an audio time: what the roll draws and the transport reports. */
   tickAt(time: AudioTime): number {
+    const anchor = this.anchorAt(time)
     if (this.timing === null) {
-      return this.anchor.tick
+      return anchor.tick
     }
-    const seconds = this.anchor.seconds + (time - this.anchor.time) * this.scale
-    return Math.max(this.anchor.tick, secondsToTicks(this.timing, seconds))
+    const seconds = anchor.seconds + (time - anchor.time) * anchor.scale
+    return Math.max(anchor.tick, secondsToTicks(this.timing, seconds))
+  }
+
+  private current(): Anchor {
+    return this.anchors[this.anchors.length - 1] ?? { tick: 0, time: 0, seconds: 0, scale: 1 }
+  }
+
+  /** The mapping in force at a time: the latest one the clock has reached by then. */
+  private anchorAt(time: AudioTime): Anchor {
+    let found = this.anchors[0] ?? this.current()
+    for (const anchor of this.anchors) {
+      if (anchor.time <= time) {
+        found = anchor
+      }
+    }
+    return found
+  }
+
+  /** The loop this pass will jump back from, if it started before the loop's end. */
+  private activeLoop(): LoopRange | null {
+    const loop = this.loopRange
+    return loop !== null && this.current().tick < loop.end ? loop : null
+  }
+
+  private seekCursor(tick: number): void {
+    const index = this.events.findIndex((event) => event.tick >= tick)
+    this.cursor = index === -1 ? this.events.length : index
+    this.fromTick = tick
   }
 
   private wake(): void {
-    const horizon = this.clock.now() + LOOK_AHEAD_SECONDS
-    while (this.cursor < this.events.length) {
+    const now = this.clock.now()
+    const horizon = now + LOOK_AHEAD_SECONDS
+    // Mappings the clock has left behind answer nothing any more.
+    while (this.anchors.length > 1 && (this.anchors[1]?.time ?? Infinity) <= now) {
+      this.anchors.shift()
+    }
+
+    for (;;) {
       const event = this.events[this.cursor]
+      const loop = this.activeLoop()
+      if (loop !== null && (event === undefined || event.tick >= loop.end)) {
+        const at = this.timeAt(loop.end)
+        if (at >= horizon) {
+          break
+        }
+        this.jumpBack(loop, at)
+        continue
+      }
       if (event === undefined) {
         break
       }
@@ -258,21 +338,60 @@ export class Scheduler {
       this.cursor += 1
     }
     this.scheduledUntil = Math.max(this.scheduledUntil, horizon)
-    if (this.finished) {
+
+    if (this.finished && now >= this.lastAt && !this.ended) {
+      this.ended = true
       this.halt()
+      this.onEnd()
     }
   }
 
+  /**
+   * The end of a loop, at the time it sounds: let go of every note still
+   * down, put the pedals as they stand at the loop's start, and carry on
+   * from there on a new mapping.
+   */
+  private jumpBack(loop: LoopRange, at: AudioTime): void {
+    for (const [pitch, count] of this.open) {
+      for (let index = 0; index < count; index += 1) {
+        this.engine.noteOff(pitch, at)
+      }
+    }
+    this.open.clear()
+    for (const pedal of new Set(this.pedals.map((event) => event.pedal))) {
+      const atEnd = pedalValueAt(this.pedals, pedal, loop.end - 1)
+      const atStart = pedalValueAt(this.pedals, pedal, loop.start - 1)
+      if (atEnd !== atStart) {
+        this.engine.pedal(pedal, atStart, at)
+      }
+    }
+    if (this.timing !== null) {
+      this.anchors.push({
+        tick: loop.start,
+        time: at,
+        seconds: ticksToSeconds(this.timing, loop.start),
+        scale: this.scale,
+      })
+    }
+    this.seekCursor(loop.start)
+    this.lastAt = Math.max(this.lastAt, at)
+  }
+
   private hand(event: TimelineEvent, at: AudioTime): void {
+    this.lastAt = Math.max(this.lastAt, at)
     switch (event.kind) {
       case 'on':
+        this.open.set(event.pitch, (this.open.get(event.pitch) ?? 0) + 1)
         this.engine.noteOn(event.pitch, event.velocity, at)
         return
-      case 'off':
-        if (event.struck >= this.fromTick) {
+      case 'off': {
+        const sounding = this.open.get(event.pitch) ?? 0
+        if (event.struck >= this.fromTick && sounding > 0) {
+          this.open.set(event.pitch, sounding - 1)
           this.engine.noteOff(event.pitch, at)
         }
         return
+      }
       case 'pedal':
         this.engine.pedal(event.pedal, event.value, at)
         return

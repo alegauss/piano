@@ -74,6 +74,9 @@
   checked **The pack builds from scratch with one command** A clean machine runs the script, which fetches the source, verifies its checksum and produces the versioned pack and manifest with no manual step in between.
 - ✅ **PI21** **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — The app reads the installed pack through a checked bridge channel, loads it behind the synthesiser and credits it in the footer (design recorded in `apps/desktop/src/renderer/audio/pack-bank.ts`).
 - ✅ **PI22** **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity picks and crossfades recordings, half pedal damps partially, and every key coming up plays its release recording (design recorded in `apps/desktop/src/renderer/audio/keyboard.ts`).
+- ✅ **PI23** **There is no transport: nothing plays, pauses, seeks, loops or changes tempo** — A transport plays, pauses, seeks, loops, rescales tempo and transposes on the audio clock; each note sounds at the reported tick (design recorded in `apps/desktop/src/renderer/audio/transport.ts`).
+  checked **Reported position never disagrees with what is sounding** After a minute of playback the position the interface shows still matches the audio clock, with no drift accumulated from a second independent counter.
+  checked **Seek, loop, tempo and transpose compose cleanly** Looping a named section at 60 percent tempo transposed up two semitones behaves exactly as each operation separately implies, asserted end to end.
 
 ## Block D — Piano roll and on-screen keyboard
 

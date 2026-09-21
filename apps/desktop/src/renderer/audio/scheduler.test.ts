@@ -1,101 +1,13 @@
-import type { Note, PedalKind, Score, Timing } from '@piano/score-format'
-import { resolveTiming } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
-import type { AudioTime, EngineKind, PianoEngine } from './engine'
 import {
   LOOK_AHEAD_SECONDS,
   Scheduler,
   timelineOf,
-  WAKE_INTERVAL_MS,
+  type LoopRange,
   type Performance,
-  type Ticker,
 } from './scheduler'
-
-/** What the engine was told, and what the clock said when it was told. */
-type Heard = {
-  readonly call: string
-  readonly at: AudioTime
-  readonly toldAt: AudioTime
-}
-
-/**
- * Synthetic time. The clock only moves when the test moves it, and each
- * wake-up fires when the test says, which is how lateness is simulated.
- */
-class FakeTime {
-  now = 0
-  private wake: (() => void) | null = null
-  wakeUps = 0
-
-  readonly clock = { now: () => this.now }
-
-  readonly ticker: Ticker = (wake) => {
-    this.wake = wake
-    return () => {
-      this.wake = null
-    }
-  }
-
-  get ticking(): boolean {
-    return this.wake !== null
-  }
-
-  /** Run the clock to `until`, waking every interval, each wake-up late by `lateness(n)` seconds. */
-  run(until: AudioTime, lateness: (wakeUp: number) => number = () => 0): void {
-    let next = this.now + WAKE_INTERVAL_MS / 1000
-    while (next <= until && this.wake !== null) {
-      const late = lateness(this.wakeUps)
-      this.now = next + late
-      this.wakeUps += 1
-      this.wake()
-      next += WAKE_INTERVAL_MS / 1000
-      if (this.now > next) {
-        next = this.now + WAKE_INTERVAL_MS / 1000
-      }
-    }
-    this.now = Math.max(this.now, until)
-  }
-}
-
-class Listener implements PianoEngine {
-  readonly kind: EngineKind = 'synth'
-  readonly heard: Heard[] = []
-  stopped = 0
-
-  constructor(private readonly time: FakeTime) {}
-
-  prepare(_score: Score): Promise<void> {
-    return Promise.resolve()
-  }
-  noteOn(pitch: number, velocity: number, at: AudioTime): void {
-    this.heard.push({ call: `on ${String(pitch)} ${String(velocity)}`, at, toldAt: this.time.now })
-  }
-  noteOff(pitch: number, at: AudioTime): void {
-    this.heard.push({ call: `off ${String(pitch)}`, at, toldAt: this.time.now })
-  }
-  pedal(pedal: PedalKind, value: number, at: AudioTime): void {
-    this.heard.push({ call: `pedal ${pedal} ${String(value)}`, at, toldAt: this.time.now })
-  }
-  setMasterGain(): void {}
-  stopAll(): void {
-    this.stopped += 1
-  }
-  retire(): void {}
-
-  /** When each call was scheduled for, rounded past float noise. */
-  times(): [string, number][] {
-    return this.heard.map((entry) => [entry.call, Math.round(entry.at * 1e6) / 1e6])
-  }
-}
-
-function note(pitch: number, start: number, duration = 240, velocity = 80): Note {
-  return { pitch, start, duration, velocity }
-}
-
-function performance(notes: Note[], timing?: Timing, extra: Partial<Performance> = {}) {
-  return { timing: resolveTiming(timing), notes, ...extra }
-}
+import { FakeTime, Listener, note, performance } from './test-doubles'
 
 function setup(played: Performance) {
   const time = new FakeTime()
@@ -287,5 +199,119 @@ describe('Scheduler', () => {
     expect(engine.heard).toHaveLength(2)
     expect(scheduler.finished).toBe(true)
     expect(time.ticking).toBe(false)
+  })
+})
+
+describe('Scheduler loops', () => {
+  const loop: LoopRange = { start: 960, end: 1920 }
+  const onsets = (engine: Listener) => engine.times().filter(([call]) => call.startsWith('on'))
+
+  it('repeats a stretch with every note at its exact time', () => {
+    const notes = Array.from({ length: 8 }, (_, index) => note(60 + index, index * 480))
+    const { time, engine, scheduler } = setup(performance(notes))
+    scheduler.setLoop(loop)
+    scheduler.start(0, 0)
+    time.run(4.2)
+    expect(onsets(engine)).toEqual([
+      ['on 60 80', 0],
+      ['on 61 80', 0.5],
+      ['on 62 80', 1],
+      ['on 63 80', 1.5],
+      ['on 62 80', 2],
+      ['on 63 80', 2.5],
+      ['on 62 80', 3],
+      ['on 63 80', 3.5],
+      ['on 62 80', 4],
+    ])
+  })
+
+  it('lets go of a note still sounding when the loop jumps back, at the moment it jumps', () => {
+    const { time, engine, scheduler } = setup(performance([note(60, 960, 1920)]))
+    scheduler.setLoop(loop)
+    scheduler.start(960, 0)
+    time.run(1.2)
+    expect(engine.times()).toEqual([
+      ['on 60 80', 0],
+      ['off 60', 1],
+      ['on 60 80', 1],
+    ])
+  })
+
+  it('puts the pedals back as they stand at the loop start', () => {
+    const { time, engine, scheduler } = setup(
+      performance([note(60, 960)], undefined, {
+        expression: { pedals: [{ tick: 1440, pedal: 'sustain', value: 127 }] },
+      }),
+    )
+    scheduler.setLoop(loop)
+    scheduler.start(960, 0)
+    time.run(1.2)
+    expect(engine.times().filter(([call]) => call.startsWith('pedal'))).toEqual([
+      ['pedal sustain 127', 0.5],
+      ['pedal sustain 0', 1],
+    ])
+  })
+
+  it('plays on through a loop whose end it started after', () => {
+    const { time, engine, scheduler } = setup(performance([note(60, 2400), note(62, 2880)]))
+    scheduler.setLoop(loop)
+    scheduler.start(2400, 0)
+    time.run(2)
+    expect(onsets(engine).map(([call]) => call)).toEqual(['on 60 80', 'on 62 80'])
+  })
+
+  it('reports the tick sounding at every note, across loops and a change of tempo', () => {
+    // Pitch 30 + n sits at tick 120 n, so any note says where it belongs.
+    const notes = Array.from({ length: 24 }, (_, index) => note(30 + index, index * 120, 60))
+    const time = new FakeTime()
+    const misses: number[] = []
+    let scheduler: Scheduler | null = null
+    class Checking extends Listener {
+      override noteOn(pitch: number, velocity: number, at: number): void {
+        super.noteOn(pitch, velocity, at)
+        misses.push(Math.abs((scheduler?.tickAt(at) ?? NaN) - (pitch - 30) * 120))
+      }
+    }
+    scheduler = new Scheduler(new Checking(time), time.clock, time.ticker)
+    scheduler.load(performance(notes))
+    scheduler.setLoop({ start: 480, end: 2400 })
+    scheduler.start(0, 0)
+    time.run(1.3)
+    scheduler.setTempoScale(0.5)
+    time.run(4)
+    scheduler.setTempoScale(1.5)
+    time.run(9)
+
+    expect(misses.length).toBeGreaterThan(40)
+    expect(Math.max(...misses)).toBeLessThan(1e-6)
+  })
+
+  it('says once that the piece has ended, when the clock passes its last note', () => {
+    let ended = 0
+    const time = new FakeTime()
+    const scheduler = new Scheduler(new Listener(time), time.clock, time.ticker, () => {
+      ended += 1
+    })
+    scheduler.load(performance([note(60, 0, 480)]))
+    scheduler.start(0, 0)
+    time.run(0.4)
+    expect(ended).toBe(0)
+    time.run(2)
+    expect(ended).toBe(1)
+    expect(time.ticking).toBe(false)
+  })
+
+  it('never ends while it loops', () => {
+    let ended = 0
+    const time = new FakeTime()
+    const scheduler = new Scheduler(new Listener(time), time.clock, time.ticker, () => {
+      ended += 1
+    })
+    scheduler.load(performance([note(60, 960)]))
+    scheduler.setLoop(loop)
+    scheduler.start(960, 0)
+    time.run(10)
+    expect(ended).toBe(0)
+    expect(time.ticking).toBe(true)
   })
 })
