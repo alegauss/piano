@@ -205,7 +205,7 @@ export function LibraryPanel({
                     <span className="truncate text-sm font-medium text-text-strong">
                       {item.title}
                     </span>
-                    <span className="text-xs text-text-muted">
+                    <span className="truncate text-xs text-text-muted">
                       {[
                         item.level,
                         item.difficulty === undefined ? undefined : `${String(item.difficulty)}/10`,
@@ -215,7 +215,12 @@ export function LibraryPanel({
                         .join(' · ')}
                     </span>
                   </button>
-                  <span className="flex shrink-0 flex-wrap justify-end gap-1 text-xs">
+                  {/*
+                   * Capped at half the row: a composer is a sentence in a
+                   * score written for this app, not a name, and chips that
+                   * refused to give ground left the title nothing to show.
+                   */}
+                  <span className="flex max-w-[50%] flex-wrap justify-end gap-1 text-xs">
                     {item.composer === undefined ? null : (
                       <FilterChip
                         label={item.composer}
@@ -259,8 +264,9 @@ function FilterChip({
     <button
       type="button"
       aria-label={`Only scores with the ${what} ${label}`}
+      title={label}
       className={cn(
-        'rounded-full px-2 py-0.5 hover:text-text-strong',
+        'min-w-0 max-w-full truncate rounded-full px-2 py-0.5 hover:text-text-strong',
         what === 'composer' ? 'text-text-default' : 'bg-surface-overlay text-text-muted',
       )}
       onClick={onPick}
