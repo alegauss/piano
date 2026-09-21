@@ -46,6 +46,7 @@ const NAMES: Readonly<Record<keyof Settings, string>> = {
   leadSeconds: 'how far ahead the roll shows',
   strictness: 'how strictly timing is judged',
   view: 'whether the piece opens on the roll or the stave',
+  sheetZoom: 'how large the stave is drawn',
 }
 
 function listed(names: readonly string[]): string {

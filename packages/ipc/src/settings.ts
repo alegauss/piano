@@ -46,6 +46,12 @@ export const settingsSchema = z.object({
    * way, and being handed the roll at each launch is being asked again.
    */
   view: z.enum(['roll', 'sheet']),
+  /**
+   * How large the stave is drawn, as a multiple. The roll's zoom is seconds of
+   * music on screen; this one is magnification, and they are separate because
+   * one slider meaning both would be a lie about either.
+   */
+  sheetZoom: z.number().min(0.5).max(3),
 })
 
 export type Settings = z.infer<typeof settingsSchema>
@@ -59,6 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   leadSeconds: 3,
   strictness: 'steady',
   view: 'roll',
+  sheetZoom: 1,
 }
 
 /** Some settings changed at once; the rest stay as they are. Anything not a setting is refused. */

@@ -116,6 +116,22 @@ const SYSTEM_GAP = 28
 /** One stave and the space under it. */
 export const STAVE_HEIGHT = 92
 
+/**
+ * How far the page may be magnified.
+ *
+ * A multiple rather than a size, and the plan knows nothing about it: the
+ * layout is worked out once in its own units and the drawing is scaled, so
+ * doubling makes the glyphs and the spacing both twice the size. Relayout
+ * cannot do that — it moves notes apart and leaves them as small as they were.
+ */
+export const MIN_SHEET_ZOOM = 0.5
+export const MAX_SHEET_ZOOM = 3
+export const DEFAULT_SHEET_ZOOM = 1
+
+export function clampZoom(zoom: number): number {
+  return Math.min(MAX_SHEET_ZOOM, Math.max(MIN_SHEET_ZOOM, zoom))
+}
+
 export type SheetNote = {
   /**
    * Where it sits on the page, which is how a highlight reaches the glyph the

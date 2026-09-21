@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import { resolveTiming, type Note } from '@piano/score-format'
 import { Profiler } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -318,6 +318,76 @@ describe('SheetMusic, following the playhead', () => {
     transport.seek(0)
     await drawn()
     expect(panel?.scrollTop ?? 0).toBeLessThan(turned)
+  })
+
+  it('magnifies the page without relaying it out, and the band with it', async () => {
+    const { transport } = driven(TWO_BARS)
+    const at = (zoom: number) =>
+      render(
+        <div style={{ width: WIDTH, height: 600, display: 'flex' }}>
+          <SheetMusic
+            timing={timing}
+            notes={TWO_BARS}
+            zoom={zoom}
+            position={() => transport.position()}
+          />
+        </div>,
+      )
+
+    const plain = at(1)
+    await drawn()
+    const one = plain.container.querySelector('svg')
+    const band = plain.container.querySelector<HTMLElement>('[data-testid="sheet-band"]')
+    const width = Number(one?.getAttribute('width'))
+    const height = Number(one?.getAttribute('height'))
+    const bandWidth = Number.parseFloat(band?.style.width ?? '0')
+    expect(width).toBeGreaterThan(0)
+    expect(bandWidth).toBeGreaterThan(0)
+
+    cleanup()
+    const large = at(2)
+    await drawn()
+    const two = large.container.querySelector('svg')
+    const bigBand = large.container.querySelector<HTMLElement>('[data-testid="sheet-band"]')
+    expect(Number(two?.getAttribute('width'))).toBeCloseTo(width * 2, 0)
+    expect(Number(two?.getAttribute('height'))).toBeCloseTo(height * 2, 0)
+    // The band is placed in the page's units, so it grows by the same number.
+    expect(Number.parseFloat(bigBand?.style.width ?? '0')).toBeCloseTo(bandWidth * 2, 0)
+    // Same layout, magnified: the bar count did not change with the zoom.
+    expect(two?.querySelectorAll('.vf-stave').length).toBe(
+      one?.querySelectorAll('.vf-stave').length,
+    )
+  })
+
+  it('follows the sounding bar sideways once the page is wider than the panel', async () => {
+    // Magnified far enough that one system runs off the panel.
+    const { transport } = driven(TWO_BARS)
+    const { container } = render(
+      <div style={{ width: 420, height: 400, display: 'flex' }}>
+        <SheetMusic
+          timing={timing}
+          notes={TWO_BARS}
+          zoom={3}
+          position={() => transport.position()}
+        />
+      </div>,
+    )
+    await drawn()
+    const panel = container.querySelector('section')
+    expect(panel?.scrollWidth ?? 0).toBeGreaterThan(panel?.clientWidth ?? 0)
+    // Bar 1 is itself wider than the panel here, so the page is already held
+    // at its left edge: a bar too wide to show whole is shown from its start.
+    const opening = panel?.scrollLeft ?? 0
+
+    // Bar 2, which at this magnification is off to the right.
+    transport.seek(BAR + QUARTER)
+    await drawn()
+    expect(panel?.scrollLeft ?? 0).toBeGreaterThan(opening)
+
+    // And back, when the music returns to the left of the system.
+    transport.seek(0)
+    await drawn()
+    expect(panel?.scrollLeft ?? 0).toBe(opening)
   })
 
   it('engraves once and never again while the piece plays', async () => {

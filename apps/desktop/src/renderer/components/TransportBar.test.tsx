@@ -29,6 +29,7 @@ function setup(over: Partial<React.ComponentProps<typeof TransportBar>> = {}) {
   const onFull = vi.fn()
   const onTheme = vi.fn()
   const onView = vi.fn()
+  const onSheetZoom = vi.fn()
   render(
     <TransportBar
       transport={transport}
@@ -44,10 +45,12 @@ function setup(over: Partial<React.ComponentProps<typeof TransportBar>> = {}) {
       onFull={onFull}
       view="roll"
       onView={onView}
+      sheetZoom={1}
+      onSheetZoom={onSheetZoom}
       {...over}
     />,
   )
-  return { time, transport, onLeadSeconds, onEffects, onFull, onTheme, onView }
+  return { time, transport, onLeadSeconds, onEffects, onFull, onTheme, onView, onSheetZoom }
 }
 
 describe('TransportBar', () => {

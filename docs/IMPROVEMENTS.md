@@ -33,27 +33,3 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 ## Block G — Score library and distribution
 
 ## Block H — Sheet music view
-
-### §PI83 A zoom for the page, and following it across
-
-The roll has a zoom — the slider under the magnifier, MIN_LEAD_SECONDS to
-MAX_LEAD_SECONDS, "Seconds of music on screen" — and the stave has one size. On a dense
-score the glyphs are too small to read, and no amount of relayout fixes that: PI81 stops
-notes colliding, and they are still small.
-
-Scale rather than relayout. The plan stays in its own units and the drawing is scaled,
-so zoom is `context.scale(z, z)` with the SVG sized `plan.width * z` by `plan.height *
-z`, and nothing about the layout is recomputed. Doubling makes glyphs and spacing both
-twice the size, which is what "bigger notes" means and what relayout alone cannot give.
-
-The page then grows past the panel, so the panel scrolls both ways. It already has
-overflow-auto; what is missing is following in x. PI75 turns the page by system and
-reads `system.y` — it needs the sounding bar's x too, kept in view the way the system
-is, and both multiplied by the zoom, since the plan is in unscaled units.
-
-Its own control beside the roll's rather than the same one: they mean different things,
-one being seconds of music and the other a magnification, and one slider doing both
-would be a lie about either. Keep it in the settings, as the view itself is.
-
-A browser test zooms and asserts the SVG's width grows and the band tracks it; another
-asserts the panel scrolls in x to a bar off to the right.

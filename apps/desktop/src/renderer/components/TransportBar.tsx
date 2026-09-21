@@ -27,6 +27,7 @@ import type { Progress } from '../lib/progress'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
 import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
+import { clampZoom, MAX_SHEET_ZOOM, MIN_SHEET_ZOOM } from '../lib/sheet'
 import type { ViewName } from '../lib/settings'
 import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
@@ -77,6 +78,9 @@ export type TransportBarProps = {
   /** Which reading of the piece fills the centre of the window. */
   readonly view: ViewName
   readonly onView: (view: ViewName) => void
+  /** How large the stave is drawn. Only the stave has one; the roll has its lead. */
+  readonly sheetZoom: number
+  readonly onSheetZoom: (zoom: number) => void
   /** The MIDI input, for the monitor that says what a controller is sending. */
   readonly midi?: MidiInput
   /** The typing keyboard as an instrument, for the panel that switches it on. */
@@ -132,6 +136,8 @@ export function TransportBar({
   full,
   view,
   onView,
+  sheetZoom,
+  onSheetZoom,
   onFull,
   midi,
   keys,
@@ -295,19 +301,39 @@ export function TransportBar({
             upLabel="Up a semitone"
           />
 
+          {/*
+            One magnifier, showing whichever view is open. They are different
+            questions — seconds of music on screen against how large the page
+            is drawn — so they are separate settings, and the slider that does
+            nothing for the view somebody is reading is not worth the width.
+          */}
           <label className="flex items-center gap-2 text-xs text-text-muted">
             <ZoomIn className="size-4" aria-hidden />
-            <Slider
-              aria-label="Seconds of music on screen"
-              className="w-24"
-              min={MIN_LEAD_SECONDS}
-              max={MAX_LEAD_SECONDS}
-              step={0.5}
-              value={[leadSeconds]}
-              onValueChange={([next]) => {
-                onLeadSeconds(clampLead(next ?? leadSeconds))
-              }}
-            />
+            {view === 'sheet' ? (
+              <Slider
+                aria-label="How large the stave is drawn"
+                className="w-24"
+                min={MIN_SHEET_ZOOM}
+                max={MAX_SHEET_ZOOM}
+                step={0.1}
+                value={[sheetZoom]}
+                onValueChange={([next]) => {
+                  onSheetZoom(clampZoom(next ?? sheetZoom))
+                }}
+              />
+            ) : (
+              <Slider
+                aria-label="Seconds of music on screen"
+                className="w-24"
+                min={MIN_LEAD_SECONDS}
+                max={MAX_LEAD_SECONDS}
+                step={0.5}
+                value={[leadSeconds]}
+                onValueChange={([next]) => {
+                  onLeadSeconds(clampLead(next ?? leadSeconds))
+                }}
+              />
+            )}
           </label>
 
           {onWaiting === undefined ? null : (

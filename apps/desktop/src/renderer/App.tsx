@@ -158,7 +158,7 @@ export function App() {
   // so each is where its control starts rather than a correction after it.
   const settings = appSettings()
   const remembered = useSyncExternalStore(settings.subscribe, () => settings.state)
-  const { theme, leadSeconds, effects, view } = remembered.settings
+  const { theme, leadSeconds, effects, view, sheetZoom } = remembered.settings
   const [full, setFull] = useState(false)
   const [loop, setLoop] = useState<LoopRange | null>(null)
   /** Null for the piece as written; otherwise the level chosen, last time or since. */
@@ -929,6 +929,10 @@ export function App() {
           view={view}
           onView={(next) => {
             settings.update({ view: next })
+          }}
+          sheetZoom={sheetZoom}
+          onSheetZoom={(next) => {
+            settings.update({ sheetZoom: next })
           }}
           midi={midi}
           keys={keys}

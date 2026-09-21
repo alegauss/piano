@@ -16,8 +16,6 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI83** (deps: PI81 ✅) **The stave is drawn at one size, and on a dense score its notes are too small to read** — The roll has a zoom and the stave has none, so a reader cannot make the glyphs bigger and move across them. → §PI83
-
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,

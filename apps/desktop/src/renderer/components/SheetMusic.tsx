@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '../lib/cn'
 import { noteLook, type Feedback } from '../lib/grading'
-import { planSheet } from '../lib/sheet'
+import { DEFAULT_SHEET_ZOOM, planSheet } from '../lib/sheet'
 import { drawSheet } from '../lib/sheet-draw'
 import { bandFor, colouring, systemFor, type Band } from '../lib/sheet-follow'
 import { readings } from '../lib/sheet-readings'
@@ -35,6 +35,8 @@ export type SheetMusicProps = {
   readonly notes: readonly Note[]
   /** metadata.key as the file spells it; an unreadable one draws no signature. */
   readonly musicKey?: string
+  /** How large the page is drawn, as a multiple. The layout does not change with it. */
+  readonly zoom?: number
   /** Where playback is, in ticks, read once a frame. */
   readonly position?: () => number
   /** The practice tempo, which is what a missed note is judged against. */
@@ -51,6 +53,7 @@ export function SheetMusic({
   timing,
   notes,
   musicKey,
+  zoom = DEFAULT_SHEET_ZOOM,
   position = () => 0,
   tempoScale = () => 1,
   feedback = () => null,
@@ -94,9 +97,9 @@ export function SheetMusic({
   // Read through a ref so that a new score does not tear down and rebuild the
   // loop mid-flight. The theme is not in here: the page is coloured by
   // styles/sheet.css, which follows data-theme without being told.
-  const read = useRef({ timing, plan, position, tempoScale, feedback })
+  const read = useRef({ timing, plan, position, tempoScale, feedback, zoom })
   useEffect(() => {
-    read.current = { timing, plan, position, tempoScale, feedback }
+    read.current = { timing, plan, position, tempoScale, feedback, zoom }
   })
 
   useEffect(() => {
@@ -104,7 +107,7 @@ export function SheetMusic({
     if (element === null || width === 0) {
       return
     }
-    const drawn = drawSheet(element, plan)
+    const drawn = drawSheet(element, plan, zoom)
     const scroller = frame.current
 
     let running = true
@@ -127,12 +130,16 @@ export function SheetMusic({
       // about once a bar rather than once a frame.
       if (bar !== shownBar) {
         shownBar = bar
-        place(band.current, bar, bandFor(current.plan, bar))
+        const box = bandFor(current.plan, bar)
+        place(band.current, bar, box, current.zoom)
         const system = systemFor(current.plan, bar)
         if (system >= 0 && system !== shownSystem) {
           shownSystem = system
-          turn(scroller, current.plan.systems[system]?.y ?? 0)
+          turn(scroller, (current.plan.systems[system]?.y ?? 0) * current.zoom)
         }
+        // Across as well as down: magnified, a system is wider than the panel,
+        // and a bar to the right of it is as lost as one below the fold.
+        across(scroller, box, current.zoom)
       }
 
       const judged = current.feedback()
@@ -157,7 +164,7 @@ export function SheetMusic({
     return () => {
       running = false
     }
-  }, [plan, width])
+  }, [plan, width, zoom])
 
   return (
     <section
@@ -210,16 +217,36 @@ const SYSTEM_MARGIN = 12
  * reader of the page — or a test — would otherwise have to work it back out of
  * a transform.
  */
-function place(mark: HTMLDivElement | null, bar: number, box: Band | null): void {
+function place(mark: HTMLDivElement | null, bar: number, box: Band | null, zoom: number): void {
   if (mark === null) {
     return
   }
   mark.dataset['bar'] = box === null ? '' : String(bar)
   mark.style.display = box === null ? 'none' : 'block'
   if (box !== null) {
-    mark.style.transform = `translate(${String(box.x)}px, ${String(box.y)}px)`
-    mark.style.width = `${String(box.width)}px`
-    mark.style.height = `${String(box.height)}px`
+    // The plan is in unscaled units and the page is drawn scaled, so the band
+    // is placed in the page's units rather than the plan's.
+    mark.style.transform = `translate(${String(box.x * zoom)}px, ${String(box.y * zoom)}px)`
+    mark.style.width = `${String(box.width * zoom)}px`
+    mark.style.height = `${String(box.height * zoom)}px`
+  }
+}
+
+/**
+ * Bring the sounding bar into view sideways, and only when it is not.
+ *
+ * Left edge first, so the bar is read from its start: a bar wider than the
+ * panel is shown from its beginning rather than its end.
+ */
+function across(scroller: HTMLElement | null, box: Band | null, zoom: number): void {
+  if (scroller === null || box === null) {
+    return
+  }
+  const left = box.x * zoom
+  const right = left + box.width * zoom
+  const shown = left >= scroller.scrollLeft && right <= scroller.scrollLeft + scroller.clientWidth
+  if (!shown) {
+    scroller.scrollLeft = Math.max(0, left - SYSTEM_MARGIN)
   }
 }
 

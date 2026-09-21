@@ -88,8 +88,16 @@ export type SheetPage = {
   readonly glyphs: ReadonlyMap<string, SVGElement>
 }
 
-/** Draw a planned page into an element, replacing whatever was there. */
-export function drawSheet(host: HTMLDivElement, plan: SheetPlan): SheetPage {
+/**
+ * Draw a planned page into an element, replacing whatever was there.
+ *
+ * The zoom is a magnification of the drawing and never of the plan: the layout
+ * is worked out once in its own units and scaled here, so doubling makes the
+ * glyphs and the spacing both twice the size. A caller reading the plan's
+ * coordinates against the page — a highlight, a scroll position — multiplies
+ * them by the same number.
+ */
+export function drawSheet(host: HTMLDivElement, plan: SheetPlan, zoom = 1): SheetPage {
   host.replaceChildren()
   const glyphs = new Map<string, SVGElement>()
   if (plan.systems.length === 0) {
@@ -97,8 +105,9 @@ export function drawSheet(host: HTMLDivElement, plan: SheetPlan): SheetPage {
   }
 
   const renderer = new Renderer(host, Renderer.Backends.SVG)
-  renderer.resize(plan.width, plan.height)
+  renderer.resize(plan.width * zoom, plan.height * zoom)
   const context = renderer.getContext()
+  context.scale(zoom, zoom)
 
   for (const system of plan.systems) {
     for (const bar of system.bars) {

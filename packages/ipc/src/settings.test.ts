@@ -53,6 +53,14 @@ describe('reading the settings file', () => {
     expect(settingsPatchSchema.safeParse({ view: 'stave' }).success).toBe(false)
   })
 
+  it('round-trips how large the stave was left, and refuses a size off the scale', () => {
+    const settings = { ...DEFAULT_SETTINGS, sheetZoom: 2.5 }
+    const written = JSON.parse(JSON.stringify(storedSettings(settings)))
+    expect(readSettings(written).settings.sheetZoom).toBe(2.5)
+    expect(settingsPatchSchema.safeParse({ sheetZoom: 0.2 }).success).toBe(false)
+    expect(settingsPatchSchema.safeParse({ sheetZoom: 10 }).success).toBe(false)
+  })
+
   it('opens a file written before there were two readings on the roll', () => {
     // No migration: a key the file does not carry is the key at its default,
     // which is why adding one does not change SETTINGS_VERSION.
