@@ -2,6 +2,8 @@ import type {
   AppInfoResponse,
   ExportRequest,
   ExportResult,
+  KeepRequest,
+  KeepResult,
   LinkAnswerRequest,
   LibraryItem,
   LibraryQuery,
@@ -84,4 +86,6 @@ export type PianoBridge = {
   readonly exportScore: (request: ExportRequest) => Promise<ExportResult>
   /** Be told the menu asked for the open score as MIDI. */
   readonly onExportRequested: (listener: () => void) => () => void
+  /** Keep a worked-out arrangement in the open score's file, answered with the score as kept. */
+  readonly keepArrangement: (request: KeepRequest) => Promise<KeepResult>
 }

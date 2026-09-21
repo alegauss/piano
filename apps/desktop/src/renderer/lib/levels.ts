@@ -179,6 +179,15 @@ export function describeAuthored(label: string): string {
   return `The score's own arrangement for this level: ${label}.`
 }
 
+/**
+ * A worked-out version somebody kept, which the score now carries as it was
+ * worked out. It is said apart from one a person wrote, because it is still
+ * the rules' opinion: kept to be read and corrected, not yet agreed with.
+ */
+export function describeKept(): string {
+  return 'Kept in the score as the rules worked it out. Change it there and it stays changed.'
+}
+
 /** The hands somebody plays, as a person says them. */
 export function describeHands(hands: readonly Hand[]): string {
   if (hands.length === HANDS.length) {

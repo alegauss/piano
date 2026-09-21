@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { WINDOWS } from './grading'
 import {
   describeAuthored,
+  describeKept,
   describeHands,
   describeReduction,
   handsPlayed,
@@ -134,6 +135,11 @@ describe('saying where the piece came from', () => {
 
   it('names the score’s own version, which wins over a worked-out one', () => {
     expect(describeAuthored('Melody only')).toContain('Melody only')
+  })
+
+  it('says a kept version is still the rules’ work, and where to change it', () => {
+    expect(describeKept()).toContain('as the rules worked it out')
+    expect(describeKept()).not.toBe(describeAuthored('Generated'))
   })
 })
 

@@ -10,12 +10,15 @@ import {
   arrangementsOf,
   describeScore,
   FORMAT_VERSION,
+  isRulesWork,
   noteEnd,
   notesOf,
+  parseScore,
   partsOf,
   reduceScore,
   resolveArrangement,
   timingOf,
+  type Arrangement,
   type Level,
   type Note,
   type Score,
@@ -52,6 +55,7 @@ import { createProgress, fingerprintOf, scoreKey } from './lib/progress'
 import { appKeys } from './lib/keys-input'
 import {
   describeAuthored,
+  describeKept,
   describeReduction,
   handsPlayed,
   LEVEL_PRESETS,
@@ -154,6 +158,8 @@ export function App() {
    * state in which the old piece is partly replaced by the new one.
    */
   const [score, setScore] = useState<Score>(placeholder)
+  /** The file it was opened from, which is where a kept arrangement goes; none for the placeholder. */
+  const [file, setFile] = useState<string | null>(null)
   /** What an open had to say: why a file was refused, or what a MIDI import guessed. */
   const [report, setReport] = useState<Report | null>(null)
   /** A file is being dragged over the window. */
@@ -178,12 +184,25 @@ export function App() {
     const authored = arrangementForLevel(arrangements, level)
     if (authored !== null) {
       const resolved = resolveArrangement(authored, written)
-      return { notes: resolved.notes, source: describeAuthored(resolved.label) }
+      return {
+        notes: resolved.notes,
+        source: isRulesWork(authored) ? describeKept() : describeAuthored(resolved.label),
+        proposal: null,
+      }
     }
+    // The worked-out version is offered to keep only where it names every
+    // note it leaves out, since that is what makes it something to correct.
     const reduced = reduceScore(score, level, LEVEL_PRESETS[level].reduction)
-    return { notes: reduced.notes, source: describeReduction(reduced) }
+    return {
+      notes: reduced.notes,
+      source: describeReduction(reduced),
+      proposal: reduced.arrangement,
+    }
   }, [score, level, arrangements, written])
   const notes = version?.notes ?? written
+  // Only a score file has somewhere to keep it: a MIDI file carries notes and
+  // nothing about them.
+  const proposal = file !== null && /\.json$/i.test(file) ? (version?.proposal ?? null) : null
   const parts = useMemo(() => partsOf(score), [score])
   const sections = useMemo(() => score.sections ?? [], [score])
   const scoreId = useMemo(() => scoreKey(score), [score])
@@ -296,6 +315,7 @@ export function App() {
       setLoop(null)
       setPartsView(NOTHING_TOUCHED)
       setScore(opened.score)
+      setFile(opened.name)
       setReport(
         opened.notices.length > 0
           ? { kind: 'notices', name: opened.name, notices: opened.notices }
@@ -621,6 +641,39 @@ export function App() {
   }
 
   /**
+   * Keep the worked-out version in the score's file, so it can be read and
+   * corrected there. The score main wrote is the one shown after, as the same
+   * piece rather than a new one: what is being practised stays as it was.
+   */
+  function keepLevel(proposal: Arrangement): void {
+    const bridge = readBridge()
+    if (bridge === null || level === null) {
+      return
+    }
+    const kept = level
+    void bridge.keepArrangement({ arrangement: proposal }).then(
+      (result) => {
+        if (result.kind === 'refused') {
+          setNotice(`Could not keep the ${kept} version: ${result.message}.`)
+          return
+        }
+        const parsed = parseScore(result.score)
+        if (parsed.ok) {
+          setScore(parsed.score)
+        }
+        setNotice(
+          `Kept the ${kept} version in ${result.name}. Change it there and it stays changed.`,
+        )
+      },
+      (cause: unknown) => {
+        setNotice(
+          `Could not keep the ${kept} version: ${cause instanceof Error ? cause.message : String(cause)}`,
+        )
+      },
+    )
+  }
+
+  /**
    * Every setting back to its default. The ones held in this window's state
    * go back with them, so the reset is seen now rather than at the next launch.
    */
@@ -824,6 +877,13 @@ export function App() {
           onLevel={chooseLevel}
           arrangementTempo={arrangementTempo}
           levelSource={version?.source}
+          {...(proposal === null
+            ? {}
+            : {
+                onKeepLevel: () => {
+                  keepLevel(proposal)
+                },
+              })}
           drill={drill}
           sections={sections}
           latency={latency}

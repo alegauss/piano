@@ -11,6 +11,7 @@ import {
   packManifest,
   packSource,
   scoreExport,
+  scoreKeepArrangement,
   scoreOpen,
   scoreRecent,
   windowSetTitle,
@@ -213,6 +214,22 @@ describe('score:export', () => {
     expect(response.safeParse({ kind: 'cancelled' }).success).toBe(true)
     expect(response.safeParse({ kind: 'refused', message: 'no' }).success).toBe(true)
     expect(response.safeParse({ kind: 'saved', name: 'a.mid' }).success).toBe(false)
+  })
+})
+
+describe('score:keep-arrangement', () => {
+  it('carries the arrangement and nothing that names a file, which main already knows', () => {
+    const { request } = scoreKeepArrangement
+    expect(request.safeParse({ arrangement: { id: 'x', level: 'beginner' } }).success).toBe(true)
+    expect(request.safeParse({}).success).toBe(false)
+    expect(request.safeParse({ arrangement: {}, path: 'C:/elsewhere.json' }).success).toBe(false)
+  })
+
+  it('answers kept with the score as written, or refused with why', () => {
+    const { response } = scoreKeepArrangement
+    expect(response.safeParse({ kind: 'kept', name: 'a.score.json', score: {} }).success).toBe(true)
+    expect(response.safeParse({ kind: 'refused', message: 'no' }).success).toBe(true)
+    expect(response.safeParse({ kind: 'kept', score: {} }).success).toBe(false)
   })
 })
 

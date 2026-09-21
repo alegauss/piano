@@ -68,25 +68,6 @@ validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 
-### §PI63 Keeping the proposal
-
-The rules hand back an arrangement, which is the whole point of deriving one rather than
-filtering notes on the fly: it names the notes it left out, so a person or Claude Code
-can read it, argue with it and correct one line of it. None of that is reachable while
-it lives for the length of a session. The reduction is worked out again on every launch,
-and a correction has nowhere to go, so the proposal is offered and then quietly thrown
-away. Writing it into the score file under its own id is what closes that: a score that
-carries a generated arrangement is a score whose beginner version somebody can fix once
-and keep, and the rules stop being consulted for it at all, since a hand-authored
-arrangement already wins. The write is an ordinary save through whatever opens a file,
-with the arrangement marked as generated so a later run can tell one it produced from
-one somebody wrote, and so re-deriving it after the source changes replaces its own work
-and never a person's. The question this leaves open is what should happen when the notes
-it named have since been edited: naming a note that is no longer there is already a
-validation error, so the choice is between dropping the stale arrangement and
-re-deriving it, and that is a judgement about whose work is worth more rather than
-something the code can settle.
-
 ### §PI66 A file type the system can hand to the piano
 
 The app already opens whatever the system hands it: the file on its command line at

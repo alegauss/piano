@@ -29,6 +29,8 @@ export type OpenerDeps = {
   readonly launched: () => string | null
   /** Told when a score joins the recent list, for the menu and the system's own list. */
   readonly remembered?: (entries: readonly RecentEntry[], opened: RecentEntry) => void
+  /** Told which file a score was opened from, which is the one a later keep writes into. */
+  readonly opened?: (path: string) => void
   readonly exists?: (path: string) => boolean
 }
 
@@ -44,6 +46,7 @@ export function createOpener(deps: OpenerDeps): Opener {
   const openPath = async (path: string): Promise<OpenResult> => {
     const result = await deps.read(path)
     if (result.kind === 'opened') {
+      deps.opened?.(path)
       const entry = { path, name: result.name, title: result.score.metadata.title }
       try {
         deps.remembered?.(await deps.recent.add(entry), entry)

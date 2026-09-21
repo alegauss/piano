@@ -36,6 +36,7 @@ function bridge(overrides: Partial<PianoBridge> = {}): PianoBridge {
     cancelPackDownload: () => Promise.resolve(null),
     onPackProgress: () => () => {},
     exportScore: () => Promise.reject(new Error('not used')),
+    keepArrangement: () => Promise.reject(new Error('not used')),
     onExportRequested: () => () => {},
     ...overrides,
   }

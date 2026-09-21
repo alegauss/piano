@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS, type OpenRequest, type OpenResult, type PianoBridge } from '@piano/ipc'
+import { isRulesWork, keepArrangement, type Arrangement, type Score } from '@piano/score-format'
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -80,6 +81,9 @@ describe('the app', () => {
 function fakeMain(launch: OpenResult = { kind: 'none' }) {
   let listener: ((result: OpenResult) => void) | null = null
   const asked: OpenRequest[] = []
+  const kept: unknown[] = []
+  /** The score file the window has open, as main would hold it. */
+  let held: Score | null = null
   const bridge: PianoBridge = {
     appInfo: () =>
       Promise.resolve({ electron: '0', chrome: '0', node: '0', scoreFormatVersion: 1 }),
@@ -110,12 +114,28 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     cancelPackDownload: () => Promise.resolve(null),
     onPackProgress: () => () => {},
     exportScore: () => Promise.resolve({ kind: 'cancelled' }),
+    keepArrangement: ({ arrangement }) => {
+      kept.push(arrangement)
+      if (held === null) {
+        return Promise.resolve({ kind: 'refused', message: 'nothing open' })
+      }
+      const next = keepArrangement(held.arrangements ?? [], arrangement as Arrangement)
+      if (!next.kept) {
+        return Promise.resolve({ kind: 'refused', message: next.reason })
+      }
+      held = { ...held, arrangements: next.arrangements }
+      return Promise.resolve({ kind: 'kept', name: 'chords.score.json', score: held })
+    },
     onExportRequested: () => () => {},
   }
   Object.defineProperty(window, 'piano', { value: bridge, configurable: true })
   return {
     asked,
+    kept,
     push: async (result: OpenResult) => {
+      if (result.kind === 'opened') {
+        held = result.score as Score
+      }
       await act(async () => {
         listener?.(result)
         await new Promise((resolve) => requestAnimationFrame(resolve))
@@ -179,5 +199,66 @@ describe('opening a score in the window', () => {
     expect(screen.getByText('Could not open broken.json')).toBeTruthy()
     expect(screen.getByText(/is still open/)).toBeTruthy()
     expect(screen.getByText('Needs a MIDI pitch from 0 to 127.')).toBeTruthy()
+  })
+})
+
+/** Three notes at once in one hand, which a beginner plays one of. */
+const chords = {
+  formatVersion: 1,
+  metadata: { title: 'Chords' },
+  notes: [
+    { id: 'a', pitch: 72, start: 0, duration: 480, velocity: 80, hand: 'right' },
+    { id: 'b', pitch: 76, start: 0, duration: 480, velocity: 80, hand: 'right' },
+    { id: 'c', pitch: 79, start: 0, duration: 480, velocity: 80, hand: 'right' },
+  ],
+}
+
+const keepButton = () =>
+  screen.queryByRole('button', { name: 'Keep this version in the score', hidden: true })
+
+async function chooseBeginner() {
+  screen.getByLabelText('Level').click()
+  await screen.findByText('Level', { selector: 'h2' })
+  await act(async () => {
+    screen.getByText('Beginner').click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+  })
+}
+
+describe('keeping a worked-out version in the score', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'piano')
+  })
+
+  it('writes the proposal into the open file, and plays the kept one from then on', async () => {
+    const main = fakeMain()
+    render(<App />)
+    await main.push({ kind: 'opened', name: 'chords.score.json', score: chords, notices: [] })
+    await chooseBeginner()
+    expect(screen.getByText(/Worked out from the rules/)).toBeTruthy()
+
+    await act(async () => {
+      keepButton()?.click()
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    })
+
+    expect(main.kept).toHaveLength(1)
+    const sent = main.kept[0] as Arrangement
+    expect(sent.level).toBe('beginner')
+    expect(isRulesWork(sent)).toBe(true)
+    expect(screen.getByText(/Kept the beginner version in chords\.score\.json/)).toBeTruthy()
+    // The score now carries it, so the level says so and offers nothing more to keep.
+    expect(screen.getByText(/Kept in the score as the rules worked it out/)).toBeTruthy()
+    expect(keepButton()).toBeNull()
+  })
+
+  it('offers nothing to keep where there is no score file to keep it in', async () => {
+    const main = fakeMain()
+    render(<App />)
+    await chooseBeginner()
+    expect(keepButton()).toBeNull()
+
+    await main.push({ kind: 'opened', name: 'chords.mid', score: chords, notices: [] })
+    expect(keepButton()).toBeNull()
   })
 })

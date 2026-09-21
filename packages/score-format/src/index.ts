@@ -73,13 +73,21 @@ export {
 } from './section'
 
 export {
+  arrangementDigest,
   arrangementForLevel,
   arrangementsOf,
   AS_WRITTEN,
+  isRulesWork,
+  keepArrangement,
   LEVELS,
+  REDUCTION_RULES,
   resolveArrangement,
+  signedByRules,
   validateArrangements,
+  withoutStaleRulesWork,
   type Arrangement,
+  type Generated,
+  type Kept,
   type Level,
   type NoteOverride,
   type ResolvedArrangement,

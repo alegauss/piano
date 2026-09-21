@@ -321,6 +321,23 @@ export const scoreExport = {
   ]),
 } as const satisfies Channel<'score:export', z.ZodType, z.ZodType>
 
+/**
+ * Keep an arrangement the rules worked out in the open score's own file, where
+ * it can be read and corrected, and answer with the score as now kept. Only
+ * into the file the window has open, which main knows and the page does not
+ * name; main validates the arrangement and the score it makes.
+ */
+export const scoreKeepArrangement = {
+  channel: CHANNEL_NAMES.scoreKeepArrangement,
+  // Strict, so a request that tries to say where to write is refused rather
+  // than quietly trimmed: the page has no say in which file.
+  request: z.object({ arrangement: z.record(z.string(), z.unknown()) }).strict(),
+  response: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('kept'), name: z.string(), score: z.unknown() }),
+    z.object({ kind: z.literal('refused'), message: z.string() }),
+  ]),
+} as const satisfies Channel<'score:keep-arrangement', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
 export const allChannels = [
   appInfo,
@@ -339,6 +356,7 @@ export const allChannels = [
   packDownload,
   packCancel,
   scoreExport,
+  scoreKeepArrangement,
 ] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
@@ -360,6 +378,8 @@ export type PackSourceResponse = z.infer<typeof packSource.response>
 export type PackDownloadResponse = z.infer<typeof packDownload.response>
 export type ExportRequest = z.infer<typeof scoreExport.request>
 export type ExportResult = z.infer<typeof scoreExport.response>
+export type KeepRequest = z.infer<typeof scoreKeepArrangement.request>
+export type KeepResult = z.infer<typeof scoreKeepArrangement.response>
 
 /** How far the sample pack's download has got, pushed as it goes. */
 export type PackProgressPush = {

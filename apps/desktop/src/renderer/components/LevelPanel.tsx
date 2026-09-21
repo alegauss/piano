@@ -29,6 +29,7 @@ export function LevelPanel({
   /** The tempo the score's own arrangement for a level asks for, where it carries one. */
   arrangementTempo,
   source,
+  onKeep,
   className,
 }: {
   readonly level: Level | null
@@ -42,6 +43,11 @@ export function LevelPanel({
   readonly arrangementTempo?: (level: Level) => number | null
   /** Where the piece at this level came from: the score's own version, or the rules. */
   readonly source?: string
+  /**
+   * Keep the version the rules worked out in the score file, where it can be
+   * read and corrected. Absent where there is nothing worked out to keep.
+   */
+  readonly onKeep?: () => void
   readonly className?: string
 }) {
   const preset = level === null ? null : LEVEL_PRESETS[level]
@@ -97,6 +103,11 @@ export function LevelPanel({
                 <p className="text-xs text-text-muted" data-testid="level-source">
                   {source}
                 </p>
+              )}
+              {onKeep === undefined ? null : (
+                <Button variant="outline" size="sm" className="self-start" onClick={onKeep}>
+                  Keep this version in the score
+                </Button>
               )}
 
               <dl className="flex flex-col gap-1 text-xs">

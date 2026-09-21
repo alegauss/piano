@@ -115,6 +115,10 @@ problems name and check again.
 - Every `part` a note names must be declared in `parts`.
 - An arrangement that `drop`s or `overrides` notes names them by `id`, and then
   every note needs an id.
+- An arrangement carrying `generated` is one the app worked out and somebody
+  kept. Correct it freely: once changed it counts as written by hand, and the
+  app never replaces it. Untouched, one naming notes you removed is set aside
+  rather than refused.
 - A `spelling` such as `"Bb3"` must agree with the pitch it sits on.
 
 ## What nothing catches, and you must

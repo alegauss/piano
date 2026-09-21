@@ -12,6 +12,7 @@ import {
   packSource,
   PUSH_NAMES,
   scoreExport,
+  scoreKeepArrangement,
   scoreOpen,
   scoreRecent,
   settingsRead,
@@ -21,6 +22,8 @@ import {
   type Channel,
   type ExportRequest,
   type ExportResult,
+  type KeepRequest,
+  type KeepResult,
   type LibraryItem,
   type LibraryQuery,
   type LinkResult,
@@ -99,6 +102,8 @@ export function registerIpcHandlers(options: {
     request: ExportRequest,
     window: BrowserWindow | null,
   ) => Promise<ExportResult>
+  /** Keep a worked-out arrangement in the file the window has open. */
+  readonly keepArrangement: (request: KeepRequest) => Promise<KeepResult>
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -161,6 +166,8 @@ export function registerIpcHandlers(options: {
   handle(scoreExport, (request, event) =>
     options.exportScore(request, BrowserWindow.fromWebContents(event.sender)),
   )
+
+  handle(scoreKeepArrangement, (request) => options.keepArrangement(request))
 }
 
 /**

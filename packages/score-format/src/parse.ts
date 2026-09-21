@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 
+import { withoutStaleRulesWork } from './arrangement'
 import { migrate, nearestKnownKey, unknownKeys } from './migrate'
 import { findOverlaps, noteProblems, pitchToSpelling, spellingToPitch, type Note } from './note'
 import { formatProblems, problemFromIssue, render, type ScoreProblem } from './repair'
@@ -146,7 +147,17 @@ export function parseScore(raw: unknown): ParseResult {
     return refused(fromZod(parsed.error, migrated.score))
   }
 
-  const score = parsed.data as Score
+  // The rules' own untouched arrangements that name notes no longer here are
+  // set aside and said so, rather than refusing a score somebody edited:
+  // they can be worked out again, where a person's arrangement cannot.
+  const written = parsed.data as Score
+  const pruned = withoutStaleRulesWork(written.arrangements ?? [], notesOf(written))
+  const score: Score =
+    pruned.setAside.length === 0 ? written : { ...written, arrangements: pruned.arrangements }
+  const setAside = pruned.setAside.map(
+    (arrangement) =>
+      `the ${arrangement.level} arrangement the rules worked out named notes this score no longer has, so it was set aside; choosing the level works it out again`,
+  )
 
   // The musical half, which no schema can express.
   const musical = [
@@ -162,5 +173,5 @@ export function parseScore(raw: unknown): ParseResult {
     return refused(musical)
   }
 
-  return { ok: true, score, migrated: migrated.applied }
+  return { ok: true, score, migrated: [...migrated.applied, ...setAside] }
 }

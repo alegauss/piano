@@ -1,4 +1,4 @@
-import type { Arrangement, Level } from './arrangement'
+import { signedByRules, type Arrangement, type Level } from './arrangement'
 import { noteEnd, voiceOf, type Note } from './note'
 import { partOf, partsOf, type Part, type PartRole } from './part'
 import { notesOf, timingOf, type Score } from './score'
@@ -368,7 +368,7 @@ export function arrangementOf(
     return { arrangement: null, anonymous }
   }
   return {
-    arrangement: { id: `generated-${level}`, level, label, drop },
+    arrangement: signedByRules({ id: `generated-${level}`, level, label, drop }),
     anonymous: 0,
   }
 }

@@ -17,7 +17,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI63** (deps: PI51 ✅) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
 - 📋 **PI66** (deps: PI51 ✅) **Double-clicking a score in the file manager never reaches the piano: no file type is registered** — A .score.json cannot be registered without claiming every .json, so the extension a score is saved under has to be settled before packaging can claim it. → §PI66
 - 📋 **PI67** (deps: PI53 ✅) **Practice history sits unvalidated in browser storage, and nothing in the app exports or deletes it** — A person's own record wants the settings' treatment: a validated, versioned file in the profile, and plain doors to take it away or erase it. → §PI67
 

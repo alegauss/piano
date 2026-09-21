@@ -90,6 +90,8 @@ export type TransportBarProps = {
   readonly arrangementTempo?: (level: Level) => number | null
   /** Where the piece at the chosen level came from: the score's own version, or the rules. */
   readonly levelSource?: string
+  /** Keep a version the rules worked out in the score file; absent when there is none. */
+  readonly onKeepLevel?: () => void
   /** The drill: looping a passage at a climbing tempo, with the hands apart. */
   readonly drill?: Drill
   readonly sections?: readonly Section[]
@@ -135,6 +137,7 @@ export function TransportBar({
   onLevel,
   arrangementTempo,
   levelSource,
+  onKeepLevel,
   drill,
   sections,
   latency,
@@ -315,6 +318,7 @@ export function TransportBar({
               onLevel={onLevel}
               arrangementTempo={arrangementTempo}
               source={levelSource}
+              {...(onKeepLevel === undefined ? {} : { onKeep: onKeepLevel })}
             />
           )}
           {drill === undefined ? null : (

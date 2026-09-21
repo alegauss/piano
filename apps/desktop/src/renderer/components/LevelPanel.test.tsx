@@ -53,6 +53,27 @@ describe('LevelPanel', () => {
     expect(screen.getByTestId('knob-hands-you-play').textContent).not.toContain('moved')
   })
 
+  it('offers to keep a worked-out version only when there is one to keep', async () => {
+    await open('beginner')
+    expect(screen.queryByText('Keep this version in the score')).toBeNull()
+  })
+
+  it('hands keeping on when a worked-out version can be kept', async () => {
+    const onKeep = vi.fn()
+    render(
+      <LevelPanel
+        level="beginner"
+        settings={() => settingsFor(LEVEL_PRESETS.beginner)}
+        onLevel={vi.fn()}
+        source="Worked out from the rules: 2 notes fewer (chords 2)."
+        onKeep={onKeep}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText('Level'))
+    fireEvent.click(await screen.findByText('Keep this version in the score'))
+    expect(onKeep).toHaveBeenCalledOnce()
+  })
+
   it('offers the three levels and hands the choice on', async () => {
     const { onLevel } = await open(null)
     fireEvent.click(screen.getByText('Advanced'))

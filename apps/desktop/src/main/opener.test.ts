@@ -106,6 +106,23 @@ describe('one road for every way of opening a score', () => {
     expect((await recent.list()).map((one) => one.path)).toEqual([good])
   })
 
+  it('says which file a score came from, and nothing for one refused', async () => {
+    const good = await write(join(directory, 'good.json'), valid)
+    const bad = await write(join(directory, 'bad.json'), broken)
+    const from: string[] = []
+    const opener = createOpener({
+      read: openScoreFile,
+      recent: createRecent(join(directory, 'profile', 'recent.json')),
+      choose: () => Promise.resolve(null),
+      libraryRoot: () => directory,
+      launched: () => null,
+      opened: (path) => from.push(path),
+    })
+    await opener.open({ from: 'dropped', path: bad })
+    await opener.open({ from: 'dropped', path: good })
+    expect(from).toEqual([good])
+  })
+
   it('opens again from the recent list only what the list holds', async () => {
     const good = await write(join(directory, 'good.json'), valid)
     const elsewhere = await write(join(directory, 'never-opened.json'), valid)

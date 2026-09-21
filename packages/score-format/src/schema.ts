@@ -140,6 +140,8 @@ export const arrangementSchema = z.object({
   drop: z.array(z.string().min(1)).optional(),
   tempoScale: z.number().positive().optional(),
   overrides: z.array(noteSchema.partial().extend({ id: z.string().min(1) })).optional(),
+  /** The reduction rules' signature, where they wrote it rather than a person. */
+  generated: z.object({ rules: z.string().min(1), digest: z.string().min(1) }).optional(),
 })
 
 /**

@@ -26,6 +26,7 @@ export const CHANNEL_NAMES = {
   packDownload: 'pack:download',
   packCancel: 'pack:cancel',
   scoreExport: 'score:export',
+  scoreKeepArrangement: 'score:keep-arrangement',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]

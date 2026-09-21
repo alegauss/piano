@@ -76,6 +76,7 @@ const bridge: PianoBridge = {
   downloadPack: async () => invoke(CHANNEL_NAMES.packDownload, null),
   cancelPackDownload: async () => invoke(CHANNEL_NAMES.packCancel, null),
   exportScore: async (request) => invoke(CHANNEL_NAMES.scoreExport, request),
+  keepArrangement: async (request) => invoke(CHANNEL_NAMES.scoreKeepArrangement, request),
   onExportRequested: (listener) => {
     const forward = () => {
       listener()

@@ -26,6 +26,7 @@ import {
 
 import { BUNDLED_SCORES } from './bundled'
 import { registerIpcHandlers } from './ipc'
+import { keepInFile } from './keep-arrangement'
 import { watchLibrary } from './library-watch'
 import { startLinkHost, type LinkHost } from './link-host'
 import { createRelay } from './link-relay'
@@ -135,6 +136,9 @@ let launchFile: string | null = launchPath(process.argv, process.cwd())
 /** Whether the window has asked, after which a score opened from outside is sent straight to it. */
 let windowAsked = false
 
+/** The file the window's score was last opened from, which a keep writes into; none at first. */
+let openFile: string | null = null
+
 const opener = createOpener({
   read: openScoreFile,
   recent,
@@ -148,6 +152,9 @@ const opener = createOpener({
   remembered: (entries, opened) => {
     app.addRecentDocument(opened.path)
     setMenu(entries)
+  },
+  opened: (path) => {
+    openFile = path
   },
 })
 
@@ -433,6 +440,7 @@ if (firstInstance) {
             },
             write: (path, bytes) => writeFile(path, bytes),
           }),
+        keepArrangement: (request) => keepInFile(openFile, request.arrangement),
       })
 
       setMenu([])
