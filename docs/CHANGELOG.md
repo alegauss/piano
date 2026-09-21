@@ -119,6 +119,9 @@
 - ✅ **PI36** **Playback runs away from a beginner, who cannot keep up and has nothing to practise against** — The transport holds at the next note the player owes, lights those keys, and carries on when they are struck (design recorded in `apps/desktop/src/renderer/lib/practice.ts`).
   checked **The score waits for a chord and resumes cleanly** Playback holds until every note of the chord is struck inside the grouping window, then continues from that note without replaying it or jumping the accompaniment.
   checked **Extra notes while waiting never block** Pressing wrong keys during a hold is recorded for the report but does not prevent the correct notes from releasing it.
+- ✅ **PI37** **Nothing says how the attempt went: wrong notes, late notes and missed notes all pass unremarked** — An attempt is graded against a timing window the learner sets, and the report names the bars to go back to, with the touch apart (design recorded in `apps/desktop/src/renderer/lib/grading.ts`).
+  checked **A dropped note does not cascade into wrong notes** A recorded attempt missing one note grades that note as missed and every following note as correct, rather than shifting the whole sequence by one position.
+  checked **The report names bars, not a percentage** A session ends with accuracy per bar and per named section, so the worst passage is identifiable without interpreting a single overall number.
 
 ## Block F — Claude Code First: MCP and plugin
 

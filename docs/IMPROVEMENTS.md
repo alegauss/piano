@@ -58,25 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI37 Saying how it went, in a way that helps
-
-Playing along without judgement is entertainment; practice needs to know what went
-wrong. Each expected note is matched against what arrived inside a timing window, and
-that window is a setting because a beginner and an advanced player want different
-strictness. Four outcomes are recorded: correct, outside the window early or late, wrong
-pitch, and missed entirely, with notes played that are not in the score as a fifth. The
-difficult part is matching rather than scoring. A player who drops one note must not
-have every following note counted wrong through a cascade, so matching runs against a
-moving window and is allowed to skip rather than shifting the whole sequence by one. The
-report is per bar and per named section instead of a single percentage, because a number
-tells nobody what to do next while bars 17 to 20 failed four attempts out of five does.
-Velocity is graded only where the input can express it, and dynamic accuracy is reported
-apart from note accuracy, since they are different skills. Nothing played during the
-count-in is matched or scored: the transport's isCountIn(time) says where the piece
-begins. Both sides of every comparison go through PI35's arithmetic first, heardAt for
-the note and struckAt for the strike, since the window is meaningless against times the
-machine's own lag has already moved.
-
 ### §PI38 Feedback where the eye already is
 
 The learner is watching notes fall and keys light up, so that is where judgement has to
@@ -89,7 +70,11 @@ as a small offset drawn on the note rather than a word, since a consistent early
 bias is more useful seen as a shape than read as a label. These colours come from the
 same token palette as everything else and they carry meaning, so they are the ones
 checked for contrast and colour blindness. Feedback fires on the judgement event and
-never on the draw loop, for the same reason the particles do.
+never on the draw loop, for the same reason the particles do. That event is what this
+line has to add: PI37 grades a whole pass once it comes to rest, because whether a
+strike is the right note is a question about the notes around it, so instant feedback
+needs a judgement made as each strike arrives, against the same window and the same
+notion of what is owed.
 
 ### §PI39 What the three levels actually promise
 
@@ -302,15 +287,16 @@ usually the one they just generated.
 A handful of things must survive a restart or the app feels amnesiac: the chosen MIDI
 device, the latency calibration measured for it, the theme, the default difficulty
 level, effects on or off, the lead time visible on the roll, the library location, and
-the metronome and count-in preferences. They live in one store in the per-user
-application directory, validated on read the same way the score format is, so a
-corrupted or hand-edited file falls back to defaults with a message rather than crashing
-at startup. Settings are versioned and migrated for the same reason scores are, because
-a setting whose meaning changes silently is worse than one that is missing. Anything
-sensitive, which here is essentially the handshake token, stays out of this file and is
-regenerated per run instead. A reset to defaults is offered, because the fastest way out
-of a bad audio configuration is to start over, and the alternative is somebody deleting
-a file they first had to find.
+the metronome and count-in preferences, and the timing window an attempt is graded
+against. They live in one store in the per-user application directory, validated on read
+the same way the score format is, so a corrupted or hand-edited file falls back to
+defaults with a message rather than crashing at startup. Settings are versioned and
+migrated for the same reason scores are, because a setting whose meaning changes
+silently is worse than one that is missing. Anything sensitive, which here is
+essentially the handshake token, stays out of this file and is regenerated per run
+instead. A reset to defaults is offered, because the fastest way out of a bad audio
+configuration is to start over, and the alternative is somebody deleting a file they
+first had to find.
 
 ### §PI54 Getting the piano onto the machine
 

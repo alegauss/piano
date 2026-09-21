@@ -108,6 +108,8 @@ export class Transport {
   /** Where playback resumes from while it is not playing. */
   private resumeTick = 0
   private timing: ResolvedTiming | null = null
+  /** The furthest playback got, kept after it stops, for whatever grades the pass. */
+  private reachedTick = 0
   private metronomeOn = false
   private countInOn = false
   /** When the count-in before this pass ends and the piece begins; null with no count-in. */
@@ -140,6 +142,7 @@ export class Transport {
         // Arriving at a hold stops playback where it stands, so the position
         // is exactly the tick being waited on and nothing drifts past it.
         this.resumeTick = tick
+        this.reachedTick = tick
         this.scheduler.stop()
         this.current = 'paused'
         this.changed()
@@ -208,6 +211,28 @@ export class Transport {
     return this.current === 'playing' ? this.scheduler.tickAt(time) : this.resumeTick
   }
 
+  /**
+   * The audio time a tick sounds at, under the mapping being scheduled now.
+   *
+   * The other way round from tickAt, and the pair is what puts a played note
+   * exactly where it fell: a tick is a coarse unit at a slow tempo, and the
+   * position never runs before the start of a pass, so what is graded is the
+   * tick plus the seconds between it and the strike.
+   */
+  timeAt(tick: number): AudioTime {
+    return this.scheduler.timeAt(tick)
+  }
+
+  /**
+   * The furthest playback got before it came to rest, which is the stretch a
+   * pass covered. Kept after stopping, where the position is not: stopping
+   * puts the position back to the start, and a report on the passage just
+   * played would then have nothing to say which notes were owed.
+   */
+  get reached(): number {
+    return this.reachedTick
+  }
+
   /** Replace the piece. Stops, and puts the position back to the start. */
   load(performance: Performance): void {
     this.scheduler.load(performance)
@@ -215,6 +240,7 @@ export class Transport {
     this.countInUntil = null
     this.current = 'stopped'
     this.resumeTick = 0
+    this.reachedTick = 0
     this.changed()
   }
 
@@ -256,6 +282,7 @@ export class Transport {
       return
     }
     this.resumeTick = this.scheduler.stop()
+    this.reachedTick = this.resumeTick
     this.silenceCountIn()
     this.current = 'paused'
     this.changed()
@@ -263,7 +290,7 @@ export class Transport {
 
   /** Stop and go back to the start: of the loop when there is one, of the piece otherwise. */
   stop(): void {
-    this.scheduler.stop()
+    this.reachedTick = this.scheduler.stop()
     this.silenceCountIn()
     this.current = 'stopped'
     this.resumeTick = this.scheduler.loop?.start ?? 0
@@ -374,6 +401,10 @@ export class Transport {
    * pedalled tail ring out rather than being cut.
    */
   private finish(): void {
+    // Where it got to, read before the position goes back to the start: the
+    // piece ending is the one way a pass ends with nobody asking it to, and
+    // the report on it is owed the stretch that was played.
+    this.reachedTick = this.scheduler.tickAt(this.clock.now())
     this.current = 'stopped'
     this.resumeTick = 0
     this.changed()

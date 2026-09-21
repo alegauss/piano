@@ -21,6 +21,7 @@ import { TransportBar } from './components/TransportBar'
 import { cn } from './lib/cn'
 import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
+import { createGrader } from './lib/grader'
 import { appKeys } from './lib/keys-input'
 import {
   calibrationKey,
@@ -136,42 +137,51 @@ export function App() {
   const calibrator = useMemo(() => createCalibrator(piano.clicker, () => piano.now()), [piano])
   const wait = useMemo(() => createWaitMode(transport), [transport])
   const waitState = useSyncExternalStore(wait.subscribe, () => wait.state)
+  const grader = useMemo(() => createGrader(transport, () => piano.now()), [transport, piano])
 
   // Wait mode is told the score and who is playing which part of it: the
-  // notes it waits for are the ones the app has been told not to play.
+  // notes it waits for are the ones the app has been told not to play. The
+  // grader is told the same thing, because those are the notes it grades.
   const filter = useMemo(() => playbackFilter(partsView), [partsView])
   useEffect(() => {
     wait.use(notes, filter)
-  }, [wait, notes, filter])
+    grader.use(timing, notes, filter)
+  }, [wait, grader, timing, notes, filter])
   useEffect(() => {
     wait.setOn(waiting)
   }, [wait, waiting])
   useEffect(() => wait.close, [wait])
-  // Told the lag rather than asked for it: the calibrator outlives this view.
+  useEffect(() => grader.close, [grader])
+  // Told the lag rather than asked for it: the calibrator and the grader both
+  // outlive this view.
   useEffect(() => {
     calibrator.useLatency(latency)
-  }, [calibrator, latency])
+    grader.useLatency(latency)
+  }, [calibrator, grader, latency])
 
   // What a player presses reaches the piano, from either input, at the pitch
-  // pressed and at the clock's now.
+  // pressed and at the clock's now. Only the controller can say how hard, so
+  // only what comes from it is graded for touch.
   useEffect(() => {
-    const sound = (event: Parameters<typeof playLive>[2]) => {
+    const sound = (expressive: boolean) => (event: Parameters<typeof playLive>[2]) => {
       void piano.resume()
       playLive(piano.engine, () => piano.now(), event)
-      // A calibration in progress counts the strike, and wait mode decides
-      // whether the score may move on; both take either input.
+      // A calibration in progress counts the strike, wait mode decides whether
+      // the score may move on, and the grader writes it down; all three take
+      // either input.
       if (event.kind === 'on') {
         calibrator.strike(piano.now())
       }
       wait.played(event)
+      grader.played(event, expressive)
     }
-    const stopMidi = midi.onEvent(sound)
-    const stopKeys = keys.onEvent(sound)
+    const stopMidi = midi.onEvent(sound(true))
+    const stopKeys = keys.onEvent(sound(false))
     return () => {
       stopMidi()
       stopKeys()
     }
-  }, [piano, midi, keys, calibrator, wait])
+  }, [piano, midi, keys, calibrator, wait, grader])
 
   // What is heard follows the panel. The transport takes it at the next note
   // it schedules, so nothing already sounding is cut.
@@ -313,6 +323,7 @@ export function App() {
           keys={keys}
           waiting={waiting}
           onWaiting={setWaiting}
+          grader={grader}
           latency={latency}
           calibrator={calibrator}
           latencySetup={device ?? 'the typing keyboard'}

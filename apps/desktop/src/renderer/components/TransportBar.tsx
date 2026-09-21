@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from 'react'
 
 import type { LoopRange, Transport } from '../audio'
+import type { Grader } from '../lib/grader'
 import type { KeysInput } from '../lib/keys-input'
 import type { Calibrator, Latency } from '../lib/latency'
 import type { MidiInput } from '../lib/midi-input'
@@ -26,6 +27,7 @@ import { useTransportState, usePosition } from '../lib/useTransport'
 import { KeysPanel } from './KeysPanel'
 import { LatencyPanel } from './LatencyPanel'
 import { MidiMonitor } from './MidiMonitor'
+import { ReportPanel } from './ReportPanel'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
 
@@ -71,6 +73,8 @@ export type TransportBarProps = {
   /** Whether the score waits for the player, and the way to change it. */
   readonly waiting?: boolean
   readonly onWaiting?: (waiting: boolean) => void
+  /** What the last attempt was worth, for the panel that reports it. */
+  readonly grader?: Grader
   /** The machine's measured lag, shown rather than hidden. */
   readonly latency?: Latency
   readonly calibrator?: Calibrator
@@ -105,6 +109,7 @@ export function TransportBar({
   keys,
   waiting = false,
   onWaiting,
+  grader,
   latency,
   calibrator,
   onMeasuredLatency,
@@ -276,6 +281,7 @@ export function TransportBar({
               <PauseCircle />
             </Button>
           )}
+          {grader === undefined ? null : <ReportPanel grader={grader} />}
           {latency === undefined || calibrator === undefined ? null : (
             <LatencyPanel
               latency={latency}

@@ -174,6 +174,52 @@ describe('Transport', () => {
   })
 })
 
+describe('the stretch a pass covered', () => {
+  it('keeps where playback got to after stopping, where the position does not', () => {
+    const { time, transport } = setup()
+    transport.play()
+    time.run(1 + START_LEAD_SECONDS)
+    transport.stop()
+    expect(transport.position()).toBe(0)
+    expect(transport.reached).toBeCloseTo(TICKS_PER_SECOND, 6)
+  })
+
+  it('keeps it through the end of the piece, which is where a report is owed it', () => {
+    const { time, transport } = setup([note(60, 0), note(62, 480)])
+    transport.play()
+    time.run(3)
+    expect(transport.status).toBe('stopped')
+    expect(transport.position()).toBe(0)
+    expect(transport.reached).toBeGreaterThanOrEqual(720)
+  })
+
+  it('is the pause point after a pause', () => {
+    const { time, transport } = setup()
+    transport.play()
+    time.run(0.5 + START_LEAD_SECONDS)
+    transport.pause()
+    expect(transport.reached).toBeCloseTo(transport.position(), 6)
+  })
+
+  it('goes back to nothing when another piece is loaded', () => {
+    const { time, transport } = setup()
+    transport.play()
+    time.run(1)
+    transport.load(performance([note(60, 0)]))
+    expect(transport.reached).toBe(0)
+  })
+})
+
+describe('where a tick sounds', () => {
+  it('is the other way round from which tick a time is', () => {
+    const { time, transport } = setup()
+    transport.play()
+    time.run(1)
+    expect(transport.timeAt(TICKS_PER_SECOND)).toBeCloseTo(START_LEAD_SECONDS + 1, 6)
+    expect(transport.tickAt(transport.timeAt(1920))).toBeCloseTo(1920, 6)
+  })
+})
+
 describe('the strikes a view draws', () => {
   it('hands over each strike with the time the engine was given', () => {
     const { time, engine, transport } = setup([note(60, 0), note(64, 480)])
