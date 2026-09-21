@@ -49,4 +49,4 @@ held = 60
 # declared = ["hardware"]
 
 [install]
-wired = "0.2.473"
+wired = "0.2.480"

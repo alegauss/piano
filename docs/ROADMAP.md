@@ -13,7 +13,7 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
-- 📋 **PI27** (deps: PI26 ✅) **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — Rendering hundreds of visible notes at 60fps needs culling, a stable draw loop and measurement, not hope. → §PI27
+- 🛠 **PI27** (deps: PI26 ✅) **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — Rendering hundreds of visible notes at 60fps needs culling, a stable draw loop and measurement, not hope. → §PI27
 - 📋 **PI28** (deps: PI26 ✅) **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A particle burst and a key flash at the strike, behind an effects toggle, are what make the roll read as impact rather than as scrolling. → §PI28
 - 📋 **PI29** (deps: PI11 ✅, PI26 ✅) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
 - 📋 **PI30** (deps: PI4 ✅, PI23 ✅) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
