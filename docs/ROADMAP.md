@@ -13,7 +13,7 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
-- 📋 **PI29** (deps: PI11 ✅, PI26 ✅) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
+- 🛠 **PI29** (deps: PI11 ✅, PI26 ✅) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
 - 📋 **PI30** (deps: PI4 ✅, PI23 ✅) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
 - 📋 **PI31** (deps: PI9 ✅, PI26 ✅) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
 - 📋 **PI32** (deps: PI4 ✅, PI26 ✅) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
