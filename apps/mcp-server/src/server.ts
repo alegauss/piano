@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { createLibrary, type Files, type Library } from './library'
 import { createLink, noWindow, type Link } from './link'
 import { toolsFor, type Tool } from './tools'
+import { PLUGIN_VERSION } from './version'
 
 /**
  * The server, which is the tool table plus a way to be spoken to.
@@ -44,7 +45,7 @@ export const nodeFiles: Files = {
  */
 export function createServer(options: { library: Library; link?: Link }): McpServer {
   const server = new McpServer(
-    { name: 'piano', version: '0.0.0' },
+    { name: 'piano', version: PLUGIN_VERSION },
     {
       instructions:
         'A piano that plays scores and teaches them. Scores are JSON in the piano score ' +

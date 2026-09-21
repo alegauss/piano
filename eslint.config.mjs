@@ -47,6 +47,8 @@ export default tseslint.config(
       '**/.selfcheck-profile/**',
       '**/.test-profile/**',
       '.roadkeep/**',
+      // The plugin's bundled server: built from apps/mcp-server, which is linted.
+      'plugin/server/**',
     ],
   },
 

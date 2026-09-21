@@ -1,0 +1,18 @@
+{
+  "name": "piano",
+  "version": "0.1.0",
+  "description": "A piano Claude Code can write scores for, play and teach from: validate and keep scores, drive the Piano app, and practise a passage at a climbing tempo.",
+  "author": {
+    "name": "Alexandre Oliveira"
+  },
+  "homepage": "https://github.com/alegauss/piano",
+  "repository": "https://github.com/alegauss/piano",
+  "license": "MIT",
+  "keywords": ["piano", "music", "practice", "mcp"],
+  "mcpServers": {
+    "piano": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/piano-mcp.cjs"]
+    }
+  }
+}

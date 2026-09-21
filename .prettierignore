@@ -18,3 +18,6 @@ docs/IMPROVEMENTS.md
 
 # Generated from the zod schema; npm run schema owns its formatting.
 packages/score-format/schema/
+
+# The plugin's bundled server; npm run plugin writes it and check:plugin guards it.
+plugin/server/

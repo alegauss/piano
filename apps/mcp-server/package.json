@@ -6,7 +6,11 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "start": "vite-node src/main.ts"
+    "start": "vite-node src/main.ts",
+    "bundle": "node scripts/bundle.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.10"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

@@ -2,7 +2,8 @@ import { describeScore, FORMAT_VERSION, isSupportedVersion, type Score } from '@
 
 export { createLibrary, libraryId, safeName, SCORE_SUFFIX } from './library'
 export type { Files, Library, LibraryEntry, Saved } from './library'
-export { createLink, NO_WINDOW, noWindow, windowsIn } from './link'
+export { APP_RELEASES, createLink, NO_WINDOW, noWindow, windowsIn } from './link'
+export { PLUGIN_VERSION } from './version'
 export type { Command, DrillAsk, Link, LinkDeps, LinkResult, PassageAsk } from './link'
 export {
   createServer,

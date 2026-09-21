@@ -1,0 +1,14 @@
+{
+  "name": "piano",
+  "owner": {
+    "name": "Alexandre Oliveira"
+  },
+  "description": "The Piano plugin: a piano Claude Code can write scores for, play and teach from.",
+  "plugins": [
+    {
+      "name": "piano",
+      "source": "./plugin",
+      "description": "A piano Claude Code can write scores for, play and teach from."
+    }
+  ]
+}

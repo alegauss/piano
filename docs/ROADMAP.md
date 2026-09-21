@@ -3,6 +3,7 @@
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
 - 📋 **PI57** (deps: PI6 ✅) **An unsigned build trips SmartScreen and Gatekeeper, so a new user meets a warning before the app** — Signing needs a purchased Windows certificate and an Apple developer account, which is a decision with a price rather than a line of configuration. → §PI57
+- 📋 **PI64** (deps: PI6 ✅, PI45 ✅) **Nothing is published to download: the plugin sends a person without the app to an empty releases page** — Installers built per platform from a version tag and attached to a release are what make the plugin's install guidance point at something real. → §PI64
 
 ## Block B — Score JSON format
 
@@ -17,8 +18,7 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI45** (deps: PI43 ✅) **There is no plugin: the tools only work for someone who wires an MCP server by hand** — A packaged Claude Code plugin with commands is what makes installation a single step and the whole premise reachable by anyone. → §PI45
-- 📋 **PI46** (deps: PI15 ✅, PI45) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
+- 📋 **PI46** (deps: PI15 ✅, PI45 ✅) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
 - 📋 **PI47** (deps: PI15 ✅, PI43 ✅) **A rejected score comes back as a validation dump the model cannot act on** — Errors written for a repair loop, naming the field, the value and the fix, let the model correct its own output without a human. → §PI47
 - 📋 **PI48** (deps: PI6 ✅, PI44 ✅) **Asking to play a piece fails whenever the app is closed, which is most of the time** — Launching or focusing the app from a tool call is what makes the request work from a chat window with nothing already open. → §PI48
 - 📋 **PI49** (deps: PI44 ✅) **A local port that accepts scores and plays them is an open door on the machine** — Binding to loopback, requiring a token and allowlisting paths keep a convenience channel from becoming a way in. → §PI49
@@ -33,15 +33,6 @@
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 - 📋 **PI63** (deps: PI51) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
-
-## Done when — PI45
-
-- **Installing the plugin is a single step** A fresh Claude Code install adds the plugin
-  and its tools and commands become available with no hand-edited configuration file
-  anywhere.
-- **A missing app gives install guidance, not a socket error** Running a command with
-  the desktop app not installed explains how to install it, rather than reporting a
-  failed connection the user cannot interpret.
 
 ## Done when — PI46
 

@@ -146,6 +146,9 @@
 - ✅ **PI44** **The MCP server and the app are separate processes with no way to find each other** — A tool call finds the most recently focused live window from its presence file and plays it there, and a version mismatch says which side to update.
   checked **A tool call reaches the window the user is looking at** With two windows open, playback starts in the most recently focused one, and a stale handshake file left by a crash is detected rather than connected to.
   checked **A version mismatch fails with a readable message** An older plugin meeting a newer app reports what is incompatible and what to update, instead of connecting and then behaving strangely.
+- ✅ **PI45** **There is no plugin: the tools only work for someone who wires an MCP server by hand** — The repository is a plugin marketplace whose plugin carries its own bundled server and four commands, and a missing app is answered with where to get it.
+  checked **Installing the plugin is a single step** A fresh Claude Code install adds the plugin and its tools and commands become available with no hand-edited configuration file anywhere.
+  checked **A missing app gives install guidance, not a socket error** Running a command with the desktop app not installed explains how to install it, rather than reporting a failed connection the user cannot interpret.
 
 ## Block G — Score library and distribution
 

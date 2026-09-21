@@ -21,14 +21,16 @@
     "test:live": "vitest run --project renderer-browser --project desktop-live",
     "test:all": "vitest run",
     "test:watch": "vitest --project score-format --project ipc --project sample-pack --project mcp-server --project desktop-main --project renderer",
-    "lint": "eslint . && prettier --check . && npm run check:format-ownership && npm run check:colour-tokens && npm run check:schema",
+    "lint": "eslint . && prettier --check . && npm run check:format-ownership && npm run check:colour-tokens && npm run check:schema && npm run check:plugin",
     "lint:fix": "eslint . --fix && prettier --write .",
     "format": "prettier --write .",
     "package": "npm run build && npm run package --workspace apps/desktop",
     "icon": "node build/make-icon.mjs",
     "schema": "npm run schema --workspace packages/score-format",
     "pack:samples": "npm run build-pack --workspace packages/sample-pack --",
-    "check:schema": "vite-node scripts/check-schema-fresh.mts"
+    "check:schema": "vite-node scripts/check-schema-fresh.mts",
+    "plugin": "node apps/mcp-server/scripts/bundle.mjs",
+    "check:plugin": "node apps/mcp-server/scripts/bundle.mjs --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

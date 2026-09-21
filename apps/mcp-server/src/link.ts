@@ -45,9 +45,20 @@ export type LinkDeps = {
   ) => Promise<{ readonly status: number; readonly text: string }>
 }
 
-/** Said when nothing is listening, which is not a failure of the request. */
+/** Where the app is had from, for somebody who has the plugin and not the piano. */
+export const APP_RELEASES = 'https://github.com/alegauss/piano/releases'
+
+/**
+ * Said when nothing is listening, which is not a failure of the request.
+ *
+ * It tells somebody how to get the app rather than that a socket was refused:
+ * the plugin is often installed first, and "connection refused" to a person
+ * who has never had the app is a message about the wrong problem.
+ */
 export const NO_WINDOW =
-  'No piano window is listening. Open the Piano app and ask again; the tools that read and ' +
+  'No piano window is listening. If the Piano app is not installed, get it from ' +
+  `${APP_RELEASES}, or build it from that repository with "npm install" and ` +
+  '"npm run package". If it is installed, open it and ask again. The tools that read and ' +
   'write scores work without it.'
 
 /**

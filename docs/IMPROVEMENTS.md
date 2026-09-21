@@ -20,6 +20,22 @@ right-click and confirm. Somebody who wanted to try a piano does neither. Until 
 done the honest position is that the installers are for people who were told where they
 came from, and the README should say so rather than implying a public release.
 
+### §PI64 Something to download
+
+The plugin installs in one step and then, for anybody without the app, says to get it
+from the repository's releases page, which is empty. The packaging exists:
+electron-builder already produces an installer on the machine that runs it. What is
+missing is the step that makes one on each platform and puts it somewhere a person can
+download it, so the guidance points at something real. A tag carrying the app's version
+is the natural trigger, with a workflow that builds the Windows and macOS installers on
+their own runners and attaches them to a release for that tag; building on the machine
+it targets is what keeps native pieces such as the MIDI stack honest. The first releases
+will be unsigned, since signing is a purchase and its own line, so the release notes
+have to say what the operating system will show and how to get past it rather than leave
+somebody to meet it cold. The version in the tag, the app's own version and the link
+version the app reports should be one decision, made once, or the message telling
+somebody which side to update names a number they cannot find.
+
 ## Block B — Score JSON format
 
 ## Block C — Audio engine and transport
@@ -77,20 +93,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI45 A plugin, not a configuration exercise
-
-If installing this means editing a JSON file by hand and already knowing what an MCP
-server is, the Claude Code First premise is true only for the person who built it. So
-the whole thing ships as a plugin: the MCP server declaration, the score-authoring skill
-and a few commands named after what people actually want. The commands are worth more
-than they look, because they are where a vague request becomes a specific one: create a
-score for a named piece, play what is open, practise a passage, set the level. Each
-command is a short prompt that reaches for the skill and then the tools, so the model is
-not rediscovering the workflow on every request. The plugin has to behave sensibly when
-the app is not installed yet, which means the failure says how to install it rather than
-reporting a connection error. Versioning the plugin against the app protocol belongs
-here too, since the two will be updated at different times by different people.
-
 ### §PI46 Teaching the model to write a score that is right
 
 A model asked for a piece will produce something that parses and is musically wrong in
@@ -101,9 +103,11 @@ ticks run 480 to the quarter, a bar of four four is 1920 ticks, and velocity sho
 range like dynamics instead of sitting at a flat 100 throughout. And it states the
 mistakes no schema catches: overlapping notes inside one voice, a left hand written
 above the right, chords spanning more than a hand reaches, a melody that never leaves
-one octave, and a beginner arrangement identical to the advanced one. It also says when
-to stop, because a request for a copyrighted song deserves an honest answer rather than
-a fabricated approximation presented as the real thing.
+one octave, and a beginner arrangement identical to the advanced one. It lives in the
+plugin as plugin/skills/, and the compose command, which today leans only on validation,
+should reach for it first. It also says when to stop, because a request for a
+copyrighted song deserves an honest answer rather than a fabricated approximation
+presented as the real thing.
 
 ### §PI47 Errors written for the thing that will read them
 
