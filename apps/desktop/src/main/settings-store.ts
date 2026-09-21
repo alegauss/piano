@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 import {
@@ -9,6 +9,8 @@ import {
   type Settings,
   type SettingsPatch,
 } from '@piano/ipc'
+
+import { replace } from './replace'
 
 /**
  * The settings file, which main owns.
@@ -109,7 +111,7 @@ export function createSettingsStore(file: string): SettingsStore {
       await mkdir(dirname(file), { recursive: true })
       const partial = `${file}.partial`
       await writeFile(partial, `${JSON.stringify(storedSettings(settings), null, 2)}\n`, 'utf8')
-      await rename(partial, file)
+      await replace(partial, file)
       return settings
     })
     // One failed write must not stop every later one from being tried.

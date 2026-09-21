@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, existsSync } from 'node:fs'
-import { mkdir, open, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, open, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
 import type { PackProgressPush, PackSourceResponse } from '@piano/ipc'
 import { parseManifest, type PackManifest } from '@piano/sample-pack'
+
+import { replace } from './replace'
 
 /**
  * Fetching the sample pack on first run.
@@ -224,13 +226,13 @@ export function createPackDownloader(options: {
     // Whatever is there, an older pack or the wreck of a hand-made one, is set aside.
     const had = existsSync(options.directory)
     if (had) {
-      await rename(options.directory, old)
+      await replace(options.directory, old)
     }
     try {
-      await rename(staging, options.directory)
+      await replace(staging, options.directory)
     } catch (error: unknown) {
       if (had) {
-        await rename(old, options.directory)
+        await replace(old, options.directory)
       }
       throw error
     }

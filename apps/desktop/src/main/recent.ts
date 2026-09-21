@@ -1,8 +1,10 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 import { recentEntrySchema, type RecentEntry } from '@piano/ipc'
 import { z } from 'zod'
+
+import { replace } from './replace'
 
 /**
  * The scores somebody opened lately.
@@ -48,7 +50,7 @@ export function createRecent(file: string, max = MAX_RECENT): Recent {
     // Written beside and moved into place, so a crash mid-write leaves the old list.
     const partial = `${file}.partial`
     await writeFile(partial, `${JSON.stringify({ entries }, null, 2)}\n`, 'utf8')
-    await rename(partial, file)
+    await replace(partial, file)
   }
 
   return {
