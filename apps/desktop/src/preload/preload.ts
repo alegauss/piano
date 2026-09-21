@@ -75,6 +75,16 @@ const bridge: PianoBridge = {
   packSource: async () => invoke(CHANNEL_NAMES.packSource, null),
   downloadPack: async () => invoke(CHANNEL_NAMES.packDownload, null),
   cancelPackDownload: async () => invoke(CHANNEL_NAMES.packCancel, null),
+  exportScore: async (request) => invoke(CHANNEL_NAMES.scoreExport, request),
+  onExportRequested: (listener) => {
+    const forward = () => {
+      listener()
+    }
+    ipcRenderer.on(PUSH_NAMES.exportRequested, forward)
+    return () => {
+      ipcRenderer.removeListener(PUSH_NAMES.exportRequested, forward)
+    }
+  },
   onPackProgress: (listener) => {
     const forward = (_event: IpcRendererEvent, progress: PackProgressPush) => {
       listener(progress)

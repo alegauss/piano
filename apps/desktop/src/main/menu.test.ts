@@ -25,7 +25,17 @@ describe('the application menu', () => {
     open: () => done.push('open'),
     openRecent: (path: string) => done.push(`recent ${path}`),
     clearRecent: () => done.push('clear'),
+    exportMidi: () => done.push('export'),
   }
+
+  it('saves the open score as MIDI from the same menu, with the usual export shortcut', () => {
+    const save = items(fileMenu(menuTemplate('win32', [], actions))).find(
+      (one) => one.label === 'Save as MIDI…',
+    )
+    expect(save?.accelerator).toBe('CmdOrCtrl+E')
+    save?.click?.(undefined as never, undefined, undefined as never)
+    expect(done).toContain('export')
+  })
 
   it('opens a file with the shortcut every other program uses', () => {
     const open = items(fileMenu(menuTemplate('win32', [], actions))).find(

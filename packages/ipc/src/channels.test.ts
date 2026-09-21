@@ -10,6 +10,7 @@ import {
   packFile,
   packManifest,
   packSource,
+  scoreExport,
   scoreOpen,
   scoreRecent,
   windowSetTitle,
@@ -195,6 +196,23 @@ describe('the sample pack download', () => {
   it('takes nothing from the page: where it downloads from is main’s to know', () => {
     expect(packDownload.request.safeParse(null).success).toBe(true)
     expect(packDownload.request.safeParse({ url: 'https://evil.example/' }).success).toBe(false)
+  })
+})
+
+describe('score:export', () => {
+  it('carries the score and the level it is played at, and no path', () => {
+    expect(scoreExport.request.safeParse({ score: {}, level: null }).success).toBe(true)
+    expect(scoreExport.request.safeParse({ score: {}, level: 'beginner' }).success).toBe(true)
+    expect(scoreExport.request.safeParse({ score: {}, level: 'expert' }).success).toBe(false)
+    expect(scoreExport.request.safeParse({ score: {} }).success).toBe(false)
+  })
+
+  it('answers saved with what was left out, cancelled, or refused with why', () => {
+    const { response } = scoreExport
+    expect(response.safeParse({ kind: 'saved', name: 'a.mid', dropped: [] }).success).toBe(true)
+    expect(response.safeParse({ kind: 'cancelled' }).success).toBe(true)
+    expect(response.safeParse({ kind: 'refused', message: 'no' }).success).toBe(true)
+    expect(response.safeParse({ kind: 'saved', name: 'a.mid' }).success).toBe(false)
   })
 })
 

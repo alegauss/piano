@@ -109,6 +109,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     downloadPack: () => Promise.resolve({ installed: false, reason: 'not in this test' }),
     cancelPackDownload: () => Promise.resolve(null),
     onPackProgress: () => () => {},
+    exportScore: () => Promise.resolve({ kind: 'cancelled' }),
+    onExportRequested: () => () => {},
   }
   Object.defineProperty(window, 'piano', { value: bridge, configurable: true })
   return {

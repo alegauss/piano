@@ -295,6 +295,32 @@ export const packCancel = {
   response: z.null(),
 } as const satisfies Channel<'pack:cancel', z.ZodType, z.ZodType>
 
+/**
+ * Save the score the window is showing as a MIDI file. The score crosses, not
+ * a path: what is in memory, at the level chosen, is the thing being saved,
+ * and main asks the person where. Main validates it again, since it comes
+ * from the renderer.
+ */
+export const scoreExport = {
+  channel: CHANNEL_NAMES.scoreExport,
+  request: z.object({
+    score: z.unknown(),
+    /** The level the notes are an arrangement for, named in the file; null for as written. */
+    level: LEVEL.nullable(),
+  }),
+  response: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('saved'),
+      /** The file's name, as a person would recognise it. */
+      name: z.string(),
+      /** What the file has nowhere to put, one sentence each. */
+      dropped: z.array(z.string()),
+    }),
+    z.object({ kind: z.literal('cancelled') }),
+    z.object({ kind: z.literal('refused'), message: z.string() }),
+  ]),
+} as const satisfies Channel<'score:export', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
 export const allChannels = [
   appInfo,
@@ -312,6 +338,7 @@ export const allChannels = [
   packSource,
   packDownload,
   packCancel,
+  scoreExport,
 ] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
@@ -331,6 +358,8 @@ export type LibraryItem = z.infer<typeof libraryItemSchema>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>
 export type PackSourceResponse = z.infer<typeof packSource.response>
 export type PackDownloadResponse = z.infer<typeof packDownload.response>
+export type ExportRequest = z.infer<typeof scoreExport.request>
+export type ExportResult = z.infer<typeof scoreExport.response>
 
 /** How far the sample pack's download has got, pushed as it goes. */
 export type PackProgressPush = {

@@ -117,21 +117,6 @@ validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 
-### §PI58 Saving a score as MIDI
-
-exportMidi in the score-format package already produces the bytes and the list of what a
-MIDI file cannot carry, so this is surface work rather than format work. An Export as
-MIDI menu item and keyboard shortcut sit beside the open routes PI51 adds. The main
-process owns the save dialog and the write, as it owns every other disk access; the
-renderer sends the score it is showing across a typed IPC channel rather than a path,
-because the score in memory is the thing being exported. The suggested file name comes
-from the title. The dropped list is shown after the write, in plain words, and never as
-a blocking question: somebody taking a practice piece into a DAW does not need to
-confirm that the fingerings stay behind, but should be told that they did. One choice is
-left open: whether the export plays the score as written, which is what exportMidi does
-today, or the arrangement currently selected, which would run resolveArrangement first
-and name the level in the file name.
-
 ### §PI63 Keeping the proposal
 
 The rules hand back an arrangement, which is the whole point of deriving one rather than

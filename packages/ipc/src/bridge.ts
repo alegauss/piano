@@ -1,5 +1,7 @@
 import type {
   AppInfoResponse,
+  ExportRequest,
+  ExportResult,
   LinkAnswerRequest,
   LibraryItem,
   LibraryQuery,
@@ -78,4 +80,8 @@ export type PianoBridge = {
   readonly cancelPackDownload: () => Promise<null>
   /** Be told how far the download has got. */
   readonly onPackProgress: (listener: (progress: PackProgressPush) => void) => () => void
+  /** Save the score being shown as a MIDI file, main asking where. */
+  readonly exportScore: (request: ExportRequest) => Promise<ExportResult>
+  /** Be told the menu asked for the open score as MIDI. */
+  readonly onExportRequested: (listener: () => void) => () => void
 }

@@ -11,6 +11,7 @@ import {
   packManifest,
   packSource,
   PUSH_NAMES,
+  scoreExport,
   scoreOpen,
   scoreRecent,
   settingsRead,
@@ -18,6 +19,8 @@ import {
   settingsWrite,
   windowSetTitle,
   type Channel,
+  type ExportRequest,
+  type ExportResult,
   type LibraryItem,
   type LibraryQuery,
   type LinkResult,
@@ -91,6 +94,11 @@ export function registerIpcHandlers(options: {
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
   readonly settings: SettingsStore
   readonly pack: PackDownloader
+  /** Save the score a window sent as MIDI, asking where in front of that window. */
+  readonly exportScore: (
+    request: ExportRequest,
+    window: BrowserWindow | null,
+  ) => Promise<ExportResult>
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -149,6 +157,10 @@ export function registerIpcHandlers(options: {
     options.pack.cancel()
     return null
   })
+
+  handle(scoreExport, (request, event) =>
+    options.exportScore(request, BrowserWindow.fromWebContents(event.sender)),
+  )
 }
 
 /**

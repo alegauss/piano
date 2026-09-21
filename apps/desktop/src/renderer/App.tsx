@@ -20,6 +20,7 @@ import {
   type Note,
   type Score,
 } from '@piano/score-format'
+import { FileMusic } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { Transport, type LoopRange } from './audio'
@@ -34,6 +35,7 @@ import { SettingsStatus } from './components/SettingsStatus'
 import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { TransportBar } from './components/TransportBar'
+import { Button } from './components/ui/button'
 import { cn } from './lib/cn'
 import {
   handsView,
@@ -65,6 +67,7 @@ import {
 } from './lib/latency'
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
+import { describeExport, exportedScore } from './lib/export'
 import { outcomeOf, type Opened } from './lib/open'
 import { appPackDownload } from './lib/pack-download'
 import { appSettings } from './lib/settings'
@@ -157,6 +160,8 @@ export function App() {
   const [dragging, setDragging] = useState(false)
   /** Opens waiting for the transport to hold what they opened, settled when it does. */
   const loaded = useRef<(() => void)[]>([])
+  /** What the last save said: where it went, and what the file could not keep. */
+  const [notice, setNotice] = useState<string | null>(null)
 
   const timing = useMemo(() => timingOf(score), [score])
   const written = useMemo(() => notesOf(score), [score])
@@ -379,6 +384,22 @@ export function App() {
   // Read through a ref, so the subscription is made once and still sees the
   // level and the chooser as they stand now.
   const controls = useRef<Controls | null>(null)
+
+  // The menu's Save as MIDI lands here, saving what is being played now.
+  const saving = useRef(saveMidi)
+  useEffect(() => {
+    saving.current = saveMidi
+  })
+  useEffect(() => {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    return bridge.onExportRequested(() => {
+      saving.current()
+    })
+  }, [])
+
   useEffect(() => {
     controls.current = {
       transport,
@@ -578,6 +599,27 @@ export function App() {
     }
   }, [full])
 
+  /** Save what is being played as MIDI, main asking where, and say how it went. */
+  function saveMidi(): void {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    void bridge.exportScore({ score: exportedScore(score, notes, level), level }).then(
+      (result) => {
+        const said = describeExport(result)
+        if (said !== null) {
+          setNotice(said)
+        }
+      },
+      (cause: unknown) => {
+        setNotice(
+          `Could not save as MIDI: ${cause instanceof Error ? cause.message : String(cause)}`,
+        )
+      },
+    )
+  }
+
   /**
    * Every setting back to its default. The ones held in this window's state
    * go back with them, so the reset is seen now rather than at the next launch.
@@ -661,6 +703,10 @@ export function App() {
                   openFrom({ from: 'library', id })
                 }}
               />
+              <Button variant="ghost" size="sm" onClick={saveMidi}>
+                <FileMusic />
+                Save as MIDI
+              </Button>
               <OpenControls
                 open={openFrom}
                 recent={() => readBridge()?.recentScores() ?? Promise.resolve([])}
@@ -697,6 +743,24 @@ export function App() {
         {error === null || full ? null : (
           <p className="mx-6 mt-4 rounded-(--radius) border border-danger px-3 py-2 text-sm text-danger">
             {error}
+          </p>
+        )}
+
+        {notice === null || full ? null : (
+          <p
+            role="status"
+            className="mx-6 mt-4 flex items-start justify-between gap-4 rounded-(--radius) border border-border-subtle px-3 py-2 text-sm text-text-default"
+          >
+            {notice}
+            <button
+              type="button"
+              className="shrink-0 text-text-muted underline hover:text-text-strong"
+              onClick={() => {
+                setNotice(null)
+              }}
+            >
+              Dismiss
+            </button>
           </p>
         )}
 

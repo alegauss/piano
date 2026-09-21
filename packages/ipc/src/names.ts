@@ -25,6 +25,7 @@ export const CHANNEL_NAMES = {
   packSource: 'pack:source',
   packDownload: 'pack:download',
   packCancel: 'pack:cancel',
+  scoreExport: 'score:export',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
@@ -36,12 +37,13 @@ export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
  * renderer asking and main answering, and a push is main telling: a command
  * from Claude Code for the window, and a score main opened because somebody
  * asked it to from outside the page — the menu, the file manager, a second
- * launch — word that the library folder changed under it, and how far the
- * sample pack's download has got.
+ * launch — word that the library folder changed under it, how far the sample
+ * pack's download has got, and that the menu asked for the open score as MIDI.
  */
 export const PUSH_NAMES = {
   linkCommand: 'link:command',
   scoreOpened: 'score:opened',
   libraryChanged: 'library:changed',
   packProgress: 'pack:progress',
+  exportRequested: 'score:export-requested',
 } as const

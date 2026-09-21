@@ -14,7 +14,15 @@ import {
   type Settings,
 } from '@piano/ipc'
 import { createLibrary, nodeFiles } from '@piano/library'
-import { app, BrowserWindow, dialog, Menu, session, type OpenDialogOptions } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  Menu,
+  session,
+  type OpenDialogOptions,
+  type SaveDialogOptions,
+} from 'electron'
 
 import { BUNDLED_SCORES } from './bundled'
 import { registerIpcHandlers } from './ipc'
@@ -27,6 +35,7 @@ import { createPackDownloader, packSourceUrl } from './pack-download'
 import { createRecent } from './recent'
 import { packDirectory } from './sample-pack'
 import { createSettingsStore } from './settings-store'
+import { exportScore } from './score-export'
 import { launchPath, libraryItem, libraryRoot, openScoreFile } from './score-files'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
 import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
@@ -191,6 +200,13 @@ function setMenu(entries: readonly RecentEntry[]): void {
         app.clearRecentDocuments()
         setMenu([])
       })
+    },
+    // The score is the window's, at the level it is playing, so the window is
+    // asked to send it rather than main saving what it last opened.
+    exportMidi: () => {
+      if (mainWindow !== null && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(PUSH_NAMES.exportRequested)
+      }
     },
   })
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
@@ -396,6 +412,22 @@ if (firstInstance) {
           (await library.search(filter, order)).map(libraryItem),
         settings,
         pack,
+        exportScore: (request, window) =>
+          exportScore(request, {
+            choose: async (suggested) => {
+              const options: SaveDialogOptions = {
+                title: 'Save as MIDI',
+                defaultPath: join(app.getPath('documents'), suggested),
+                filters: [{ name: 'MIDI files', extensions: ['mid'] }],
+              }
+              const chosen =
+                window === null
+                  ? await dialog.showSaveDialog(options)
+                  : await dialog.showSaveDialog(window, options)
+              return chosen.canceled || chosen.filePath === '' ? null : chosen.filePath
+            },
+            write: (path, bytes) => writeFile(path, bytes),
+          }),
       })
 
       setMenu([])

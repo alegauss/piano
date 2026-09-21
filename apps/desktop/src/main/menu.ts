@@ -15,6 +15,8 @@ export type MenuActions = {
   readonly open: () => void
   readonly openRecent: (path: string) => void
   readonly clearRecent: () => void
+  /** Save the open score as a MIDI file, as the window is playing it. */
+  readonly exportMidi: () => void
 }
 
 export function menuTemplate(
@@ -56,6 +58,14 @@ export function menuTemplate(
             },
           },
         ],
+      },
+      { type: 'separator' },
+      {
+        label: 'Save as MIDI…',
+        accelerator: 'CmdOrCtrl+E',
+        click: () => {
+          actions.exportMidi()
+        },
       },
       { type: 'separator' },
       platform === 'darwin' ? { role: 'close' } : { role: 'quit' },
