@@ -6,10 +6,9 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI9** (deps: PI8 ✅) **A score is one flat list of notes, so the parts panel has nothing to mute, solo or colour** — Grouping notes into named parts with their own colour and role is what lets a listener silence the left hand or follow a single voice. → §PI9
 - 📋 **PI10** (deps: PI8 ✅) **Sustain pedal, dynamics and articulation are unrepresented, so playback sounds mechanical** — Timed pedal events plus dynamic and articulation marks that shape velocity and length are the difference between music and a metronome. → §PI10
 - 📋 **PI11** (deps: PI7 ✅) **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — Named ranges give the loop selector, the practice tools and Claude Code one vocabulary for talking about part of a piece. → §PI11
-- 📋 **PI12** (deps: PI8 ✅, PI9) **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Difficulty arrangements as views over one note source, with overrides instead of copies, keep three levels from drifting into three different pieces. → §PI12
+- 📋 **PI12** (deps: PI8 ✅, PI9 ✅) **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Difficulty arrangements as views over one note source, with overrides instead of copies, keep three levels from drifting into three different pieces. → §PI12
 - 📋 **PI13** (deps: PI2 ✅) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
 - 📋 **PI14** (deps: PI12, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
 - 📋 **PI15** (deps: PI14) **Nothing validates a score, so a malformed file fails somewhere deep inside the audio engine** — A published JSON Schema and a runtime validator generated from one source of truth reject a bad file at the door, naming the field and the reason. → §PI15
@@ -34,7 +33,7 @@
 - 📋 **PI28** (deps: PI26) **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A particle burst and a key flash at the strike, behind an effects toggle, are what make the roll read as impact rather than as scrolling. → §PI28
 - 📋 **PI29** (deps: PI11, PI26) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
 - 📋 **PI30** (deps: PI4 ✅, PI23) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
-- 📋 **PI31** (deps: PI9, PI26) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
+- 📋 **PI31** (deps: PI9 ✅, PI26) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
 - 📋 **PI32** (deps: PI4 ✅, PI26) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
 
 ## Block E — Practice mode and difficulty levels
@@ -68,15 +67,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI9
-
-- **Notes group into parts and a part can be silenced** A fixture with two parts loads,
-  and muting one removes its notes from both playback and the roll while the other
-  continues unchanged.
-- **A score declaring no parts still loads and plays** The loader assigns one implicit
-  part which the panel shows, and no validation error is raised for the missing part
-  table.
 
 ## Done when — PI10
 

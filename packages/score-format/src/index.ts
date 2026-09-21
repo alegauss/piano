@@ -3,6 +3,7 @@ export {
   FORMAT_VERSION,
   isSupportedVersion,
   notesOf,
+  scoreParts,
   timingOf,
   validateScoreNotes,
   type Score,
@@ -28,6 +29,18 @@ export {
   type NoteProblem,
   type Overlap,
 } from './note'
+
+export {
+  audibleNotes,
+  IMPLICIT_PART_ID,
+  notesByPart,
+  partOf,
+  partsOf,
+  validateParts,
+  type Part,
+  type PartRole,
+  type PlaybackFilter,
+} from './part'
 
 export {
   barAtTick,

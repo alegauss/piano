@@ -33,6 +33,9 @@
 - ✅ **PI8** **There is no note model: pitch, length, dynamics, hand and fingering have nowhere to live** — A note carries pitch, spelling, tick length, velocity, voice, hand and finger through a round trip, and one voice overlapping itself is named as an error.
   checked **A note round-trips with hand, voice and fingering intact** Parsing and reserialising a fixture preserves pitch, spelling, start, duration, velocity, voice, hand and finger, with no field quietly replaced by a default.
   checked **Overlapping same-pitch notes in one voice are rejected** The validator names both note ids, the pitch and the tick where they overlap, instead of leaving the engine to resolve an ambiguous note-off at playback time.
+- ✅ **PI9** **A score is one flat list of notes, so the parts panel has nothing to mute, solo or colour** — Notes group into named parts that can be muted, soloed or filtered by hand, and a score declaring no parts gets one implicit part and plays.
+  checked **Notes group into parts and a part can be silenced** A fixture with two parts loads, and muting one removes its notes from both playback and the roll while the other continues unchanged.
+  checked **A score declaring no parts still loads and plays** The loader assigns one implicit part which the panel shows, and no validation error is raised for the missing part table.
 
 ## Block C — Audio engine and transport
 

@@ -22,21 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI9 Parts, and why they are not hands
-
-The reference interface carries a PARTS panel down the left edge, and that is the unit a
-listener manipulates: mute this, solo that, colour the other. A part has an id, a name,
-a colour token, an instrument hint and a default visibility, and notes reference a part
-by id. The decision worth stating is that parts are orthogonal to hands. A simple piano
-piece is often one part whose notes are assigned to two hands; an arrangement with the
-melody written out separately is two parts a single hand may cover. Keeping them apart
-means practice features can say left hand only without caring how the score was
-authored, and the parts panel can offer melody only without caring which hand plays it.
-Colours are theme tokens rather than literal values, so the roll stays readable when the
-theme changes and stays distinguishable for colour-blind viewers. A score that declares
-no parts is valid and gets one implicit part, because a model writing a quick melody
-should not have to build a part table before it is allowed to play a tune.
-
 ### §PI10 Pedal, dynamics and articulation as timed events
 
 Three things separate a score that sounds like music from one that sounds like a

@@ -13,6 +13,7 @@
  */
 
 import { validateNotes, type Note } from './note'
+import { partsOf, validateParts, type Part } from './part'
 import { resolveTiming, type ResolvedTiming, type Timing } from './time'
 
 /**
@@ -43,6 +44,16 @@ export type Score = {
    * does not. Optional, so a score can be a title and a plan.
    */
   readonly notes?: readonly Note[]
+  /**
+   * The parts the panel lists. A score declaring none gets one implicit part,
+   * so a quick melody needs no part table.
+   */
+  readonly parts?: readonly Part[]
+}
+
+/** The parts a score plays with, with the implicit one supplied where needed. */
+export function scoreParts(score: Score): readonly Part[] {
+  return partsOf(score)
 }
 
 /** The notes a score carries, with the empty case made explicit. */
@@ -59,7 +70,8 @@ export function notesOf(score: Score): readonly Note[] {
  * voice.
  */
 export function validateScoreNotes(score: Score): string[] {
-  return validateNotes(notesOf(score))
+  const notes = notesOf(score)
+  return [...validateNotes(notes), ...validateParts(scoreParts(score), notes)]
 }
 
 /** The timing a score actually plays under, with every default filled in. */
