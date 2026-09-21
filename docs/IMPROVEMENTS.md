@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI34 Playable on a laptop, testable without hardware
-
-Most people will open this app on a machine with no MIDI keyboard attached, and if the
-answer is buy a controller first then nobody tries it. So the computer keyboard is a
-real input: two rows mapped as roughly an octave and a half, in the layout trackers and
-sequencers have used for decades, with keys to shift octave and a visible indication of
-where the mapping currently sits. The limitations are stated rather than hidden. There
-is no velocity, so a fixed value is used and dynamics are simply not graded on this
-input. Key rollover on a typical keyboard means some chords cannot be played at all,
-which belongs in the interface rather than leaving someone to conclude their playing is
-wrong. Auto-repeat has to be suppressed or a held key becomes a stream of note-ons.
-Beyond reach, this path is what makes the whole practice block testable: a test can
-synthesise key events deterministically, where testing MIDI input needs hardware nobody
-has in CI.
-
 ### §PI35 Measuring the lag before grading anyone
 
 Every machine has latency, and on a bad setup it is enough to make a player who is

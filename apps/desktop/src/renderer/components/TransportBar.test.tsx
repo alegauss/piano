@@ -169,15 +169,22 @@ describe('playing from the keyboard alone', () => {
     expect(transport.tempoScale).toBe(1.05)
   })
 
-  it('loops on L and goes back to the start on R', () => {
+  it('loops on L and goes back to the start on Home', () => {
     fireEvent.keyDown(document, { key: 'l' })
     expect(transport.loop).not.toBeNull()
     fireEvent.keyDown(document, { key: 'l' })
     expect(transport.loop).toBeNull()
 
     transport.seek(3 * QUARTER)
-    fireEvent.keyDown(document, { key: 'r' })
+    fireEvent.keyDown(document, { key: 'Home' })
     expect(transport.position()).toBe(0)
+  })
+
+  it('leaves the letters the typing keyboard plays with alone', () => {
+    transport.seek(3 * QUARTER)
+    // R is F sharp on the Q row; it used to jump to the start.
+    fireEvent.keyDown(document, { key: 'r' })
+    expect(transport.position()).toBe(3 * QUARTER)
   })
 
   it('keeps its hands off a keystroke meant for a field', () => {

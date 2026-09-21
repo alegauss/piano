@@ -111,6 +111,9 @@
 - ✅ **PI33** **A MIDI keyboard plugged into the machine is invisible: nothing receives a single note** — Web MIDI is granted in main and normalised in the renderer, with hot-plug, a remembered device and a monitor showing raw events (design recorded in `apps/desktop/src/renderer/lib/midi-input.ts`).
   checked **A controller switched on later connects without a restart** Plugging in or powering a MIDI keyboard mid-session makes it available and selectable immediately, and the chosen device is still selected on the next launch.
   checked **Velocity zero is treated as note off** A controller sending note-on at velocity zero releases the note, verified against recorded message streams from at least two controllers that behave differently.
+- ✅ **PI34** **Without a MIDI keyboard there is no way to play at all, so most people cannot try the app** — Two rows of the typing keyboard play two octaves, shiftable and stated, and both inputs now sound the piano at the pitch pressed (design recorded in `apps/desktop/src/renderer/lib/keys-input.ts`).
+  checked **An octave and a half is playable from the computer keyboard** The mapped rows sound the right pitches, octave shift moves the whole mapping, and the current range is visible on the on-screen keyboard rather than guessed.
+  checked **Auto-repeat never produces a stream of note-ons** Holding a key sounds one note that sustains until release, asserted by a test over synthetic key events rather than by trying it by hand.
 
 ## Block F — Claude Code First: MCP and plugin
 

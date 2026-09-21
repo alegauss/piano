@@ -14,12 +14,14 @@ import {
 import { useEffect, useState } from 'react'
 
 import type { LoopRange, Transport } from '../audio'
+import type { KeysInput } from '../lib/keys-input'
 import type { MidiInput } from '../lib/midi-input'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
 import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
 import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
+import { KeysPanel } from './KeysPanel'
 import { MidiMonitor } from './MidiMonitor'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
@@ -33,8 +35,9 @@ import { Slider } from './ui/slider'
  *
  * The keyboard is the other half. Someone practising has their hands on a
  * piano, not on a mouse: space starts and stops, the bracket keys change the
- * tempo, L loops and R goes back to the start. Shortcuts stay out of the way
- * of anything being typed into.
+ * tempo, L loops and Home goes back to the start. None of those letters is
+ * one the typing keyboard plays a note with, so switching that on takes
+ * nothing away. Shortcuts stay out of the way of anything being typed into.
  */
 
 /** How much a press of the tempo keys moves the practice tempo. */
@@ -60,6 +63,8 @@ export type TransportBarProps = {
   readonly onFull: (full: boolean) => void
   /** The MIDI input, for the monitor that says what a controller is sending. */
   readonly midi?: MidiInput
+  /** The typing keyboard as an instrument, for the panel that switches it on. */
+  readonly keys?: KeysInput
   /** Called before playing, to let the platform's audio start on a gesture. */
   readonly onStart?: () => void
   readonly className?: string
@@ -85,6 +90,7 @@ export function TransportBar({
   full,
   onFull,
   midi,
+  keys,
   onStart,
   className,
 }: TransportBarProps) {
@@ -143,8 +149,10 @@ export function TransportBar({
         },
         l: toggleLoop,
         L: toggleLoop,
-        r: restart,
-        R: restart,
+        // Home rather than R: R is a note on the typing keyboard, and a key
+        // that plays F sharp in one mode and jumps to the start in another
+        // is worse than a key somebody has to learn once.
+        Home: restart,
       }
       const act = handled[event.key]
       if (act !== undefined) {
@@ -170,7 +178,7 @@ export function TransportBar({
       )}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Button variant="ghost" size="icon" onClick={restart} aria-label="Back to the start (R)">
+        <Button variant="ghost" size="icon" onClick={restart} aria-label="Back to the start (Home)">
           <SkipBack />
         </Button>
         <Button
@@ -237,6 +245,7 @@ export function TransportBar({
             />
           </label>
 
+          {keys === undefined ? null : <KeysPanel keys={keys} />}
           {midi === undefined ? null : <MidiMonitor midi={midi} />}
           <Button
             variant={effects ? 'secondary' : 'ghost'}

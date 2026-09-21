@@ -21,6 +21,8 @@ import { TransportBar } from './components/TransportBar'
 import { cn } from './lib/cn'
 import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
+import { appKeys } from './lib/keys-input'
+import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { appPiano, appSound } from './lib/sound'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
@@ -78,6 +80,7 @@ export function App() {
   const sound = appSound()
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
   const midi = appMidi()
+  const keys = appKeys()
 
   const timing = useMemo(() => timingOf(placeholder), [])
   const notes = useMemo(() => notesOf(placeholder), [])
@@ -102,6 +105,21 @@ export function App() {
     made.load({ timing, notes })
     return made
   }, [piano, timing, notes])
+
+  // What a player presses reaches the piano, from either input, at the pitch
+  // pressed and at the clock's now.
+  useEffect(() => {
+    const sound = (event: Parameters<typeof playLive>[2]) => {
+      void piano.resume()
+      playLive(piano.engine, () => piano.now(), event)
+    }
+    const stopMidi = midi.onEvent(sound)
+    const stopKeys = keys.onEvent(sound)
+    return () => {
+      stopMidi()
+      stopKeys()
+    }
+  }, [piano, midi, keys])
 
   // What is heard follows the panel. The transport takes it at the next note
   // it schedules, so nothing already sounding is cut.
@@ -239,6 +257,7 @@ export function App() {
           full={full}
           onFull={setFull}
           midi={midi}
+          keys={keys}
           onStart={() => {
             void piano.resume()
           }}
