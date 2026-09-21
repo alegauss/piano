@@ -36,6 +36,15 @@ reads it to find the window in front of you and removes nothing there. An
 installed app also records where it lives in `~/.piano/app.json`, so it can be
 started from a request wherever it was installed; `PIANO_APP` overrides that.
 
+## The recorded piano
+
+The app plays a synthesised piano from the first moment, and offers in its footer
+to download the recorded one, saying how big it is first. The download can be
+stopped, picks up where it left off, and checks every file before the app uses
+it; the synthesised piano plays meanwhile. On a machine that cannot download,
+copy a sample pack (the folder holding its `manifest.json`) to the folder the
+footer names, or point `PIANO_SAMPLE_PACK` at it.
+
 ## Versions
 
 The plugin and the app are updated separately. They check each other's link

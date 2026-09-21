@@ -258,6 +258,43 @@ export const settingsReset = {
   response: settingsSchema,
 } as const satisfies Channel<'settings:reset', z.ZodType, z.ZodType>
 
+/**
+ * The sample pack that could be downloaded, and how big it is, asked before
+ * anything is fetched: a download is honest about its size before it starts.
+ */
+export const packSource = {
+  channel: CHANNEL_NAMES.packSource,
+  request: z.null(),
+  response: z.discriminatedUnion('available', [
+    z.object({ available: z.literal(false), reason: z.string() }),
+    z.object({
+      available: z.literal(true),
+      id: z.string(),
+      version: z.number(),
+      bytes: z.number().nonnegative(),
+      files: z.number().int().nonnegative(),
+    }),
+  ]),
+} as const satisfies Channel<'pack:source', z.ZodType, z.ZodType>
+
+/**
+ * Fetch the sample pack, continuing whatever an earlier attempt left, and put
+ * it in place once every file is verified. Answers when it is done; how far it
+ * has got arrives meanwhile as a push.
+ */
+export const packDownload = {
+  channel: CHANNEL_NAMES.packDownload,
+  request: z.null(),
+  response: z.object({ installed: z.boolean(), reason: z.string() }),
+} as const satisfies Channel<'pack:download', z.ZodType, z.ZodType>
+
+/** Stop the download, keeping what has arrived for the next attempt. */
+export const packCancel = {
+  channel: CHANNEL_NAMES.packCancel,
+  request: z.null(),
+  response: z.null(),
+} as const satisfies Channel<'pack:cancel', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
 export const allChannels = [
   appInfo,
@@ -272,6 +309,9 @@ export const allChannels = [
   settingsRead,
   settingsWrite,
   settingsReset,
+  packSource,
+  packDownload,
+  packCancel,
 ] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
@@ -289,6 +329,15 @@ export type RecentEntry = z.infer<typeof recentEntrySchema>
 export type LibraryQuery = z.infer<typeof libraryQuerySchema>
 export type LibraryItem = z.infer<typeof libraryItemSchema>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>
+export type PackSourceResponse = z.infer<typeof packSource.response>
+export type PackDownloadResponse = z.infer<typeof packDownload.response>
+
+/** How far the sample pack's download has got, pushed as it goes. */
+export type PackProgressPush = {
+  readonly phase: 'downloading' | 'installing'
+  readonly bytes: number
+  readonly total: number
+}
 
 /** What main pushes the window: a command, and the id its answer must carry. */
 export type LinkCommandPush = {

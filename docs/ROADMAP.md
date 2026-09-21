@@ -22,21 +22,11 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51 ✅) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 - 📋 **PI63** (deps: PI51 ✅) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
 - 📋 **PI66** (deps: PI51 ✅) **Double-clicking a score in the file manager never reaches the piano: no file type is registered** — A .score.json cannot be registered without claiming every .json, so the extension a score is saved under has to be settled before packaging can claim it. → §PI66
 - 📋 **PI67** (deps: PI53 ✅) **Practice history sits unvalidated in browser storage, and nothing in the app exports or deletes it** — A person's own record wants the settings' treatment: a validated, versioned file in the profile, and plain doors to take it away or erase it. → §PI67
-
-## Done when — PI54
-
-- **An interrupted download resumes and verifies** Killing the transfer part-way and
-  restarting continues rather than beginning again, and a corrupted file fails its
-  checksum instead of being installed.
-- **The app stays fully usable while the pack downloads** Playback works on the
-  synthesised engine throughout, and cancelling leaves a working app that can retry
-  later from settings.
 
 ## Done when — PI55
 

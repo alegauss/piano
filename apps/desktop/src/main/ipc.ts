@@ -5,8 +5,12 @@ import {
   libraryList,
   linkAnswer,
   linkListening,
+  packCancel,
+  packDownload,
   packFile,
   packManifest,
+  packSource,
+  PUSH_NAMES,
   scoreOpen,
   scoreRecent,
   settingsRead,
@@ -25,6 +29,7 @@ import { FORMAT_VERSION } from '@piano/score-format'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { z } from 'zod'
 
+import type { PackDownloader } from './pack-download'
 import { packDirectory, readPackFile, readPackManifest } from './sample-pack'
 import type { SettingsStore } from './settings-store'
 
@@ -85,6 +90,7 @@ export function registerIpcHandlers(options: {
   readonly recentScores: () => Promise<RecentEntry[]>
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
   readonly settings: SettingsStore
+  readonly pack: PackDownloader
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -127,6 +133,22 @@ export function registerIpcHandlers(options: {
   handle(settingsWrite, (patch) => options.settings.update(patch))
 
   handle(settingsReset, () => options.settings.reset())
+
+  handle(packSource, () => options.pack.source())
+
+  // Progress goes back to the window that asked, as it arrives.
+  handle(packDownload, (_request, event) =>
+    options.pack.download((progress) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send(PUSH_NAMES.packProgress, progress)
+      }
+    }),
+  )
+
+  handle(packCancel, () => {
+    options.pack.cancel()
+    return null
+  })
 }
 
 /**

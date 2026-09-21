@@ -26,15 +26,18 @@ The plugin installs in one step and then, for anybody without the app, says to g
 from the repository's releases page, which is empty. The packaging exists:
 electron-builder already produces an installer on the machine that runs it. What is
 missing is the step that makes one on each platform and puts it somewhere a person can
-download it, so the guidance points at something real. A tag carrying the app's version
-is the natural trigger, with a workflow that builds the Windows and macOS installers on
-their own runners and attaches them to a release for that tag; building on the machine
-it targets is what keeps native pieces such as the MIDI stack honest. The first releases
-will be unsigned, since signing is a purchase and its own line, so the release notes
-have to say what the operating system will show and how to get past it rather than leave
-somebody to meet it cold. The version in the tag, the app's own version and the link
-version the app reports should be one decision, made once, or the message telling
-somebody which side to update names a number they cannot find.
+download it, so the guidance points at something real. The sample pack is published too,
+as the folder npm run pack:samples builds, from somewhere that serves it as a folder,
+since release assets are flat; and PUBLISHED_PACK in the app's pack-download module is
+set to where it lands, which is what turns the first-run download on. A tag carrying the
+app's version is the natural trigger, with a workflow that builds the Windows and macOS
+installers on their own runners and attaches them to a release for that tag; building on
+the machine it targets is what keeps native pieces such as the MIDI stack honest. The
+first releases will be unsigned, since signing is a purchase and its own line, so the
+release notes have to say what the operating system will show and how to get past it
+rather than leave somebody to meet it cold. The version in the tag, the app's own
+version and the link version the app reports should be one decision, made once, or the
+message telling somebody which side to update names a number they cannot find.
 
 ## Block B — Score JSON format
 
@@ -111,24 +114,6 @@ easier enough are judgements, not sums. The warnings live in score-format beside
 validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
-
-### §PI54 Getting the piano onto the machine
-
-The sample pack is too large to sit inside an installer people are expected to download
-from a web page, so it arrives on first run. That download has to behave like a download
-and not a hopeful fetch: resumable, verified against a checksum, cancellable, and honest
-about its size before it starts. While it runs the app stays fully usable on the
-synthesised engine, which is the whole reason that engine exists. A failed or cancelled
-download leaves a working app rather than a broken one and can be retried later from
-settings. The pack is versioned, so a later release can ship a better one without a
-reinstall; npm run pack:samples builds it reproducibly as a directory whose manifest
-lists every file with its size and sha256, which is what the download verifies against,
-and the app tolerates holding an older pack than it would prefer. Main already reads the
-installed pack from a sample-pack directory in the app's user data, or from wherever
-PIANO_SAMPLE_PACK points, so the download only has to put a verified pack there. For an
-offline or restricted machine there is a manual path: a documented location to drop the
-pack file by hand. That is not an edge case, it is every corporate laptop the app will
-ever run on.
 
 ### §PI55 Something to hear on the first launch
 

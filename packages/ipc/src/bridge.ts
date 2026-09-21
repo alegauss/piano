@@ -6,9 +6,12 @@ import type {
   LinkCommandPush,
   OpenRequest,
   OpenResult,
+  PackDownloadResponse,
   PackFileRequest,
   PackFileResponse,
   PackManifestResponse,
+  PackProgressPush,
+  PackSourceResponse,
   RecentEntry,
   SettingsReadResponse,
   WindowSetTitleRequest,
@@ -67,4 +70,12 @@ export type PianoBridge = {
   readonly writeSettings: (patch: SettingsPatch) => Promise<Settings>
   /** Every setting back to its default. */
   readonly resetSettings: () => Promise<Settings>
+  /** The sample pack that could be downloaded, and how big it is. */
+  readonly packSource: () => Promise<PackSourceResponse>
+  /** Download the sample pack; settles once it is installed, or has stopped. */
+  readonly downloadPack: () => Promise<PackDownloadResponse>
+  /** Stop the download, keeping what arrived. */
+  readonly cancelPackDownload: () => Promise<null>
+  /** Be told how far the download has got. */
+  readonly onPackProgress: (listener: (progress: PackProgressPush) => void) => () => void
 }

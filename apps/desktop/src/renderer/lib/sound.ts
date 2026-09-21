@@ -29,6 +29,8 @@ export type Sound = {
   readonly subscribe: (listener: () => void) => () => void
   /** Look for the installed pack and move onto it. Safe to call more than once. */
   readonly start: () => void
+  /** Look again, as after a pack has just been put in place. */
+  readonly reload: () => void
 }
 
 /** The installed pack, one file at a time across the bridge. */
@@ -86,15 +88,21 @@ export function createSound(
         listeners.delete(listener)
       }
     },
-    start: () => {
-      if (started) {
-        return
-      }
-      started = true
-      begin().catch((error: unknown) => {
-        report({ kind: 'failed', message: error instanceof Error ? error.message : String(error) })
-      })
+    start,
+    reload: () => {
+      started = false
+      start()
     },
+  }
+
+  function start(): void {
+    if (started) {
+      return
+    }
+    started = true
+    begin().catch((error: unknown) => {
+      report({ kind: 'failed', message: error instanceof Error ? error.message : String(error) })
+    })
   }
 }
 

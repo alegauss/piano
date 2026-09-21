@@ -6,8 +6,10 @@ import {
   appInfo,
   formatIssues,
   libraryList,
+  packDownload,
   packFile,
   packManifest,
+  packSource,
   scoreOpen,
   scoreRecent,
   windowSetTitle,
@@ -170,6 +172,29 @@ describe('library:list', () => {
     ['nothing', null],
   ])('refuses %s', (_label, query) => {
     expect(libraryList.request.safeParse(query).success).toBe(false)
+  })
+})
+
+describe('the sample pack download', () => {
+  it('states the size before anything is fetched, or why there is nothing to fetch', () => {
+    expect(
+      packSource.response.safeParse({
+        available: true,
+        id: 'salamander',
+        version: 2,
+        bytes: 15_000_000,
+        files: 210,
+      }).success,
+    ).toBe(true)
+    expect(packSource.response.safeParse({ available: false, reason: 'nowhere' }).success).toBe(
+      true,
+    )
+    expect(packSource.response.safeParse({ available: true }).success).toBe(false)
+  })
+
+  it('takes nothing from the page: where it downloads from is main’s to know', () => {
+    expect(packDownload.request.safeParse(null).success).toBe(true)
+    expect(packDownload.request.safeParse({ url: 'https://evil.example/' }).success).toBe(false)
   })
 })
 

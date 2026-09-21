@@ -22,7 +22,9 @@ import { startLinkHost, type LinkHost } from './link-host'
 import { createRelay } from './link-relay'
 import { menuTemplate } from './menu'
 import { createOpener } from './opener'
+import { createPackDownloader, packSourceUrl } from './pack-download'
 import { createRecent } from './recent'
+import { packDirectory } from './sample-pack'
 import { createSettingsStore } from './settings-store'
 import { launchPath, libraryItem, libraryRoot, openScoreFile } from './score-files'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
@@ -105,6 +107,9 @@ const library = createLibrary(libraryRoot(), nodeFiles)
 
 /** What the app remembers between launches, in this profile. */
 const settings = createSettingsStore(join(app.getPath('userData'), 'settings.json'))
+
+/** The sample pack, fetched into wherever the app reads one from. */
+const pack = createPackDownloader({ base: packSourceUrl(), directory: packDirectory() })
 
 /**
  * What the app was started to open, held until the window asks for it: a
@@ -389,6 +394,7 @@ if (firstInstance) {
         libraryScores: async ({ order, ...filter }) =>
           (await library.search(filter, order)).map(libraryItem),
         settings,
+        pack,
       })
 
       setMenu([])

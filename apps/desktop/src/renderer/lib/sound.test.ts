@@ -31,6 +31,10 @@ function bridge(overrides: Partial<PianoBridge> = {}): PianoBridge {
     readSettings: () => Promise.reject(new Error('not used')),
     writeSettings: () => Promise.reject(new Error('not used')),
     resetSettings: () => Promise.reject(new Error('not used')),
+    packSource: () => Promise.reject(new Error('not used')),
+    downloadPack: () => Promise.reject(new Error('not used')),
+    cancelPackDownload: () => Promise.resolve(null),
+    onPackProgress: () => () => {},
     ...overrides,
   }
 }
@@ -123,6 +127,30 @@ describe('createSound', () => {
     sound.start()
     await settle()
     expect(usePack).toHaveBeenCalledTimes(1)
+  })
+
+  it('looks again after a pack is put in place, and moves onto it without a restart', async () => {
+    let installed = false
+    const usePack = vi.fn(() => Promise.resolve(bank() as unknown as PackBank))
+    const sound = createSound(
+      bridge({
+        packManifest: () =>
+          Promise.resolve(
+            installed
+              ? { installed: true, manifest: { any: 'manifest' } }
+              : { installed: false, location: '/p/pack' },
+          ),
+      }),
+      () => ({ usePack }),
+    )
+    sound.start()
+    await settle()
+    expect(sound.state.kind).toBe('synth')
+
+    installed = true
+    sound.reload()
+    await settle()
+    expect(sound.state).toMatchObject({ kind: 'sampled', credit })
   })
 })
 

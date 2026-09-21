@@ -27,6 +27,7 @@ import { readBridge } from './bridge'
 import { LibraryPanel } from './components/LibraryPanel'
 import { OpenControls } from './components/OpenControls'
 import { OpenReport, type Report } from './components/OpenReport'
+import { PackDownloadStatus } from './components/PackDownloadStatus'
 import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
 import { SettingsStatus } from './components/SettingsStatus'
@@ -65,6 +66,7 @@ import {
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { outcomeOf, type Opened } from './lib/open'
+import { appPackDownload } from './lib/pack-download'
 import { appSettings } from './lib/settings'
 import { appPiano, appSound } from './lib/sound'
 import { createWaitMode } from './lib/wait-mode'
@@ -522,6 +524,17 @@ export function App() {
     sound.start()
   }, [sound])
 
+  // With no recordings installed, what could be downloaded is asked about, so
+  // the offer can say how big it is before anybody starts it.
+  const download = appPackDownload()
+  const downloadState = useSyncExternalStore(download.subscribe, () => download.state)
+  const synthesised = soundState.kind === 'synth' || soundState.kind === 'failed'
+  useEffect(() => {
+    if (synthesised) {
+      download.check()
+    }
+  }, [download, synthesised])
+
   useEffect(() => {
     const bridge = readBridge()
     if (bridge === null) {
@@ -767,6 +780,11 @@ export function App() {
 
           <footer className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
             <SoundStatus state={soundState} />
+            <PackDownloadStatus
+              state={downloadState}
+              onStart={download.start}
+              onCancel={download.cancel}
+            />
             <SettingsStatus
               notice={remembered.notice}
               onDismiss={settings.dismiss}

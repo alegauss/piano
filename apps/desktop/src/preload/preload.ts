@@ -1,4 +1,4 @@
-import type { LinkCommandPush, OpenResult, PianoBridge } from '@piano/ipc'
+import type { LinkCommandPush, OpenResult, PackProgressPush, PianoBridge } from '@piano/ipc'
 import { CHANNEL_NAMES, PUSH_NAMES } from '@piano/ipc/names'
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 
@@ -72,6 +72,18 @@ const bridge: PianoBridge = {
   readSettings: async () => invoke(CHANNEL_NAMES.settingsRead, null),
   writeSettings: async (patch) => invoke(CHANNEL_NAMES.settingsWrite, patch),
   resetSettings: async () => invoke(CHANNEL_NAMES.settingsReset, null),
+  packSource: async () => invoke(CHANNEL_NAMES.packSource, null),
+  downloadPack: async () => invoke(CHANNEL_NAMES.packDownload, null),
+  cancelPackDownload: async () => invoke(CHANNEL_NAMES.packCancel, null),
+  onPackProgress: (listener) => {
+    const forward = (_event: IpcRendererEvent, progress: PackProgressPush) => {
+      listener(progress)
+    }
+    ipcRenderer.on(PUSH_NAMES.packProgress, forward)
+    return () => {
+      ipcRenderer.removeListener(PUSH_NAMES.packProgress, forward)
+    }
+  },
   onLibraryChanged: (listener) => {
     const forward = () => {
       listener()

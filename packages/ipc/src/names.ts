@@ -22,6 +22,9 @@ export const CHANNEL_NAMES = {
   settingsRead: 'settings:read',
   settingsWrite: 'settings:write',
   settingsReset: 'settings:reset',
+  packSource: 'pack:source',
+  packDownload: 'pack:download',
+  packCancel: 'pack:cancel',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
@@ -33,10 +36,12 @@ export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
  * renderer asking and main answering, and a push is main telling: a command
  * from Claude Code for the window, and a score main opened because somebody
  * asked it to from outside the page — the menu, the file manager, a second
- * launch — and word that the library folder changed under it.
+ * launch — word that the library folder changed under it, and how far the
+ * sample pack's download has got.
  */
 export const PUSH_NAMES = {
   linkCommand: 'link:command',
   scoreOpened: 'score:opened',
   libraryChanged: 'library:changed',
+  packProgress: 'pack:progress',
 } as const
