@@ -93,20 +93,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI47 Errors written for the thing that will read them
-
-The main reader of a validation error here is not a person, it is a model about to try
-again, and that changes what a good error is. Each one carries the JSON path to the
-field, the value that arrived, what was expected, and where possible the specific
-correction. Overlapping notes name both note ids and the tick where they collide. A tick
-off the grid says what the nearest valid value would be. A missing required field names
-it and gives a valid example. Errors come back as structured data alongside the prose,
-so a retry can be driven programmatically rather than by rereading English. Just as
-importantly they are bounded: a score with two hundred problems returns the first
-handful grouped by kind instead of two hundred lines, because a wall of output is a
-repair loop that never converges. The same errors surface in the app when a user opens a
-bad file, showing the prose half and keeping the JSON paths out of the way.
-
 ### §PI48 Making it work from a cold start
 
 The ordinary case is somebody sitting in a chat window with the app not running, and if
@@ -182,13 +168,14 @@ often forgotten. The operating system side matters too: double-clicking a score 
 should open it here, which means registering the extension during packaging and handling
 the open-file event on macOS and the command-line argument on Windows, including the
 case where the app is already running. Every route goes through the same validation, so
-a malformed file produces the same readable error however it arrived. A file that fails
-to open must not leave the app half-loaded with the previous score partly replaced,
-which is the bug this feature is most likely to grow. Claude Code already asks for a
-score by library id: the window refuses that until it can open files, and opening one is
-this same route. A .mid file takes the same routes through importMidi from the
-score-format package, and the lists of what it dropped and what it guessed are shown to
-whoever opened it rather than swallowed.
+a malformed file produces the same readable error however it arrived, shown to a person
+as the expected and fix halves of each problem with the JSON paths kept out of the way.
+A file that fails to open must not leave the app half-loaded with the previous score
+partly replaced, which is the bug this feature is most likely to grow. Claude Code
+already asks for a score by library id: the window refuses that until it can open files,
+and opening one is this same route. A .mid file takes the same routes through importMidi
+from the score-format package, and the lists of what it dropped and what it guessed are
+shown to whoever opened it rather than swallowed.
 
 ### §PI52 A collection that stays usable as it grows
 

@@ -7,6 +7,7 @@ export {
   scoreParts,
   timingOf,
   validateScoreNotes,
+  validateScoreRest,
   type Score,
 } from './score'
 
@@ -123,6 +124,7 @@ export {
   KNOWN_SCORE_KEYS,
   migrate,
   MIGRATIONS,
+  nearestKnownKey,
   unknownKeyProblems,
   unknownKeys,
   type Extensions,
@@ -135,8 +137,11 @@ export {
   MAX_REPORTED_PROBLEMS,
   parseScore,
   type ParseResult,
+  type ProblemKind,
   type ScoreProblem,
 } from './parse'
+
+export { nearestOption, PER_KIND, problemFromIssue } from './repair'
 
 export {
   arrangementSchema,

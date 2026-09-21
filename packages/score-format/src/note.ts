@@ -192,6 +192,11 @@ export type Overlap = {
   readonly pitch: number
   readonly tick: number
   readonly voice: number
+  /** Where the two notes are in the list, for a problem that has to point at them. */
+  readonly firstIndex: number
+  readonly secondIndex: number
+  /** Where the first note starts, which is what a shortened duration is measured from. */
+  readonly firstStart: number
 }
 
 /**
@@ -232,6 +237,9 @@ export function findOverlaps(notes: readonly Note[]): Overlap[] {
           pitch: current.note.pitch,
           tick: current.note.start,
           voice: voiceOf(current.note),
+          firstIndex: previous.index,
+          secondIndex: current.index,
+          firstStart: previous.note.start,
         })
       }
     }

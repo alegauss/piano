@@ -1,8 +1,17 @@
 import type { z } from 'zod'
 
-import { migrate, unknownKeyProblems } from './migrate'
+import { migrate, nearestKnownKey, unknownKeys } from './migrate'
+import { findOverlaps, noteProblems, pitchToSpelling, spellingToPitch, type Note } from './note'
+import { formatProblems, problemFromIssue, render, type ScoreProblem } from './repair'
 import { scoreSchema } from './schema'
-import { validateScoreNotes, type Score } from './score'
+import { notesOf, validateScoreRest, type Score } from './score'
+
+export {
+  formatProblems,
+  MAX_REPORTED_PROBLEMS,
+  type ProblemKind,
+  type ScoreProblem,
+} from './repair'
 
 /**
  * The one door a score comes through.
@@ -16,42 +25,9 @@ import { validateScoreNotes, type Score } from './score'
  * musical rules, which a schema cannot express.
  */
 
-export type ScoreProblem = {
-  /** Where, as a JSON path such as notes.3.pitch. */
-  readonly path: string
-  /** What arrived, rendered for a message. */
-  readonly received: string
-  /** What was wanted instead. */
-  readonly expected: string
-}
-
 export type ParseResult =
   | { readonly ok: true; readonly score: Score; readonly migrated: readonly string[] }
   | { readonly ok: false; readonly problems: readonly ScoreProblem[]; readonly message: string }
-
-/**
- * How many problems a caller is shown before the rest are counted.
- *
- * A score with two hundred problems returned in full is a repair loop that
- * never converges: the model rewrites everything, breaks something else, and
- * gets another two hundred. A handful, grouped, is actionable.
- */
-export const MAX_REPORTED_PROBLEMS = 8
-
-function render(value: unknown): string {
-  if (value === undefined) {
-    return 'nothing'
-  }
-  if (typeof value === 'string') {
-    return JSON.stringify(value)
-  }
-  if (typeof value === 'object' && value !== null) {
-    return Array.isArray(value) ? `an array of ${String(value.length)}` : 'an object'
-  }
-  // Primitives only by this point: objects, arrays, strings and undefined are
-  // all handled above, so there is no default stringification to fall into.
-  return JSON.stringify(value) ?? 'nothing'
-}
 
 /** Pull the value at a JSON path out of the input, so the message can quote it. */
 function valueAt(root: unknown, path: readonly PropertyKey[]): unknown {
@@ -66,31 +42,81 @@ function valueAt(root: unknown, path: readonly PropertyKey[]): unknown {
 }
 
 function fromZod(error: z.ZodError, raw: unknown): ScoreProblem[] {
-  return error.issues.map((issue) => ({
-    path: issue.path.length > 0 ? issue.path.join('.') : '<root>',
-    received: render(valueAt(raw, issue.path)),
-    expected: issue.message,
-  }))
+  return error.issues.map((issue) => problemFromIssue(issue, valueAt(raw, issue.path)))
 }
 
-/** One line per problem, in the shape a model can act on directly. */
-export function formatProblems(problems: readonly ScoreProblem[]): string {
-  const shown = problems.slice(0, MAX_REPORTED_PROBLEMS)
-  const lines = shown.map(
-    (problem) => `${problem.path}: expected ${problem.expected}, received ${problem.received}`,
-  )
-  if (problems.length > shown.length) {
-    lines.push(`and ${String(problems.length - shown.length)} more problems of the same kind`)
+/**
+ * A field the format does not define, pointed at by name, with the field it
+ * was probably meant to be or the place anything else belongs.
+ */
+function unknownFieldProblems(record: Record<string, unknown>): ScoreProblem[] {
+  return unknownKeys(record).map((key) => {
+    const near = nearestKnownKey(key)
+    return {
+      kind: 'unknown field',
+      path: key,
+      received: 'a field the format does not define',
+      expected: near === null ? 'only the fields a score defines' : `"${near}"`,
+      fix:
+        near === null
+          ? `move "${key}" under "extensions", which keeps anything of your own`
+          : `rename "${key}" to "${near}"`,
+    }
+  })
+}
+
+/**
+ * The rules about notes that need the notes, each pointed at the note.
+ *
+ * Two notes of one pitch overlapping in a voice name both, the tick where they
+ * collide and the two ways out; a spelling that disagrees with its pitch names
+ * the spelling that would agree.
+ */
+function noteRuleProblems(notes: readonly Note[]): ScoreProblem[] {
+  const problems: ScoreProblem[] = []
+  notes.forEach((note, index) => {
+    for (const problem of noteProblems(note, index)) {
+      const spelled = note.spelling === undefined ? null : spellingToPitch(note.spelling)
+      const spellingWrong = spelled !== null && spelled !== note.pitch
+      problems.push({
+        kind: 'note',
+        path: spellingWrong ? `notes.${String(index)}.spelling` : `notes.${String(index)}`,
+        received: spellingWrong ? render(note.spelling) : `${problem.note}`,
+        expected: problem.message,
+        ...(spellingWrong
+          ? { fix: `use "${pitchToSpelling(note.pitch)}", or leave the spelling out` }
+          : {}),
+      })
+    }
+  })
+  for (const overlap of findOverlaps(notes)) {
+    problems.push({
+      kind: 'overlap',
+      path: `notes.${String(overlap.secondIndex)}`,
+      received: `${overlap.second} starting at tick ${String(overlap.tick)}`,
+      expected:
+        `no overlap with ${overlap.first} (notes.${String(overlap.firstIndex)}), ` +
+        `which holds pitch ${String(overlap.pitch)} in voice ${String(overlap.voice)} past that tick`,
+      fix:
+        `give notes.${String(overlap.firstIndex)} a duration of ` +
+        `${String(overlap.tick - overlap.firstStart)} so it ends where the next one starts, ` +
+        `or put one of them in another voice`,
+    })
   }
-  return lines.join('\n')
+  return problems
 }
 
 export function parseScore(raw: unknown): ParseResult {
+  const refused = (problems: ScoreProblem[]): ParseResult => ({
+    ok: false,
+    problems,
+    message: formatProblems(problems),
+  })
+
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    const problems: ScoreProblem[] = [
-      { path: '<root>', received: render(raw), expected: 'a score object' },
-    ]
-    return { ok: false, problems, message: formatProblems(problems) }
+    return refused([
+      { kind: 'wrong type', path: '<root>', received: render(raw), expected: 'a score object' },
+    ])
   }
 
   const record = raw as Record<string, unknown>
@@ -98,45 +124,42 @@ export function parseScore(raw: unknown): ParseResult {
   // An old file is not a malformed one. Bring it forward first.
   const migrated = migrate(record)
   if (!migrated.ok) {
-    const problems: ScoreProblem[] = [
+    return refused([
       {
+        kind: 'version',
         path: 'formatVersion',
         received: render(record['formatVersion']),
         expected: migrated.reason,
       },
-    ]
-    return { ok: false, problems, message: formatProblems(problems) }
+    ])
   }
 
-  // Unknown keys first, because the message names the field they probably
+  // Unknown keys first, because the problem names the field they probably
   // meant, which a strict-object failure does not.
-  const unknown = unknownKeyProblems(migrated.score)
+  const unknown = unknownFieldProblems(migrated.score)
   if (unknown.length > 0) {
-    const problems: ScoreProblem[] = unknown.map((message) => ({
-      path: '<root>',
-      received: 'an unrecognised field',
-      expected: message,
-    }))
-    return { ok: false, problems, message: formatProblems(problems) }
+    return refused(unknown)
   }
 
   const parsed = scoreSchema.safeParse(migrated.score)
   if (!parsed.success) {
-    const problems = fromZod(parsed.error, migrated.score)
-    return { ok: false, problems, message: formatProblems(problems) }
+    return refused(fromZod(parsed.error, migrated.score))
   }
 
   const score = parsed.data as Score
 
   // The musical half, which no schema can express.
-  const musical = validateScoreNotes(score)
+  const musical = [
+    ...noteRuleProblems(notesOf(score)),
+    ...validateScoreRest(score).map((problem): ScoreProblem => ({
+      kind: 'musical',
+      path: problem.area,
+      received: `the ${problem.area} as written`,
+      expected: problem.message,
+    })),
+  ]
   if (musical.length > 0) {
-    const problems: ScoreProblem[] = musical.map((message) => ({
-      path: 'notes',
-      received: 'the notes as written',
-      expected: message,
-    }))
-    return { ok: false, problems, message: formatProblems(problems) }
+    return refused(musical)
   }
 
   return { ok: true, score, migrated: migrated.applied }

@@ -1,3 +1,4 @@
+import { nearestOption } from './repair'
 import { FORMAT_VERSION } from './version'
 
 /**
@@ -122,51 +123,13 @@ export function unknownKeys(raw: Record<string, unknown>): string[] {
  */
 export function unknownKeyProblems(raw: Record<string, unknown>): string[] {
   return unknownKeys(raw).map((key) => {
-    const near = nearestKey(key)
+    const near = nearestKnownKey(key)
     const suggestion = near === null ? '' : `; did you mean "${near}"?`
     return `"${key}" is not a field of a score${suggestion} Anything the format does not define goes under "extensions".`
   })
 }
 
-/** A cheap edit distance, enough to catch a typo but not to guess wildly. */
-function nearestKey(key: string): string | null {
-  let best: string | null = null
-  let bestDistance = Number.POSITIVE_INFINITY
-
-  for (const candidate of KNOWN_SCORE_KEYS) {
-    const distance = editDistance(key.toLowerCase(), candidate.toLowerCase())
-    if (distance < bestDistance) {
-      bestDistance = distance
-      best = candidate
-    }
-  }
-
-  // Beyond a couple of edits it is a different word, not a typo.
-  return bestDistance <= 3 ? best : null
-}
-
-function editDistance(a: string, b: string): number {
-  const rows: number[][] = Array.from({ length: a.length + 1 }, () =>
-    new Array<number>(b.length + 1).fill(0),
-  )
-
-  for (let i = 0; i <= a.length; i += 1) {
-    rows[i]![0] = i
-  }
-  for (let j = 0; j <= b.length; j += 1) {
-    rows[0]![j] = j
-  }
-
-  for (let i = 1; i <= a.length; i += 1) {
-    for (let j = 1; j <= b.length; j += 1) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1
-      rows[i]![j] = Math.min(
-        rows[i - 1]![j]! + 1,
-        rows[i]![j - 1]! + 1,
-        rows[i - 1]![j - 1]! + cost,
-      )
-    }
-  }
-
-  return rows[a.length]![b.length]!
+/** The field a misspelled key probably meant, or null when it is a different word. */
+export function nearestKnownKey(key: string): string | null {
+  return nearestOption(key, KNOWN_SCORE_KEYS)
 }

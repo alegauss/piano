@@ -90,14 +90,32 @@ export function notesOf(score: Score): readonly Note[] {
  * voice.
  */
 export function validateScoreNotes(score: Score): string[] {
-  const notes = notesOf(score)
   return [
-    ...validateNotes(notes),
-    ...validateParts(scoreParts(score), notes),
-    ...validateExpression(score.expression),
-    ...validateSections(score.sections ?? []),
-    ...validateArrangements(score.arrangements ?? [], notes, scoreParts(score)),
-    ...validateMetadata(score.metadata),
+    ...validateNotes(notesOf(score)),
+    ...validateScoreRest(score).map((problem) => problem.message),
+  ]
+}
+
+/**
+ * The musical rules for everything but the notes themselves, each with the
+ * part of the score it is about, so a problem can say where to look.
+ */
+export function validateScoreRest(score: Score): {
+  readonly area: 'parts' | 'expression' | 'sections' | 'arrangements' | 'metadata'
+  readonly message: string
+}[] {
+  const notes = notesOf(score)
+  const tagged = <A extends string>(area: A, messages: readonly string[]) =>
+    messages.map((message) => ({ area, message }))
+  return [
+    ...tagged('parts', validateParts(scoreParts(score), notes)),
+    ...tagged('expression', validateExpression(score.expression)),
+    ...tagged('sections', validateSections(score.sections ?? [])),
+    ...tagged(
+      'arrangements',
+      validateArrangements(score.arrangements ?? [], notes, scoreParts(score)),
+    ),
+    ...tagged('metadata', validateMetadata(score.metadata)),
   ]
 }
 

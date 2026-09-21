@@ -152,6 +152,9 @@
 - ✅ **PI46** **A model writing a score guesses at the format and produces files that almost validate** — The plugin's piano-score skill teaches the format by a complete example that validates, and names the musical mistakes no validator catches.
   checked **A score written from the skill validates first time** Across a scripted evaluation over several pieces the generated JSON passes the validator with no repair round in the large majority of runs.
   checked **The skill names the mistakes a schema cannot catch** Overlapping voices, hands crossed by accident, chord spans no hand reaches and a beginner arrangement identical to the advanced one are each called out with an example.
+- ✅ **PI47** **A rejected score comes back as a validation dump the model cannot act on** — A refusal names the path, what arrived, what was wanted and the fix where one exists, grouped and bounded, so a model repairs its own score (design recorded in `packages/score-format/src/repair.ts`).
+  checked **Errors carry path, value, expectation and where possible the fix** Every malformed fixture returns a structured error holding those fields, and a retry driven only by that structure converges without a human reading anything.
+  checked **Output stays bounded on a badly broken score** A score with hundreds of problems returns a handful grouped by kind with a count of the rest, rather than one line per problem.
 
 ## Block G — Score library and distribution
 
