@@ -56,8 +56,6 @@ reference, and carry the calibration in the manifest if packs differ. The onset 
 as much: the recordings keep three milliseconds before the hammer, and the synthesised
 attack should land at the same point.
 
-## Block D — Piano roll and on-screen keyboard
-
 ## Block E — Practice mode and difficulty levels
 
 ### §PI33 A real piano as the input device

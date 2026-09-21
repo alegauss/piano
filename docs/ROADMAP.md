@@ -11,8 +11,6 @@
 - 📋 **PI59** (deps: PI19 ✅, PI23 ✅) **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — The app is driven from a terminal, so it plays behind another window more often than not, and a throttled wake-up misses the look-ahead. → §PI59
 - 📋 **PI61** (deps: PI21 ✅, PI22 ✅) **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — A key moves from the synthesiser to its recording mid-phrase as registers arrive, and nothing has measured the two voices against each other. → §PI61
 
-## Block D — Piano roll and on-screen keyboard
-
 ## Block E — Practice mode and difficulty levels
 
 - 📋 **PI33** (deps: PI3 ✅) **A MIDI keyboard plugged into the machine is invisible: nothing receives a single note** — Web MIDI with device discovery and hot-plug is what turns a real piano into the input device this whole block depends on. → §PI33
@@ -268,12 +266,6 @@
 - **A score plays with accurate timing and a convincing piano** Scheduled onsets hold
   their tolerance under load, velocity layers and pedal behave as written, and the first
   note sounds before the sample pack has finished loading.
-
-## Done when — Block D
-
-- **What is seen and what is heard are the same event** The roll holds 60fps on the
-  densest fixture while its position stays locked to the audio clock, in both themes and
-  with effects on.
 
 ## Done when — Block E
 
