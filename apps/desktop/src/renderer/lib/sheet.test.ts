@@ -120,6 +120,37 @@ describe('planSheet', () => {
     expect(narrow.height).toBeGreaterThan(wide.height)
   })
 
+  it('gives a busy bar more room than a sparse one', () => {
+    const sparse = plan([note(0, BAR)])
+    // Sixteen sixteenths, which is a bar of the Prelude in C.
+    const busy = plan(Array.from({ length: 16 }, (_unused, index) => note(index * 120, 120)))
+    const width = (page: SheetPlan) => bars(page)[0]?.width ?? 0
+    expect(width(busy)).toBeGreaterThan(width(sparse) * 2)
+  })
+
+  it('fits fewer busy bars on a system than sparse ones', () => {
+    const sparse = Array.from({ length: 8 }, (_unused, index) => note(index * BAR, BAR))
+    const busy = Array.from({ length: 8 }, (_unused, index) =>
+      Array.from({ length: 16 }, (_ignored, at) => note(index * BAR + at * 120, 120)),
+    ).flat()
+    const first = (notes: readonly Note[]) => plan(notes).systems[0]?.bars.length ?? 0
+    expect(first(busy)).toBeLessThan(first(sparse))
+    // And every bar is still on the page, wherever it landed.
+    expect(bars(plan(busy))).toHaveLength(8)
+  })
+
+  it('leaves a bar too wide for the panel wide, rather than squeezing it', () => {
+    // Thirty-two figures in a narrow panel: no width would hold it, and
+    // shrinking it back is the defect this replaces.
+    const crammed = Array.from({ length: 32 }, (_unused, index) => note(index * 60, 60))
+    const page = plan(crammed, { width: 400 })
+    const only = bars(page)[0]
+    expect(page.systems).toHaveLength(1)
+    expect(only?.width ?? 0).toBeGreaterThan(400)
+    // The page says how wide it really is, so a panel can scroll across it.
+    expect(page.width).toBeGreaterThan(400)
+  })
+
   it('lays each system out left to right with no bar off the edge', () => {
     const notes = Array.from({ length: 6 }, (_unused, index) => note(index * BAR, QUARTER))
     const page = plan(notes)

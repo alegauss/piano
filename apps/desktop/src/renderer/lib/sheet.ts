@@ -91,8 +91,20 @@ const MINOR: readonly string[] = ['m', 'min', 'minor']
 /** A spelling as note.ts writes one: a letter, what is done to it, an octave. */
 const SPELLED = /^([A-G])(#{1,2}|b{1,2})?(-1|\d)$/
 
-/** CSS pixels a bar of music is given, which is a bar of sixteenths at this glyph size. */
-const BAR_WIDTH = 220
+/**
+ * CSS pixels one figure needs, measured rather than chosen.
+ *
+ * VexFlow's own formatter answers what a bar needs before anything is drawn,
+ * and across 4, 8, 12 and 16 figures it asks for 110, 221, 331 and 442 px: a
+ * straight line at about 27.6 px a figure, and a chord costs no more than a
+ * single note. Rounded up, because an accidental or a dot widens a figure and
+ * a page that is a little loose reads, where one that is a little tight does
+ * not.
+ */
+const FIGURE_WIDTH = 30
+
+/** What even a bar of one note is given, so a sparse page is not a row of slivers. */
+const MIN_BAR_WIDTH = 120
 
 /** What a system's first bar needs on top, for its clef, key signature and meter. */
 const HEAD_WIDTH = 76
@@ -277,13 +289,30 @@ function written(figure: BarFigure, clef: Clef, id: string): SheetNote {
   }
 }
 
+/** A bar with everything but its place on the page settled. */
+type Drafted = Omit<SheetBar, 'head' | 'x' | 'width'> & {
+  /** The room its figures need before any system is justified. */
+  readonly natural: number
+  readonly changed: boolean
+}
+
 /**
  * The whole page: which staves, which bars on which system, and where.
  *
- * Bars are given equal room and the system is filled to the panel's width, so
- * the page reflows when the window does and a bar is never half off the edge.
- * A last system holding fewer bars is left short rather than stretched, which
- * is what a printed page does with one.
+ * Width follows content. A bar of sixteen sixteenths needs about four times
+ * the room of a bar of four, and giving every bar an equal share is what put
+ * the notes of a busy one on top of each other. So each bar asks for what its
+ * figures need, bars are packed into a system until the next will not fit, and
+ * the slack is shared out so the system fills the width — which is what
+ * justification means on an engraved page.
+ *
+ * The last system is left at its natural width rather than stretched, as a
+ * printed page leaves it: three bars pulled across a whole page read as a
+ * mistake.
+ *
+ * A system whose bars need more than the panel has is left wider than the
+ * panel rather than squeezed back into it. Squeezing is the defect; scrolling
+ * across is the answer, and the page reports the width it actually needs.
  */
 export function planSheet({ timing, notes, key, width }: SheetInput): SheetPlan {
   const hands = STAVES.filter((hand) => notes.some((note) => note.hand === hand))
@@ -297,58 +326,106 @@ export function planSheet({ timing, notes, key, width }: SheetInput): SheetPlan 
   const last = end === 0 ? first - 1 : barAtTick(timing, end - 1).bar
   const signature = keySignature(key)
 
-  const room = Math.max(width - MARGIN * 2, HEAD_WIDTH + BAR_WIDTH)
-  const perSystem = Math.max(1, Math.floor((room - HEAD_WIDTH) / BAR_WIDTH))
-  const share = (room - HEAD_WIDTH) / perSystem
+  const room = Math.max(width - MARGIN * 2, HEAD_WIDTH + MIN_BAR_WIDTH)
   const systemHeight = lines.length * STAVE_HEIGHT + SYSTEM_GAP
 
-  const systems: SheetSystem[] = []
   let leftovers = 0
-
-  for (let opens = first; opens <= last; opens += perSystem) {
-    const bars: SheetBar[] = []
-    let x = MARGIN
-    for (let bar = opens; bar <= Math.min(opens + perSystem - 1, last); bar += 1) {
-      const head = bar === opens
-      const meter = meterAt(timing, tickAtBar(timing, bar))
-      const before = bar > first ? meterAt(timing, tickAtBar(timing, bar - 1)) : null
-      const changed =
+  const drafted: Drafted[] = []
+  for (let bar = first; bar <= last; bar += 1) {
+    const meter = meterAt(timing, tickAtBar(timing, bar))
+    const before = bar > first ? meterAt(timing, tickAtBar(timing, bar - 1)) : null
+    const staves = lines.map((line, at) => ({
+      clef: line.clef,
+      notes: barFigures(timing, notes, bar, line.hand).map((figure, index) =>
+        written(figure, line.clef, `${String(bar)}:${String(at)}:${String(index)}`),
+      ),
+    }))
+    leftovers += staves.reduce(
+      (count, stave) => count + stave.notes.filter((one) => one.leftover !== 0).length,
+      0,
+    )
+    // The busiest stave decides: the hands are formatted together, so a bar is
+    // as wide as whichever of them holds the most.
+    const figures = staves.reduce((most, stave) => Math.max(most, stave.notes.length), 0)
+    drafted.push({
+      bar,
+      staves,
+      signature: { numerator: meter.numerator, denominator: meter.denominator },
+      natural: Math.max(MIN_BAR_WIDTH, figures * FIGURE_WIDTH),
+      changed:
         before === null ||
         before.numerator !== meter.numerator ||
-        before.denominator !== meter.denominator
-      const barWidth = head ? HEAD_WIDTH + share : share
-      const staves = lines.map((line, at) => ({
-        clef: line.clef,
-        notes: barFigures(timing, notes, bar, line.hand).map((figure, index) =>
-          written(figure, line.clef, `${String(bar)}:${String(at)}:${String(index)}`),
-        ),
-      }))
-      leftovers += staves.reduce(
-        (count, stave) => count + stave.notes.filter((one) => one.leftover !== 0).length,
-        0,
-      )
+        before.denominator !== meter.denominator,
+    })
+  }
+
+  const rows = packed(drafted, room)
+  const systems: SheetSystem[] = []
+  let widest = 0
+
+  rows.forEach((row, index) => {
+    const natural = row.reduce((total, one) => total + one.natural, 0)
+    // Never below natural, so a system too wide for the panel stays readable;
+    // and never stretched on the last row, which a printed page leaves short.
+    const stretch =
+      index === rows.length - 1 ? 1 : Math.max(1, (room - HEAD_WIDTH) / Math.max(natural, 1))
+    const bars: SheetBar[] = []
+    let x = MARGIN
+    row.forEach((one, at) => {
+      const head = at === 0
+      const barWidth = one.natural * stretch + (head ? HEAD_WIDTH : 0)
       bars.push({
-        bar,
+        bar: one.bar,
         head,
         x,
         width: barWidth,
-        staves,
-        signature: { numerator: meter.numerator, denominator: meter.denominator },
-        ...(head || changed
-          ? { meter: `${String(meter.numerator)}/${String(meter.denominator)}` }
+        staves: one.staves,
+        signature: one.signature,
+        ...(head || one.changed
+          ? {
+              meter: `${String(one.signature.numerator)}/${String(one.signature.denominator)}`,
+            }
           : {}),
         ...(head && signature !== undefined ? { key: signature } : {}),
       })
       x += barWidth
-    }
-    systems.push({ y: MARGIN + systems.length * systemHeight, bars })
-  }
+    })
+    widest = Math.max(widest, x - MARGIN)
+    systems.push({ y: MARGIN + index * systemHeight, bars })
+  })
 
   return {
     clefs,
     systems,
-    width: Math.max(width, room + MARGIN * 2),
+    width: Math.max(width, widest + MARGIN * 2),
     height: MARGIN * 2 + systems.length * systemHeight,
     leftovers,
   }
+}
+
+/**
+ * Bars gathered into systems, each filled until the next bar will not fit.
+ *
+ * A bar that is too wide for an empty system still gets one to itself: the
+ * alternative is dropping it, and a page that is wider than the panel is a
+ * page somebody can scroll.
+ */
+function packed(bars: readonly Drafted[], room: number): Drafted[][] {
+  const rows: Drafted[][] = []
+  let row: Drafted[] = []
+  let used = HEAD_WIDTH
+
+  for (const one of bars) {
+    if (row.length > 0 && used + one.natural > room) {
+      rows.push(row)
+      row = []
+      used = HEAD_WIDTH
+    }
+    row.push(one)
+    used += one.natural
+  }
+  if (row.length > 0) {
+    rows.push(row)
+  }
+  return rows
 }

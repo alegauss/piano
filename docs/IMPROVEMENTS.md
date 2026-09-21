@@ -34,29 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI81 A bar as wide as what is in it
-
-Measured against VexFlow's own formatter, which answers what a bar needs before anything
-is drawn: 4 figures want 110 px, 8 want 221, 12 want 331, 16 want 442. A straight line,
-about 27.6 px a figure, and a chord costs no more than a single note.
-
-planSheet gives every bar the same share instead, so a whole note and sixteen sixteenths
-come out the same width. The second gets 208 px where it needs 442, and the formatter
-has nowhere to put the notes but on top of each other. The Prelude in C is sixteen
-sixteenths a bar throughout, which is why it reads as a smear.
-
-So width follows content: a bar asks for its busiest stave's figure count times a
-per-figure width, with a floor for a bar of one or two notes and the head where it opens
-a system. Bars are packed into a system until the next will not fit, rather than a fixed
-count, and the slack shared out so the system fills the width.
-
-A bar wider than the panel is then possible. Neither clip it nor shrink it back: let the
-page be wider than the panel, which is what scrolling across it will want.
-
-Unit tests: a dense bar is wider than a sparse one, a system holds fewer dense bars than
-sparse ones, and the bars still tile each system left to right. A browser test asserts
-that no two noteheads of one bar share an x.
-
 ### §PI82 An icon that is not the monitor's
 
 MidiMonitor.tsx imports Music4 and so does the bar's roll-or-stave button, which sits

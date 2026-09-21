@@ -79,6 +79,34 @@ describe('SheetMusic', () => {
     expect(notes.length).toBe(10)
   })
 
+  it('keeps the noteheads of a busy bar off each other', async () => {
+    // Sixteen sixteenths in one bar, which is the Prelude in C and the shape
+    // that used to come out as a smear: every bar got the same width whatever
+    // it held, and the formatter stacked the notes to fit.
+    const sixteenths: readonly Note[] = Array.from({ length: 16 }, (_unused, index) => ({
+      pitch: 60 + (index % 8),
+      start: index * (QUARTER / 4),
+      duration: QUARTER / 4,
+      velocity: 80,
+    }))
+    const { svg } = await mount(sixteenths)
+    // The group, not its text: a notehead draws itself in more than one node.
+    const heads = [...(svg?.querySelectorAll('.vf-notehead') ?? [])]
+    expect(heads).toHaveLength(16)
+
+    const boxes = heads
+      .map((head) => head.getBoundingClientRect())
+      .sort((one, other) => one.left - other.left)
+    for (let index = 1; index < boxes.length; index += 1) {
+      const before = boxes[index - 1]
+      const after = boxes[index]
+      // Measured, not declared: a notehead starts after the one before it ends.
+      expect(after?.left ?? 0, `notehead ${String(index)}`).toBeGreaterThanOrEqual(
+        before?.right ?? 0,
+      )
+    }
+  })
+
   it('draws a rest where the music stops before the barline', async () => {
     const half = [{ pitch: 60, start: 0, duration: BAR / 2, velocity: 80 }]
     const { svg } = await mount(half)
