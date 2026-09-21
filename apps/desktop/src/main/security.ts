@@ -70,14 +70,30 @@ export function applyContentSecurityPolicy(
 
 /**
  * Nothing in this app needs a camera, a microphone, geolocation or
- * notifications. MIDI arrives in PI33 and is the one request that will ever be
- * granted, which is a line added here on purpose rather than a default left open.
+ * notifications. MIDI is the one permission granted, because a practice mode
+ * without a keyboard plugged into it is not one.
+ *
+ * Both names are here, and not by carelessness. Web MIDI asks for plain
+ * access and for system-exclusive access separately, but Chromium carries
+ * one permission for the pair and Electron hands it over as `midiSysex`
+ * whichever the page asked for: granting only `midi` leaves
+ * requestMIDIAccess rejecting with nothing in the renderer able to say why.
+ * What keeps sysex out of this app is therefore the renderer's own request,
+ * which never asks for it, so the ports it holds never deliver it. That is
+ * asserted in the self-check rather than assumed here.
+ *
+ * Both handlers matter too. Electron asks the request handler when a page
+ * calls requestMIDIAccess and the check handler when something wants to know
+ * whether the permission is already held, and a check handler that says no
+ * is the same silent failure by another route.
  */
-export function denyPermissions(session: Session): void {
-  session.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(false)
+const GRANTED = new Set<string>(['midi', 'midiSysex'])
+
+export function applyPermissions(session: Session): void {
+  session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(GRANTED.has(permission))
   })
-  session.setPermissionCheckHandler(() => false)
+  session.setPermissionCheckHandler((_webContents, permission) => GRANTED.has(permission))
 }
 
 /**

@@ -58,22 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI33 A real piano as the input device
-
-The practice mode only earns its name once it is connected to a real keyboard, so Web
-MIDI comes first here. In Electron the API exists in the renderer but needs its
-permission handler wired up in main, which is easy to miss and fails silently rather
-than raising an error. Devices are enumerated, shown by name and remembered between
-sessions, since somebody with one controller should never have to pick it twice.
-Hot-plug matters more than it sounds: switching a USB keyboard on after the app is
-already running is a normal thing to do, and the connection event has to reconnect
-rather than demand a restart. Incoming messages are normalised at the boundary into the
-same note-on, note-off and control-change shape the rest of the app speaks, with running
-status handled and velocity zero treated as note off, because controllers differ and
-nothing downstream should have to know that. Pedal arrives on controller 64 by the same
-path. A monitor view showing raw events is worth building here, since it is the only way
-to diagnose an odd controller without guessing.
-
 ### §PI34 Playable on a laptop, testable without hardware
 
 Most people will open this app on a machine with no MIDI keyboard attached, and if the

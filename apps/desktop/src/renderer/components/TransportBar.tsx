@@ -14,11 +14,13 @@ import {
 import { useEffect, useState } from 'react'
 
 import type { LoopRange, Transport } from '../audio'
+import type { MidiInput } from '../lib/midi-input'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
 import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
 import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
+import { MidiMonitor } from './MidiMonitor'
 import { Button } from './ui/button'
 import { Slider } from './ui/slider'
 
@@ -56,6 +58,8 @@ export type TransportBarProps = {
   readonly onTheme: (theme: ThemeName) => void
   readonly full: boolean
   readonly onFull: (full: boolean) => void
+  /** The MIDI input, for the monitor that says what a controller is sending. */
+  readonly midi?: MidiInput
   /** Called before playing, to let the platform's audio start on a gesture. */
   readonly onStart?: () => void
   readonly className?: string
@@ -80,6 +84,7 @@ export function TransportBar({
   onTheme,
   full,
   onFull,
+  midi,
   onStart,
   className,
 }: TransportBarProps) {
@@ -232,6 +237,7 @@ export function TransportBar({
             />
           </label>
 
+          {midi === undefined ? null : <MidiMonitor midi={midi} />}
           <Button
             variant={effects ? 'secondary' : 'ghost'}
             size="icon"

@@ -108,6 +108,10 @@
 
 ## Block E — Practice mode and difficulty levels
 
+- ✅ **PI33** **A MIDI keyboard plugged into the machine is invisible: nothing receives a single note** — Web MIDI is granted in main and normalised in the renderer, with hot-plug, a remembered device and a monitor showing raw events (design recorded in `apps/desktop/src/renderer/lib/midi-input.ts`).
+  checked **A controller switched on later connects without a restart** Plugging in or powering a MIDI keyboard mid-session makes it available and selectable immediately, and the chosen device is still selected on the next launch.
+  checked **Velocity zero is treated as note off** A controller sending note-on at velocity zero releases the note, verified against recorded message streams from at least two controllers that behave differently.
+
 ## Block F — Claude Code First: MCP and plugin
 
 ## Block G — Score library and distribution

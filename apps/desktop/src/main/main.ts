@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, session } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
-import { applyContentSecurityPolicy, confineNavigation, denyPermissions } from './security'
+import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
 import { secureWebPreferences, WINDOW_BACKGROUND } from './window-preferences'
 
 /**
@@ -118,7 +118,7 @@ app
   .whenReady()
   .then(() => {
     applyContentSecurityPolicy(session.defaultSession, devServerUrl)
-    denyPermissions(session.defaultSession)
+    applyPermissions(session.defaultSession)
     registerIpcHandlers()
 
     createWindow()

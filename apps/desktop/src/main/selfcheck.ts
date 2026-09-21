@@ -201,7 +201,40 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     )
   }
 
-  // 9. Where a pack is installed, the renderer decodes it: the footer's count
+  // 9. MIDI is the one permission granted, and the renderer really gets it.
+  //    Web MIDI fails silently when the handler is missing — requestMIDIAccess
+  //    just rejects — so the only honest check is to ask the page.
+  const midi = (await webContents.executeJavaScript(
+    `navigator.requestMIDIAccess().then(() => ({ granted: true, message: '' }), (e) => ({ granted: false, message: String(e && e.message || e) }))`,
+  )) as { granted: boolean; message: string }
+  results.push(
+    check(
+      'the renderer is granted MIDI',
+      midi.granted,
+      midi.granted ? 'requestMIDIAccess resolved' : midi.message,
+    ),
+  )
+  // Chromium carries one permission for MIDI and for system-exclusive MIDI,
+  // so the gate cannot separate them. What keeps sysex out is that the app
+  // never asks for it, and an access granted without it cannot send one.
+  const plain = (await webContents.executeJavaScript(
+    `navigator.requestMIDIAccess().then((a) => ({ sysex: a.sysexEnabled }), (e) => ({ error: String(e && e.message || e) }))`,
+  )) as { sysex?: boolean; error?: string }
+  results.push(
+    check('the access it asks for carries no sysex', plain.sysex === false, JSON.stringify(plain)),
+  )
+  const camera = (await webContents.executeJavaScript(
+    `navigator.mediaDevices.getUserMedia({ video: true }).then(() => ({ refused: false }), () => ({ refused: true }))`,
+  )) as { refused: boolean }
+  results.push(
+    check(
+      'a camera is still refused',
+      camera.refused,
+      camera.refused ? 'rejected' : 'resolved, which it should not',
+    ),
+  )
+
+  // 10. Where a pack is installed, the renderer decodes it: the footer's count
   //    of loaded registers leaves zero. This is the check that Chromium in
   //    this Electron plays what the pack pipeline encodes.
   if (pack.installed === true) {

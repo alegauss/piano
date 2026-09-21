@@ -21,6 +21,7 @@ import { TransportBar } from './components/TransportBar'
 import { cn } from './lib/cn'
 import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
+import { appMidi } from './lib/midi-input'
 import { appPiano, appSound } from './lib/sound'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
 
@@ -76,6 +77,7 @@ export function App() {
   const [partsView, setPartsView] = useState<PartsView>(NOTHING_TOUCHED)
   const sound = appSound()
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
+  const midi = appMidi()
 
   const timing = useMemo(() => timingOf(placeholder), [])
   const notes = useMemo(() => notesOf(placeholder), [])
@@ -236,6 +238,7 @@ export function App() {
           onTheme={chooseTheme}
           full={full}
           onFull={setFull}
+          midi={midi}
           onStart={() => {
             void piano.resume()
           }}
