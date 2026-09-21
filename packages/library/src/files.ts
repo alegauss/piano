@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 
 /**
  * The filesystem, as the library needs it and no more.
@@ -22,6 +22,8 @@ export type Files = {
   readonly ensure: (dir: string) => Promise<void>
   /** A file's size and when it was written, or null when it is not a file. */
   readonly stat: (path: string) => Promise<FileStat | null>
+  /** Remove a file, and say nothing when it is already gone. */
+  readonly remove: (path: string) => Promise<void>
 }
 
 /** Node's filesystem. */
@@ -40,6 +42,7 @@ export const nodeFiles: Files = {
       return null
     }
   },
+  remove: (path) => rm(path, { force: true }),
 }
 
 /**
@@ -84,6 +87,10 @@ export function memoryFiles(seed: Readonly<Record<string, string>> = {}): Files 
       return Promise.resolve(
         text === undefined ? null : { size: text.length, modified: written.get(path) ?? 0 },
       )
+    },
+    remove: (path) => {
+      held.delete(path)
+      return Promise.resolve()
     },
   }
 }

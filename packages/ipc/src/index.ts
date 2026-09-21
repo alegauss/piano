@@ -49,7 +49,16 @@ export {
   type WindowSetTitleRequest,
   type WindowSetTitleResponse,
 } from './channels'
-export { LIBRARY_DIRECTORY, libraryFileName, safeName, SCORE_SUFFIX } from './library'
+export {
+  LEGACY_SCORE_SUFFIX,
+  LIBRARY_DIRECTORY,
+  libraryFileName,
+  libraryFileNames,
+  libraryIdOfFile,
+  safeName,
+  SCORE_SUFFIX,
+  SCORE_SUFFIXES,
+} from './library'
 export {
   DEFAULT_SETTINGS,
   readSettings,

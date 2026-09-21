@@ -71,7 +71,7 @@ export function createOpener(deps: OpenerDeps): Opener {
         }
         return openPath(request.path)
       case 'library': {
-        const path = libraryPath(deps.libraryRoot(), request.id)
+        const path = libraryPath(deps.libraryRoot(), request.id, exists)
         if (!exists(path)) {
           return {
             kind: 'refused',

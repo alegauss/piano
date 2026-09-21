@@ -60,6 +60,12 @@ describe('keeping a worked-out arrangement in the score', () => {
     }
   })
 
+  it('keeps it in a .piano file the same way', async () => {
+    const files = disk({ '/music/chords.piano': JSON.stringify(score) })
+    const result = await keepInFile('/music/chords.piano', proposal, files)
+    expect(result).toMatchObject({ kind: 'kept', name: 'chords.piano' })
+  })
+
   it('replaces its own earlier work rather than keeping two', async () => {
     const files = disk({ '/music/chords.score.json': JSON.stringify(score) })
     await keepInFile('/music/chords.score.json', proposal, files)

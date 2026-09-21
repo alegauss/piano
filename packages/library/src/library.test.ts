@@ -2,7 +2,7 @@ import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { SCORE_SUFFIX, safeName } from '@piano/ipc'
+import { LEGACY_SCORE_SUFFIX, SCORE_SUFFIX, safeName } from '@piano/ipc'
 import { VALID_FIXTURES } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
@@ -65,6 +65,36 @@ describe('keeping a score', () => {
     expect([...files.held.keys()]).toEqual([`${root}/escape${SCORE_SUFFIX}`])
   })
 
+  it('still lists and reads a score kept under the suffix it had before', async () => {
+    const files = memoryFiles({
+      [`${root}/aria${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('aria', 'Aria')),
+    })
+    const library = createLibrary(root, files)
+    expect((await library.list()).map((entry) => entry.id)).toEqual(['aria'])
+    expect((await library.read('aria')).metadata.title).toBe('Aria')
+  })
+
+  it('lists one score where an id is there under both suffixes, the one written now', async () => {
+    const files = memoryFiles({
+      [`${root}/aria${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('aria', 'Old aria')),
+      [`${root}/aria${SCORE_SUFFIX}`]: JSON.stringify(named('aria', 'Aria')),
+    })
+    const library = createLibrary(root, files)
+    const listed = await library.list()
+    expect(listed.map((entry) => entry.metadata.title)).toEqual(['Aria'])
+    expect((await library.read('aria')).metadata.title).toBe('Aria')
+  })
+
+  it('moves a score to the new suffix when it is saved again, leaving no old copy', async () => {
+    const files = memoryFiles({
+      [`${root}/aria${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('aria', 'Old aria')),
+    })
+    await createLibrary(root, files).save(named('aria', 'Aria'))
+    expect([...files.held.keys()].filter((path) => path !== `${root}/${INDEX_FILE}`)).toEqual([
+      `${root}/aria${SCORE_SUFFIX}`,
+    ])
+  })
+
   it('reads back exactly what it kept', async () => {
     const library = createLibrary(root, memoryFiles())
     await library.save(named('bwv-846', 'Prelude'))
@@ -106,7 +136,7 @@ describe('on a real disk, against names chosen to escape', () => {
       const written = await readdir(library.root)
       expect(written.length).toBeGreaterThan(0)
       for (const name of written) {
-        expect(name).toMatch(/^[a-z0-9-]+\.score\.json$/)
+        expect(name).toMatch(/^[a-z0-9-]+\.piano$/)
         expect(name).not.toMatch(/^(con|prn|aux|nul|com\d|lpt\d)\./)
       }
     } finally {
@@ -194,6 +224,15 @@ describe('the scores an app ships with', () => {
     const files = memoryFiles()
     const library = createLibrary(root, files)
     await library.save(named('ode', 'My own ode'))
+    expect(await library.seed(shipped)).toEqual(['minuet'])
+    expect((await library.read('ode')).metadata.title).toBe('My own ode')
+  })
+
+  it('never overwrite one kept under the suffix scores had before, either', async () => {
+    const files = memoryFiles({
+      [`${root}/ode${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('ode', 'My own ode')),
+    })
+    const library = createLibrary(root, files)
     expect(await library.seed(shipped)).toEqual(['minuet'])
     expect((await library.read('ode')).metadata.title).toBe('My own ode')
   })

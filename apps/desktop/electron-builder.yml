@@ -31,6 +31,23 @@ files:
 asar: true
 compression: maximum
 
+# What the system hands to the piano when somebody double-clicks a file.
+#
+# A score is `.piano`, an extension of the app's own, so the app claims it
+# outright on every system. MIDI is not: `.mid` belongs to whatever the person
+# already plays it with, so the piano is offered and never made the default.
+# electron-builder's associations always take the default on Windows, which is
+# why MIDI is listed here only for macOS (rank Alternate) and Linux (a MIME
+# type in the desktop entry, which offers without choosing), and why Windows
+# gets it from build/installer.nsh as an Open With entry instead.
+fileAssociations:
+  - &score
+    ext: piano
+    name: Piano score
+    description: A score for the Piano app
+    mimeType: application/x-piano-score
+    role: Editor
+    rank: Owner
 win:
   target:
     - target: nsis
@@ -48,6 +65,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Piano
+  # MIDI under Open With, without becoming what a .mid opens with.
+  include: ../../build/installer.nsh
 
 mac:
   target:
@@ -58,6 +77,24 @@ mac:
   # Gatekeeper needs notarisation, which needs an Apple account. Until then the
   # build is honest about being unsigned rather than half-configured.
   identity: null
+  fileAssociations:
+    - *score
+    - &midi
+      ext: [mid, midi]
+      name: MIDI file
+      mimeType: audio/midi
+      role: Viewer
+      rank: Alternate
+  # The score type declared as the app's own, so macOS knows .piano by name
+  # rather than only by its extension.
+  extendInfo:
+    UTExportedTypeDeclarations:
+      - UTTypeIdentifier: com.alegauss.piano.score
+        UTTypeDescription: Piano score
+        UTTypeConformsTo: [public.json, public.data]
+        UTTypeTagSpecification:
+          public.filename-extension: [piano]
+          public.mime-type: application/x-piano-score
 
 linux:
   target:
@@ -66,3 +103,6 @@ linux:
   icon: ../../build/icon.png
   category: Audio
   synopsis: Play scores, watch them fall, learn to play them.
+  fileAssociations:
+    - *score
+    - *midi

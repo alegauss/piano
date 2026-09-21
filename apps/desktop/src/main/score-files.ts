@@ -1,8 +1,16 @@
+import { existsSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, extname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-import { LIBRARY_DIRECTORY, libraryFileName, type LibraryItem, type OpenResult } from '@piano/ipc'
+import {
+  LIBRARY_DIRECTORY,
+  libraryFileName,
+  libraryFileNames,
+  type LibraryItem,
+  type OpenResult,
+} from '@piano/ipc'
 import type { LibraryEntry } from '@piano/library'
 import { importMidi, parseScore, type Score } from '@piano/score-format'
 
@@ -24,11 +32,21 @@ const BYTE_ORDER_MARK = 0xfeff
 /** How many problems cross to the window: enough to act on, not a flood. */
 const MAX_PROBLEMS = 50
 
-/** What each extension is read as. Anything else is refused before it is read. */
+/**
+ * What each extension is read as. Anything else is refused before it is read.
+ * A score is JSON whichever it is called: `.piano` is the name the system
+ * hands to the app, and `.json` is what a score written anywhere else is.
+ */
 const KINDS: Readonly<Record<string, 'json' | 'midi'>> = {
+  '.piano': 'json',
   '.json': 'json',
   '.mid': 'midi',
   '.midi': 'midi',
+}
+
+/** Whether a path names a score file, as opposed to a MIDI file, which has nowhere to keep more. */
+export function isScoreFile(path: string): boolean {
+  return KINDS[extname(path).toLowerCase()] === 'json'
 }
 
 /** Whether a path names a file this app opens, by what it is called. */
@@ -57,7 +75,7 @@ export async function openScoreFile(path: string): Promise<Opened | Refused> {
   const name = basename(path)
   const kind = KINDS[extname(path).toLowerCase()]
   if (kind === undefined) {
-    return refused(name, `${name} is not a score: open a .json score or a .mid file.`)
+    return refused(name, `${name} is not a score: open a .piano or .json score, or a .mid file.`)
   }
 
   let size: number
@@ -143,9 +161,20 @@ export function libraryItem(entry: LibraryEntry): LibraryItem {
   }
 }
 
-/** The file a library id names, which is inside the library whatever the id says. */
-export function libraryPath(root: string, id: string): string {
-  return join(root, libraryFileName(id))
+/**
+ * The file a library id names, which is inside the library whatever the id
+ * says: the one it is kept in now, where a score saved before the suffix
+ * changed has not moved yet, and the name it is written under otherwise.
+ */
+export function libraryPath(
+  root: string,
+  id: string,
+  exists: (path: string) => boolean = existsSync,
+): string {
+  const kept = libraryFileNames(id)
+    .map((name) => join(root, name))
+    .find(exists)
+  return kept ?? join(root, libraryFileName(id))
 }
 
 /**
@@ -155,11 +184,22 @@ export function libraryPath(root: string, id: string): string {
  * argument; a second launch hands the first its whole command line. Flags and
  * the app's own path are not files to open, so the last argument that names a
  * score or a MIDI file is the one, resolved from where the launch happened.
+ * A Linux desktop entry may hand the file over as a file:// URL instead.
  */
 export function launchPath(argv: readonly string[], cwd: string): string | null {
   const found = argv
     .slice(1)
-    .filter((arg) => !arg.startsWith('-') && isOpenable(arg))
+    .map((arg) => (arg.startsWith('file://') ? fromFileUrl(arg) : arg))
+    .filter((arg) => arg !== '' && !arg.startsWith('-') && isOpenable(arg))
     .at(-1)
   return found === undefined ? null : resolve(cwd, found)
+}
+
+/** A file:// URL as the path it names, or nothing for one that names no local file. */
+function fromFileUrl(url: string): string {
+  try {
+    return fileURLToPath(url)
+  } catch {
+    return ''
+  }
 }

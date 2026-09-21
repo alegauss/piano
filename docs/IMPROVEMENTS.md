@@ -32,24 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI66 A file type the system can hand to the piano
-
-The app already opens whatever the system hands it: the file on its command line at
-launch, the one a second launch passes to the running window, and the macOS open-file
-event, early or late. What is missing is the system knowing to hand it over, and that is
-blocked on a name rather than on code. Scores are saved as `name.score.json`, and
-neither Windows nor macOS registers a double extension: a claim on `.score.json` is a
-claim on every `.json` somebody has, which no piano app should make. So the choice comes
-first. A single extension of the app's own, such as `.piano`, holding the same JSON, is
-the one that can be registered honestly; the library then writes it, reads both suffixes
-while old files remain, and the MCP server and the app keep sharing the one naming
-function in the IPC package. MIDI is different: `.mid` belongs to whatever the person
-already uses, so the piano should appear under Open With and never become the default,
-which is `rank: Alternate` on macOS and an OpenWithProgids entry rather than a default
-verb on Windows. The Linux AppImage gets a desktop entry and a MIME type with the same
-split. Done when a score double-clicked in the file manager opens in the piano, and a
-MIDI file offers it without taking it over.
-
 ### §PI67 The practice history, kept like the settings
 
 The practice history is written on every attempt and read at every launch, and it is the
@@ -67,3 +49,24 @@ exports records of attempts as JSON. "User accounts, cloud storage or sync acros
 machines" is about leaving the machine, and this file stays in the local profile unless
 its owner carries it somewhere. Done when the history survives a restart from the file,
 a damaged record costs only itself, and both doors work.
+
+### §PI68 Associations checked on the system that registers them
+
+Building a package proves the configuration parses, not that a system acts on it.
+electron-builder's NSIS template calls `customInstall` by name: a macro spelled
+differently is never called and the build still succeeds, so the piano would quietly
+fail to appear under Open With for a MIDI file. macOS reads the document types and the
+exported type declaration only once the app is registered with Launch Services. Linux
+reads the desktop entry's MimeType only where the AppImage has been integrated. None of
+that is touched by packaging.
+
+A runner can touch it, each on the system it is for, straight after the installer is
+built. On Windows: a silent install into a temporary directory, then read the registry —
+the class for `.piano`, and the OpenWithProgids value under `.mid` which must name the
+piano without becoming the default — then run the uninstaller and check the same keys
+are gone. On macOS: copy the app out of the DMG and ask `lsregister` what it now knows
+about the bundle id, the extension and its rank. On Linux: `desktop-file-validate` the
+entry the AppImage carries and read its MimeType line. The natural home is the release
+workflow beside packaging, so an installer that does not register what it claims stops
+the release instead of reaching somebody's machine. The same step can start the
+installed app with a score's path and watch the window open it.

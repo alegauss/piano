@@ -155,9 +155,11 @@ export async function runPremise(recording: Recording): Promise<PremiseRun> {
     }
 
     // The file the save answered with, beside whatever the app ships into the library.
+    // Spelled out rather than imported: the config that loads this file runs on
+    // Node's own loader, which cannot read the workspace's TypeScript packages.
     const kept =
       typeof id === 'string'
-        ? (JSON.parse(await readFile(join(library, `${id}.score.json`), 'utf8')) as unknown)
+        ? (JSON.parse(await readFile(join(library, `${id}.piano`), 'utf8')) as unknown)
         : null
     return { request: recording.request, answers, saved: kept }
   } finally {

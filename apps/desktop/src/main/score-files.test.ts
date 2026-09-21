@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { exportMidi, notesOf, type Score } from '@piano/score-format'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -98,6 +99,12 @@ describe('opening a score file', () => {
     expect(opened.kind).toBe('refused')
     expect(isOpenable('C:/Windows/win.ini')).toBe(false)
     expect(isOpenable('/home/ada/piece.MID')).toBe(true)
+    expect(isOpenable('/home/ada/piece.Piano')).toBe(true)
+  })
+
+  it('reads a .piano file as the score it is', async () => {
+    const opened = await openScoreFile(await file('prelude.piano', JSON.stringify(minimal)))
+    expect(opened).toMatchObject({ kind: 'opened', name: 'prelude.piano' })
   })
 
   it('leaves alone a file far bigger than any score', async () => {
@@ -126,17 +133,36 @@ describe('where a library id and a launch point', () => {
     for (const id of ['../../outside', '/etc/passwd', 'C:\\Windows\\win.ini', '..', 'con']) {
       const path = libraryPath(root, id)
       expect(resolve(path).startsWith(resolve(root))).toBe(true)
-      expect(path.endsWith('.score.json')).toBe(true)
+      expect(path.endsWith('.piano')).toBe(true)
     }
+  })
+
+  it('finds a library score saved before the suffix changed, where it has not moved', () => {
+    const root = join(directory, 'library')
+    const old = join(root, 'aria.score.json')
+    expect(libraryPath(root, 'aria', (path) => path === old)).toBe(old)
+    const both = new Set([old, join(root, 'aria.piano')])
+    expect(libraryPath(root, 'aria', (path) => both.has(path))).toBe(join(root, 'aria.piano'))
   })
 
   it('takes the score a command line names, and not the app or a flag', () => {
     const cwd = resolve('/music')
-    expect(launchPath(['Piano.exe', '--flag', 'nocturne.score.json'], cwd)).toBe(
+    expect(launchPath(['Piano.exe', '--flag', 'nocturne.piano'], cwd)).toBe(
+      resolve(cwd, 'nocturne.piano'),
+    )
+    expect(launchPath(['Piano.exe', 'nocturne.score.json'], cwd)).toBe(
       resolve(cwd, 'nocturne.score.json'),
     )
     expect(launchPath(['electron', '.'], cwd)).toBeNull()
     expect(launchPath(['Piano.exe', '--allow-file-access=a.json'], cwd)).toBeNull()
     expect(launchPath(['Piano.exe', 'one.mid', 'two.json'], cwd)).toBe(resolve(cwd, 'two.json'))
+  })
+
+  it('takes a file a desktop entry hands over as a file:// URL', () => {
+    const cwd = resolve('/music')
+    const path = resolve('/music/Nocturne No 1.piano')
+    expect(launchPath(['piano', pathToFileURL(path).href], cwd)).toBe(path)
+    // A URL that names no file on this machine is not a file to open.
+    expect(launchPath(['piano', 'file:///music/a%2Fb.piano'], cwd)).toBeNull()
   })
 })

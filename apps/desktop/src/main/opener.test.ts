@@ -70,11 +70,11 @@ describe('one road for every way of opening a score', () => {
   it('refuses the same file in the same words, whichever way it came', async () => {
     const library = join(directory, 'library')
     await mkdir(library, { recursive: true })
-    const path = await write(join(library, 'broken.score.json'), broken)
+    const path = await write(join(library, 'broken.piano'), broken)
     const { opener, recent } = await setup(path, path)
     // The recent list only offers what it holds, so the file is put on it the
     // way an earlier, valid version of it would have been.
-    await recent.add({ path, name: 'broken.score.json', title: 'Broken' })
+    await recent.add({ path, name: 'broken.piano', title: 'Broken' })
 
     const requests: OpenRequest[] = [
       { from: 'dialog' },
@@ -136,9 +136,14 @@ describe('one road for every way of opening a score', () => {
 
   it('opens a library score by the id Claude Code saved it under', async () => {
     const { opener, library } = await setup()
-    await write(join(library, 'little-tune.score.json'), valid)
+    await write(join(library, 'little-tune.piano'), valid)
     const opened = await opener.open({ from: 'library', id: 'Little Tune' })
-    expect(opened).toMatchObject({ kind: 'opened', name: 'little-tune.score.json' })
+    expect(opened).toMatchObject({ kind: 'opened', name: 'little-tune.piano' })
+
+    // One saved before scores were called .piano opens by its id all the same.
+    await write(join(library, 'old-tune.score.json'), valid)
+    const old = await opener.open({ from: 'library', id: 'old-tune' })
+    expect(old).toMatchObject({ kind: 'opened', name: 'old-tune.score.json' })
 
     const missing = await opener.open({ from: 'library', id: 'nocturne' })
     expect(missing).toMatchObject({ kind: 'refused' })

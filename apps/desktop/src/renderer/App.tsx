@@ -202,7 +202,8 @@ export function App() {
   const notes = version?.notes ?? written
   // Only a score file has somewhere to keep it: a MIDI file carries notes and
   // nothing about them.
-  const proposal = file !== null && /\.json$/i.test(file) ? (version?.proposal ?? null) : null
+  const proposal =
+    file !== null && /\.(?:piano|json)$/i.test(file) ? (version?.proposal ?? null) : null
   const parts = useMemo(() => partsOf(score), [score])
   const sections = useMemo(() => score.sections ?? [], [score])
   const scoreId = useMemo(() => scoreKey(score), [score])

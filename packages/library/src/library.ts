@@ -1,4 +1,10 @@
-import { libraryFileName, safeName, SCORE_SUFFIX } from '@piano/ipc'
+import {
+  libraryFileName,
+  libraryFileNames,
+  libraryIdOfFile,
+  safeName,
+  SCORE_SUFFIX,
+} from '@piano/ipc'
 import {
   compareForLibrary,
   matchesFilter,
@@ -124,6 +130,33 @@ export function createLibrary(root: string, files: Files): Library {
   const pathFor = (id: string) => `${root}/${libraryFileName(id)}`
   const indexPath = `${root}/${INDEX_FILE}`
 
+  /** Where a score is kept now: under the suffix it is written as, or the one it had before. */
+  const foundFor = async (id: string): Promise<string | null> => {
+    for (const name of libraryFileNames(id)) {
+      if ((await files.stat(`${root}/${name}`)) !== null) {
+        return `${root}/${name}`
+      }
+    }
+    return null
+  }
+
+  /**
+   * Write a score under its id, and take away the file it had under the old
+   * suffix: saving it again is the moment it moves, and leaving the old one
+   * would bring last week's version back the day the new one is deleted.
+   */
+  const keep = async (id: string, score: Score): Promise<string> => {
+    const file = pathFor(id)
+    await files.ensure(root)
+    await files.write(file, `${JSON.stringify(score, null, 2)}\n`)
+    for (const name of libraryFileNames(id)) {
+      if (`${root}/${name}` !== file) {
+        await files.remove(`${root}/${name}`)
+      }
+    }
+    return file
+  }
+
   const readScore = async (path: string): Promise<Score> => {
     const parsed = parseScore(JSON.parse(await files.read(path)))
     if (!parsed.ok) {
@@ -145,8 +178,16 @@ export function createLibrary(root: string, files: Files): Library {
   const entries = async (): Promise<LibraryEntry[]> => {
     // An empty library and a library nobody has made yet are the same thing to
     // a caller: there is nothing to play.
-    const names = (await files.list(root).catch((): readonly string[] => [])).filter((name) =>
-      name.endsWith(SCORE_SUFFIX),
+    const listed = (await files.list(root).catch((): readonly string[] => [])).filter(
+      (name) => libraryIdOfFile(name) !== null,
+    )
+    // Where one id is there under both suffixes, the file written as a score
+    // is now is the one; the other is what it was before.
+    const current = new Set(listed.filter((name) => name.endsWith(SCORE_SUFFIX)))
+    const names = listed.filter(
+      (name) =>
+        name.endsWith(SCORE_SUFFIX) ||
+        !current.has(`${libraryIdOfFile(name) ?? ''}${SCORE_SUFFIX}`),
     )
     const held = await readIndex()
     const next: Record<string, IndexRecord> = {}
@@ -168,7 +209,7 @@ export function createLibrary(root: string, files: Files): Library {
       try {
         const score = await readScore(path)
         entry = {
-          id: name.slice(0, -SCORE_SUFFIX.length),
+          id: libraryIdOfFile(name) ?? name,
           metadata: score.metadata,
           seconds: durationOf(score),
         }
@@ -224,12 +265,10 @@ export function createLibrary(root: string, files: Files): Library {
         throw new Error(parsed.message)
       }
       const id = libraryId(parsed.score)
-      const file = pathFor(id)
-      await files.ensure(root)
-      await files.write(file, `${JSON.stringify(parsed.score, null, 2)}\n`)
+      const file = await keep(id, parsed.score)
       return { id, file, metadata: parsed.score.metadata, score: parsed.score }
     },
-    read: (id) => readScore(pathFor(id)),
+    read: async (id) => readScore((await foundFor(id)) ?? pathFor(id)),
     seed: async (scores) => {
       const seededPath = `${root}/${SEEDED_FILE}`
       let seeded: string[] = []
@@ -251,11 +290,10 @@ export function createLibrary(root: string, files: Files): Library {
           continue
         }
         seeded.push(id)
-        if ((await files.stat(pathFor(id))) !== null) {
+        if ((await foundFor(id)) !== null) {
           continue
         }
-        await files.ensure(root)
-        await files.write(pathFor(id), `${JSON.stringify(parsed.score, null, 2)}\n`)
+        await keep(id, parsed.score)
         added.push(id)
       }
       await files.ensure(root)

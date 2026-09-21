@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { basename, extname } from 'node:path'
+import { basename } from 'node:path'
 
 import type { KeepResult } from '@piano/ipc'
 import {
@@ -11,6 +11,7 @@ import {
 } from '@piano/score-format'
 
 import { replace } from './replace'
+import { isScoreFile } from './score-files'
 
 /**
  * Keeping a worked-out arrangement in the score's own file.
@@ -52,7 +53,7 @@ export async function keepInFile(
       'this piece has no file of its own to keep it in; open it from a file or the library',
     )
   }
-  if (extname(path).toLowerCase() !== '.json') {
+  if (!isScoreFile(path)) {
     return refused('a MIDI file has nowhere to keep an arrangement; it needs to be a score file')
   }
   const proposal = arrangementSchema.safeParse(raw)
