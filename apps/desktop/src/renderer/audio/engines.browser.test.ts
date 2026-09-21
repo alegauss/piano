@@ -101,6 +101,19 @@ describe.each([
     expect(loudness(dry, 1.6, 2)).toBeLessThan(SILENT)
   })
 
+  it('fades a released note at half pedal faster than held, slower than let go', async () => {
+    const released = (sustain: number) =>
+      render(make, (engine) => {
+        engine.pedal('sustain', sustain, 0)
+        engine.noteOn(60, 100, 0.1)
+        engine.noteOff(60, 0.4)
+      })
+    const [held, half, dry] = await Promise.all([released(127), released(64), released(0)])
+    const tail = (data: Float32Array) => loudness(data, 0.6, 0.9)
+    expect(tail(half)).toBeLessThan(tail(held))
+    expect(tail(half)).toBeGreaterThan(tail(dry) * 4)
+  })
+
   it('plays a harder key louder', async () => {
     const soft = await render(make, (engine) => {
       engine.noteOn(60, 40, 0)

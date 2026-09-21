@@ -13,6 +13,10 @@ import { PEDAL_DOWN, type AudioTime } from './engine'
  * disagree about pedalling, and it touches no audio node, so it is tested
  * without a sound card.
  *
+ * The sustain pedal is a range, not a switch, because the format stores one:
+ * half down, the dampers brush the strings, and a released note fades faster
+ * than with the pedal down and slower than with it up.
+ *
  * Events are expected in time order, which is the scheduler's promise.
  */
 
@@ -20,8 +24,15 @@ import { PEDAL_DOWN, type AudioTime } from './engine'
 export type Voice = {
   /** Let it die away from `at`, as a released key does. */
   release(at: AudioTime): void
+  /**
+   * Press the damper on the string from `at` by `amount`, from 0 (lifted:
+   * the string rings as it would) to 1 (down: which is `release`).
+   */
+  damp(at: AudioTime, amount: number): void
   /** Silence it at once, for a stop or a seek. */
   stop(): void
+  /** A string with no damper, as the top of a piano has: letting the key up does not stop it. */
+  readonly undamped?: boolean
 }
 
 /** Make a voice, or answer null when this engine has nothing to play the pitch with. */
@@ -29,6 +40,27 @@ export type StartVoice = (pitch: number, velocity: number, at: AudioTime) => Voi
 
 /** How much the soft pedal takes off a note struck while it is down. */
 export const SOFT_PEDAL_SCALE = 0.7
+
+/** Sustain values at or above this lift the dampers clear of the strings. */
+export const SUSTAIN_CLEAR = 96
+
+/** Sustain values at or below this leave the dampers resting on the strings. */
+export const SUSTAIN_RESTING = 32
+
+/**
+ * How hard the dampers press on the strings at a sustain value: 0 lifted, 1
+ * resting, and in between the half-pedal a pianist uses to thin a sound
+ * without cutting it.
+ */
+export function damperAmount(sustain: number): number {
+  if (sustain >= SUSTAIN_CLEAR) {
+    return 0
+  }
+  if (sustain <= SUSTAIN_RESTING) {
+    return 1
+  }
+  return (SUSTAIN_CLEAR - sustain) / (SUSTAIN_CLEAR - SUSTAIN_RESTING)
+}
 
 type Strike = {
   readonly pitch: number
@@ -39,11 +71,13 @@ type Strike = {
   sounding: boolean
   /** The sostenuto caught this key down and holds it. */
   heldBySostenuto: boolean
+  /** How hard the damper presses now: 0 while the key is down. */
+  damper: number
 }
 
 export class Keyboard {
   private strikes: Strike[] = []
-  private sustain = false
+  private sustain = 0
   private sostenuto = false
   private soft = false
 
@@ -66,6 +100,7 @@ export class Keyboard {
       keyDown: true,
       sounding: voice !== null,
       heldBySostenuto: false,
+      damper: 0,
     })
   }
 
@@ -75,10 +110,11 @@ export class Keyboard {
       return
     }
     strike.keyDown = false
-    if (strike.sounding && (this.sustain || strike.heldBySostenuto)) {
+    if (!strike.sounding) {
+      this.forget(strike)
       return
     }
-    this.silence(strike, at)
+    this.applyDamper(strike, at)
   }
 
   pedal(pedal: PedalKind, value: number, at: AudioTime): void {
@@ -86,11 +122,12 @@ export class Keyboard {
 
     switch (pedal) {
       case 'sustain':
-        this.sustain = down
-        if (!down) {
-          for (const strike of this.strikes.filter((s) => !s.keyDown && !s.heldBySostenuto)) {
-            this.silence(strike, at)
-          }
+        if (value === this.sustain) {
+          return
+        }
+        this.sustain = value
+        for (const strike of this.strikes.filter((s) => s.sounding && !s.keyDown)) {
+          this.applyDamper(strike, at)
         }
         return
       case 'sostenuto':
@@ -101,8 +138,8 @@ export class Keyboard {
         } else if (!down && this.sostenuto) {
           for (const strike of this.strikes.filter((s) => s.heldBySostenuto)) {
             strike.heldBySostenuto = false
-            if (!strike.keyDown && !this.sustain) {
-              this.silence(strike, at)
+            if (!strike.keyDown) {
+              this.applyDamper(strike, at)
             }
           }
         }
@@ -139,19 +176,41 @@ export class Keyboard {
     return this.strikes.filter((strike) => strike.sounding).length
   }
 
+  /**
+   * Set the damper on a released key's string to what the pedals say: none
+   * while the sostenuto holds it or the string has no damper, otherwise as
+   * far as the sustain pedal lets it fall.
+   */
+  private applyDamper(strike: Strike, at: AudioTime): void {
+    if (strike.heldBySostenuto || strike.voice?.undamped === true) {
+      return
+    }
+    const amount = damperAmount(this.sustain)
+    if (amount >= 1) {
+      this.silence(strike, at)
+    } else if (amount !== strike.damper) {
+      strike.voice?.damp(at, amount)
+      strike.damper = amount
+    }
+  }
+
   private silence(strike: Strike, at: AudioTime): void {
     if (strike.sounding) {
       strike.voice?.release(at)
       strike.sounding = false
     }
     if (!strike.keyDown) {
-      this.strikes = this.strikes.filter((other) => other !== strike)
+      this.forget(strike)
     }
+  }
+
+  private forget(strike: Strike): void {
+    this.strikes = this.strikes.filter((other) => other !== strike)
   }
 
   private reset(): void {
     this.strikes = []
-    this.sustain = false
+    this.sustain = 0
     this.sostenuto = false
     this.soft = false
   }

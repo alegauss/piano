@@ -1,6 +1,12 @@
 import type { Score } from '@piano/score-format'
 
-import { pitchToFrequency, velocityGain, type AudioTime, type EngineKind } from './engine'
+import {
+  pitchToFrequency,
+  UNDAMPED_FROM,
+  velocityGain,
+  type AudioTime,
+  type EngineKind,
+} from './engine'
 import { WebAudioEngine, type VoiceNodes } from './web-audio-engine'
 
 /** Loudness of one note at full velocity, leaving room for a chord before the limiter works. */
@@ -57,10 +63,19 @@ export function synthVoice(
     partial.gain.value = level
     oscillator.connect(partial).connect(envelope)
     oscillator.start(at)
+    // Whatever the pedals do, the string has died by then; without this an
+    // undamped or pedalled note would keep its oscillators running for good.
+    oscillator.stop(at + ATTACK_SECONDS + decaySeconds(pitch) * 10)
     return oscillator
   })
 
-  return { sources, envelope, releaseSeconds: 0.08 }
+  return {
+    sources,
+    envelope,
+    releaseSeconds: 0.08,
+    ringSeconds: decaySeconds(pitch),
+    ...(pitch >= UNDAMPED_FROM ? { undamped: true } : {}),
+  }
 }
 
 /**

@@ -11,6 +11,14 @@ export type VoiceNodes = {
   readonly envelope: GainNode
   /** Time constant of the release, in seconds: about a fifth of the audible tail. */
   readonly releaseSeconds: number
+  /**
+   * Time constant of the decay the envelope itself applies while the string
+   * rings freely. A synthesised note has one; a recording carries its decay
+   * inside it and leaves this out.
+   */
+  readonly ringSeconds?: number
+  /** A string with no damper: the key coming up does not stop it. */
+  readonly undamped?: boolean
 }
 
 /** A stop that does not click: fast, but a fade rather than a cut. */
@@ -98,19 +106,36 @@ export abstract class WebAudioEngine implements PianoEngine {
     if (nodes === null) {
       return null
     }
-    const { sources, envelope, releaseSeconds } = nodes
-    const [first] = sources
+    const { sources, envelope, releaseSeconds, ringSeconds, undamped } = nodes
     this.sounding += 1
-    if (first !== undefined) {
-      first.onended = () => {
-        this.sounding -= 1
-        envelope.disconnect()
-        this.letGoIfSilent()
+    // A note of two crossfaded layers has two sources of different lengths,
+    // and it is over when the last of them is.
+    let playing = sources.length
+    for (const source of sources) {
+      source.onended = () => {
+        playing -= 1
+        if (playing === 0) {
+          this.sounding -= 1
+          envelope.disconnect()
+          this.letGoIfSilent()
+        }
       }
     }
 
     const gain = envelope.gain
     return {
+      ...(undamped === true ? { undamped } : {}),
+      damp: (when, amount) => {
+        const from = Math.max(when, this.context.currentTime)
+        gain.cancelAndHoldAtTime(from)
+        // A damper pressed half as hard lets the string ring four times as
+        // long, and a lifted one leaves only the string's own decay.
+        const damped = amount > 0 ? releaseSeconds / amount ** 2 : Infinity
+        const seconds = Math.min(damped, ringSeconds ?? Infinity)
+        if (Number.isFinite(seconds)) {
+          gain.setTargetAtTime(0, from, seconds)
+        }
+      },
       release: (when) => {
         const from = Math.max(when, this.context.currentTime)
         gain.cancelAndHoldAtTime(from)

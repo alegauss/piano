@@ -10,6 +10,14 @@ export type Sample = {
   readonly buffer: AudioBuffer
   /** A tuning correction the library states for this recording, in cents. */
   readonly tuneCents?: number
+  /** Recorded on a string with no damper, which rings on after the key comes up. */
+  readonly undamped?: boolean
+}
+
+/** A recording to play for a note, at a gain: two of them near a velocity layer's edge. */
+export type SoundingSample = {
+  readonly sample: Sample
+  readonly gain: number
 }
 
 export type SampledEngineOptions = {
@@ -26,15 +34,14 @@ export type SampledEngineOptions = {
  * Where a sampled engine gets its recordings.
  *
  * An interface because where they come from is somebody else's problem: the
- * pack pipeline (PI20) decides the files, lazy loading by register (PI21)
- * decides when, and velocity layers (PI22) decide which of several. The engine
- * only asks for the recording to play a pitch from.
+ * pack pipeline decides the files, the bank decides when they load and which
+ * velocity layers a note sounds. The engine only asks what to play.
  */
 export interface SampleBank {
   /** Make sure what these pitches need is loaded. */
   load(pitches: ReadonlySet<number>): Promise<void>
-  /** The loaded recording to play a pitch from, or null when none covers it yet. */
-  sampleFor(pitch: number, velocity: number): Sample | null
+  /** The loaded recordings to play a note from, with their gains; none when nothing covers it yet. */
+  samplesFor(pitch: number, velocity: number): readonly SoundingSample[]
 }
 
 /**
@@ -46,7 +53,7 @@ export interface SampleBank {
 export function bankOf(samples: readonly Sample[]): SampleBank {
   return {
     load: () => Promise.resolve(),
-    sampleFor: (pitch) => {
+    samplesFor: (pitch) => {
       let best: Sample | null = null
       for (const sample of samples) {
         const distance = Math.abs(sample.pitch - pitch)
@@ -55,7 +62,7 @@ export function bankOf(samples: readonly Sample[]): SampleBank {
           best = sample
         }
       }
-      return best
+      return best === null ? [] : [{ sample: best, gain: 1 }]
     },
   }
 }
@@ -64,11 +71,22 @@ export function bankOf(samples: readonly Sample[]): SampleBank {
 const VOICE_PEAK = 0.5
 
 /**
+ * How much of the velocity curve applies on top of the layer.
+ *
+ * The layer already sounds soft or loud, since it was recorded that way, so
+ * applying the whole curve again would count the dynamics twice. The library's
+ * own mapping tracks velocity at 73 percent, and this follows it.
+ */
+const VELOCITY_TRACKING = 0.73
+
+/**
  * A piano made of recordings.
  *
- * The real product. Each note plays the nearest recording, retuned by
- * playback rate, at a gain from its velocity; the decay is whatever the
- * recording holds, and the keyboard's rules decide when it is released.
+ * The real product. Velocity chooses the recording: a soft note is a softer
+ * recording, not the loud one turned down, and near a layer's edge the two
+ * neighbours crossfade. Each is retuned by playback rate to the key asked for;
+ * the decay is whatever the recording holds, and the keyboard's rules decide
+ * when the damper falls.
  */
 export class SampledEngine extends WebAudioEngine {
   readonly kind: EngineKind = 'sampled'
@@ -104,20 +122,33 @@ export class SampledEngine extends WebAudioEngine {
     into: AudioNode,
   ): VoiceNodes | null {
     const { context } = this
-    const sample = this.bank.sampleFor(pitch, velocity)
-    if (sample === null) {
+    const layers = this.bank.samplesFor(pitch, velocity)
+    if (layers.length === 0) {
       return this.fallback ? synthVoice(context, pitch, velocity, at, into) : null
     }
-    const source = context.createBufferSource()
-    source.buffer = sample.buffer
-    const semitones = pitch - sample.pitch + (sample.tuneCents ?? 0) / 100
-    source.playbackRate.value = 2 ** (semitones / 12)
 
     const envelope = context.createGain()
-    envelope.gain.setValueAtTime(VOICE_PEAK * velocityGain(velocity), at)
-    source.connect(envelope).connect(into)
-    source.start(at)
+    envelope.gain.setValueAtTime(VOICE_PEAK * velocityGain(velocity) ** VELOCITY_TRACKING, at)
+    envelope.connect(into)
 
-    return { sources: [source], envelope, releaseSeconds: 0.12 }
+    const sources = layers.map(({ sample, gain }) => {
+      const source = context.createBufferSource()
+      source.buffer = sample.buffer
+      const semitones = pitch - sample.pitch + (sample.tuneCents ?? 0) / 100
+      source.playbackRate.value = 2 ** (semitones / 12)
+      const layer = context.createGain()
+      layer.gain.value = gain
+      source.connect(layer).connect(envelope)
+      source.start(at)
+      return source
+    })
+
+    const undamped = layers.some(({ sample }) => sample.undamped === true)
+    return {
+      sources,
+      envelope,
+      releaseSeconds: 0.12,
+      ...(undamped ? { undamped: true } : {}),
+    }
   }
 }

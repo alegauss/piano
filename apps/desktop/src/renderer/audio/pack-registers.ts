@@ -74,3 +74,52 @@ export function decodedBytes(register: Register, sampleRate: number, channels: n
     0,
   )
 }
+
+/** A recording to play and how loud, when a velocity falls between two layers. */
+export type WeightedSample = {
+  readonly sample: PackSample
+  readonly gain: number
+}
+
+/** Velocities either side of a layer boundary over which the two layers crossfade. */
+export const CROSSFADE_VELOCITIES = 6
+
+/**
+ * The recordings a key sounds at a velocity, with their gains.
+ *
+ * Mostly one. Near the boundary between two velocity layers both play, at
+ * equal-power gains that meet halfway, so a crescendo passes from one
+ * recording to the next without a step at the line the pack drew.
+ */
+export function weightedSamples(
+  manifest: PackManifest,
+  key: number,
+  velocity: number,
+): WeightedSample[] {
+  const here = sampleFor(manifest, key, velocity)
+  if (here === undefined) {
+    return []
+  }
+  const sameKey = manifest.samples.filter((sample) => key >= sample.lowKey && key <= sample.highKey)
+  const above = sameKey.find((sample) => sample.lowVelocity === here.highVelocity + 1)
+  const below = sameKey.find((sample) => sample.highVelocity === here.lowVelocity - 1)
+
+  // How far into the crossfade zone of each neighbour the velocity sits:
+  // 0 at the zone's outer edge, 0.5 on the boundary itself.
+  const width = CROSSFADE_VELOCITIES
+  const towardAbove =
+    above === undefined ? 0 : (velocity - (here.highVelocity + 0.5 - width)) / (2 * width)
+  const towardBelow =
+    below === undefined ? 0 : (here.lowVelocity - 0.5 + width - velocity) / (2 * width)
+
+  const neighbour =
+    towardAbove > 0 ? { sample: above, t: towardAbove } : { sample: below, t: towardBelow }
+  if (neighbour.sample === undefined || neighbour.t <= 0) {
+    return [{ sample: here, gain: 1 }]
+  }
+  const angle = (neighbour.t * Math.PI) / 2
+  return [
+    { sample: here, gain: Math.cos(angle) },
+    { sample: neighbour.sample, gain: Math.sin(angle) },
+  ]
+}

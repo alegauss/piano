@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { Keyboard, SOFT_PEDAL_SCALE, type Voice } from './keyboard'
+import { damperAmount, Keyboard, SOFT_PEDAL_SCALE, type Voice } from './keyboard'
 
 type Played = {
   readonly pitch: number
@@ -8,17 +8,23 @@ type Played = {
   readonly at: number
   released: number | null
   stopped: boolean
+  /** Every time the damper moved, as [when, how hard]. */
+  damped: [number, number][]
 }
 
 /** A keyboard whose voices only write down what happened to them. */
-function keyboard() {
+function keyboard(undamped: (pitch: number) => boolean = () => false) {
   const played: Played[] = []
   const keys = new Keyboard((pitch, velocity, at): Voice => {
-    const note: Played = { pitch, velocity, at, released: null, stopped: false }
+    const note: Played = { pitch, velocity, at, released: null, stopped: false, damped: [] }
     played.push(note)
     return {
+      ...(undamped(pitch) ? { undamped: true } : {}),
       release: (when) => {
         note.released = when
+      },
+      damp: (when, amount) => {
+        note.damped.push([when, amount])
       },
       stop: () => {
         note.stopped = true
@@ -33,7 +39,9 @@ describe('Keyboard', () => {
     const { keys, played } = keyboard()
     keys.noteOn(60, 90, 0)
     keys.noteOff(60, 1)
-    expect(played).toEqual([{ pitch: 60, velocity: 90, at: 0, released: 1, stopped: false }])
+    expect(played).toEqual([
+      { pitch: 60, velocity: 90, at: 0, released: 1, stopped: false, damped: [] },
+    ])
     expect(keys.soundingCount).toBe(0)
   })
 
@@ -57,12 +65,70 @@ describe('Keyboard', () => {
     expect(played[0]?.released).toBe(2)
   })
 
-  it('treats a sustain value below half as up, until half-pedalling is modelled', () => {
+  it('treats the pedal near the top as down and near the bottom as up', () => {
+    expect(damperAmount(127)).toBe(0)
+    expect(damperAmount(96)).toBe(0)
+    expect(damperAmount(32)).toBe(1)
+    expect(damperAmount(0)).toBe(1)
+    expect(damperAmount(64)).toBeCloseTo(0.5, 9)
+  })
+
+  it('thins a released note at half pedal rather than holding it or cutting it', () => {
     const { keys, played } = keyboard()
-    keys.pedal('sustain', 40, 0)
+    keys.pedal('sustain', 64, 0)
     keys.noteOn(60, 90, 0)
     keys.noteOff(60, 1)
-    expect(played[0]?.released).toBe(1)
+    expect(played[0]?.released).toBeNull()
+    expect(played[0]?.damped).toEqual([[1, 0.5]])
+  })
+
+  it('lets the damper down as the pedal rises and lifts it as the pedal goes back down', () => {
+    const { keys, played } = keyboard()
+    keys.pedal('sustain', 127, 0)
+    keys.noteOn(60, 90, 0)
+    keys.noteOff(60, 1)
+    keys.pedal('sustain', 64, 2)
+    keys.pedal('sustain', 127, 3)
+    keys.pedal('sustain', 0, 4)
+    expect(played[0]?.damped).toEqual([
+      [2, 0.5],
+      [3, 0],
+    ])
+    expect(played[0]?.released).toBe(4)
+  })
+
+  it('leaves a string with no damper ringing when its key comes up, pedal or not', () => {
+    const { keys, played } = keyboard((pitch) => pitch >= 89)
+    keys.noteOn(100, 90, 0)
+    keys.noteOff(100, 1)
+    keys.pedal('sustain', 127, 2)
+    keys.pedal('sustain', 0, 3)
+    expect(played[0]?.released).toBeNull()
+    expect(played[0]?.damped).toEqual([])
+    // Struck again, the old sound still gives way to the new one.
+    keys.noteOn(100, 90, 4)
+    expect(played[0]?.released).toBe(4)
+  })
+
+  it('releases exactly what the pedal was holding when it comes up, and nothing else', () => {
+    const { keys, played } = keyboard((pitch) => pitch >= 89)
+    keys.noteOn(48, 80, 0) // still held by the hand
+    keys.noteOn(52, 80, 0) // caught by the sostenuto below
+    keys.pedal('sostenuto', 127, 0.1)
+    keys.pedal('sustain', 127, 0.2)
+    keys.noteOn(55, 80, 0.3) // let go under the pedal: the one it holds
+    keys.noteOn(100, 80, 0.3) // a string with no damper
+    keys.noteOff(52, 0.5)
+    keys.noteOff(55, 0.5)
+    keys.noteOff(100, 0.5)
+    keys.pedal('sustain', 0, 1)
+
+    expect(played.map((note) => [note.pitch, note.released])).toEqual([
+      [48, null],
+      [52, null],
+      [55, 1],
+      [100, null],
+    ])
   })
 
   it('holds with the sostenuto only what was down when it was pressed', () => {

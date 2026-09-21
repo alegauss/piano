@@ -47,24 +47,36 @@ function wav(frequency: number, seconds: number): ArrayBuffer {
   return buffer
 }
 
-/** Thirty registers, a minor third apart from A0 to C8, one velocity layer each. */
-function syntheticPack(): { manifest: PackManifest; files: Map<string, ArrayBuffer> } {
+type Layer = { readonly upTo: number; readonly hz: number }
+
+/**
+ * Thirty registers, a minor third apart from A0 to C8, each with the velocity
+ * layers asked for: by default one, a 1000 Hz sine.
+ */
+function syntheticPack(layers: readonly Layer[] = [{ upTo: 127, hz: RECORDED_HZ }]): {
+  manifest: PackManifest
+  files: Map<string, ArrayBuffer>
+} {
   const samples: PackSample[] = []
   const files = new Map<string, ArrayBuffer>()
   for (let pitch = 21; pitch <= 108; pitch += 3) {
-    const file = `samples/${String(pitch)}.wav`
-    samples.push({
-      file,
-      pitch,
-      lowKey: pitch === 21 ? 21 : pitch - 1,
-      highKey: pitch === 108 ? 108 : pitch === 21 ? 22 : pitch + 1,
-      lowVelocity: 1,
-      highVelocity: 127,
-      seconds: SECONDS,
-      bytes: 1,
-      sha256: '0'.repeat(64),
-    })
-    files.set(file, wav(RECORDED_HZ, SECONDS))
+    let from = 1
+    for (const layer of layers) {
+      const file = `samples/${String(pitch)}-${String(layer.upTo)}.wav`
+      samples.push({
+        file,
+        pitch,
+        lowKey: pitch === 21 ? 21 : pitch - 1,
+        highKey: pitch === 108 ? 108 : pitch === 21 ? 22 : pitch + 1,
+        lowVelocity: from,
+        highVelocity: layer.upTo,
+        seconds: SECONDS,
+        bytes: 1,
+        sha256: '0'.repeat(64),
+      })
+      files.set(file, wav(layer.hz, SECONDS))
+      from = layer.upTo + 1
+    }
   }
   const manifest: PackManifest = {
     format: 1,
@@ -130,6 +142,49 @@ function frequency(data: Float32Array, from: number, to: number): number {
   return crossings / (to - from)
 }
 
+describe('velocity layers', () => {
+  const layers = [
+    { upTo: 63, hz: 500 },
+    { upTo: 127, hz: 1500 },
+  ]
+
+  async function strike(velocity: number): Promise<Float32Array> {
+    const { manifest, files } = syntheticPack(layers)
+    const context = offline(0.6)
+    const pack = source(manifest, files)
+    pack.open()
+    const bank = await PackBank.open(context, pack)
+    await bank.load(new Set([60]))
+    const engine = new SampledEngine(context, bank)
+    engine.noteOn(60, velocity, 0)
+    return (await context.startRendering()).getChannelData(0)
+  }
+
+  it('plays a soft note from the soft recording and a hard one from the hard one', async () => {
+    // Middle C was recorded at middle C, so each layer sounds at its own frequency.
+    expect(frequency(await strike(20), 0.05, 0.45)).toBeCloseTo(500, -1)
+    expect(frequency(await strike(120), 0.05, 0.45)).toBeCloseTo(1500, -1)
+  })
+
+  it('crossfades the two layers at equal power near the line between them', async () => {
+    const { manifest, files } = syntheticPack(layers)
+    const pack = source(manifest, files)
+    pack.open()
+    const bank = await PackBank.open(offline(1), pack)
+    await bank.load(new Set([60]))
+
+    expect(bank.samplesFor(60, 40)).toHaveLength(1)
+    const edge = bank.samplesFor(60, 63)
+    expect(edge).toHaveLength(2)
+    const power = edge.reduce((sum, layer) => sum + layer.gain ** 2, 0)
+    expect(power).toBeCloseTo(1, 6)
+    // Either side of the line the blend is the mirror image, so nothing steps.
+    const [below] = bank.samplesFor(60, 63)
+    const [above] = bank.samplesFor(60, 64)
+    expect(below?.gain).toBeCloseTo(above?.gain ?? 0, 6)
+  })
+})
+
 describe('PackBank', () => {
   it('refuses a pack whose manifest leaves keys unplayable', async () => {
     const { manifest, files } = syntheticPack()
@@ -186,7 +241,7 @@ describe('PackBank', () => {
       expect(bank.decodedBytes).toBeLessThanOrEqual(bank.budgetBytes)
     }
     // Middle C is played again, so the register at 72 is now the stalest.
-    expect(bank.sampleFor(60, 80)).not.toBeNull()
+    expect(bank.samplesFor(60, 80)).toHaveLength(1)
     await bank.load(new Set([96]))
 
     expect(bank.loadedRegisters).toEqual([60, 84, 96])
@@ -202,7 +257,7 @@ describe('PackBank', () => {
     await bank.load(new Set([60]))
     expect(bank.loadedRegisters).toEqual([])
     expect(bank.decodedBytes).toBe(0)
-    expect(bank.sampleFor(60, 80)).toBeNull()
+    expect(bank.samplesFor(60, 80)).toEqual([])
   })
 
   it('fills outward from middle C for as long as the budget allows without evicting', async () => {
@@ -222,9 +277,9 @@ describe('PackBank', () => {
     const pack = source(manifest, files)
     pack.open()
     const bank = await PackBank.open(offline(1), pack)
-    expect(bank.sampleFor(90, 80)).toBeNull()
+    expect(bank.samplesFor(90, 80)).toEqual([])
     await bank.load(new Set([90]))
-    expect(bank.sampleFor(90, 80)).not.toBeNull()
+    expect(bank.samplesFor(90, 80)).toHaveLength(1)
     // One fetch: the miss and the load shared a register rather than fetching it twice.
     expect(pack.fetched).toBe(1)
   })

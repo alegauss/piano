@@ -1,7 +1,13 @@
 import { parseManifest, type Credit, type PackManifest } from '@piano/sample-pack'
 
-import { decodedBytes, registerFor, registersOf, sampleFor, type Register } from './pack-registers'
-import type { Sample, SampleBank } from './sampled-engine'
+import {
+  decodedBytes,
+  registerFor,
+  registersOf,
+  weightedSamples,
+  type Register,
+} from './pack-registers'
+import type { SampleBank, SoundingSample } from './sampled-engine'
 
 /**
  * A sample pack, loaded as it is needed and no more.
@@ -150,28 +156,42 @@ export class PackBank implements SampleBank {
     }
   }
 
-  sampleFor(pitch: number, velocity: number): Sample | null {
-    const sample = sampleFor(this.manifest, pitch, velocity)
-    if (sample === undefined) {
-      return null
+  samplesFor(pitch: number, velocity: number): readonly SoundingSample[] {
+    const weighted = weightedSamples(this.manifest, pitch, velocity)
+    const [first] = weighted
+    if (first === undefined) {
+      return []
     }
-    const resident = this.resident.get(sample.pitch)
-    const buffer = resident?.buffers.get(sample.file)
-    if (resident === undefined || buffer === undefined) {
+    // Every layer of a key lives in one register, so one lookup covers both.
+    const resident = this.resident.get(first.sample.pitch)
+    if (resident === undefined) {
       const register = registerFor(this.registers, pitch)
       if (register !== undefined) {
         // This note falls back; the next one on this key should not.
         void this.loadRegister(register, new Set()).catch(() => {})
       }
-      return null
+      return []
     }
     this.uses += 1
     resident.lastUsed = this.uses
-    return {
-      pitch: sample.pitch,
-      buffer,
-      ...(sample.tuneCents !== undefined ? { tuneCents: sample.tuneCents } : {}),
+
+    const sounding: SoundingSample[] = []
+    for (const { sample, gain } of weighted) {
+      const buffer = resident.buffers.get(sample.file)
+      if (buffer === undefined) {
+        return []
+      }
+      sounding.push({
+        gain,
+        sample: {
+          pitch: sample.pitch,
+          buffer,
+          ...(sample.tuneCents !== undefined ? { tuneCents: sample.tuneCents } : {}),
+          ...(sample.undamped === true ? { undamped: true } : {}),
+        },
+      })
     }
+    return sounding
   }
 
   private loadRegister(register: Register, keep: ReadonlySet<number>): Promise<void> {

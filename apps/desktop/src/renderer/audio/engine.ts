@@ -57,6 +57,12 @@ export function velocityGain(velocity: number): number {
   return (clamped / 127) ** 2
 }
 
+/**
+ * The lowest key whose string has no damper. On a grand the top octave and a
+ * half ring on after the key comes up; the sample library marks the same keys.
+ */
+export const UNDAMPED_FROM = 89
+
 /** Equal temperament at A4 = 440 Hz. */
 export function pitchToFrequency(pitch: number): number {
   return 440 * 2 ** ((pitch - 69) / 12)
