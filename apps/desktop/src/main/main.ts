@@ -4,7 +4,7 @@ import { app, BrowserWindow, session } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
-import { secureWebPreferences, WINDOW_BACKGROUND } from './window-preferences'
+import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
 
 /**
  * Set by scripts/dev.mjs. Present means the renderer is served by Vite; absent
@@ -34,6 +34,7 @@ if (userDataDir !== undefined && userDataDir !== '') {
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
+  const icon = windowIcon()
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -43,6 +44,9 @@ function createWindow(): void {
     backgroundColor: WINDOW_BACKGROUND,
     autoHideMenuBar: true,
     title: 'Piano',
+    // Development has no executable to take an icon from, so the window is
+    // given the same file electron-builder stamps into the packaged one.
+    ...(icon === undefined ? {} : { icon }),
     // The renderer holds no privilege; window-preferences.ts says exactly how,
     // and the self-check asserts both that object and what the live page can
     // actually reach.

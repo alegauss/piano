@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -5,7 +6,7 @@ import { allChannels, windowSetTitle } from '@piano/ipc'
 import type { BrowserWindow } from 'electron'
 
 import { unregisteredChannels } from './ipc'
-import { secureWebPreferences } from './window-preferences'
+import { secureWebPreferences, windowIcon } from './window-preferences'
 
 /**
  * The checks that can only be run inside a real Electron process.
@@ -234,7 +235,18 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     ),
   )
 
-  // 10. Where a pack is installed, the renderer decodes it: the footer's count
+  // 10. The window has this app's icon rather than Electron's. Development
+  //     has no executable to take one from, so the file has to resolve.
+  const icon = windowIcon()
+  results.push(
+    check(
+      'the window is given the app icon',
+      icon !== undefined && existsSync(icon),
+      icon ?? 'build/icon.png was not found; run npm run icon',
+    ),
+  )
+
+  // 11. Where a pack is installed, the renderer decodes it: the footer's count
   //    of loaded registers leaves zero. This is the check that Chromium in
   //    this Electron plays what the pack pipeline encodes.
   if (pack.installed === true) {

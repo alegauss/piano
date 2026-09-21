@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { BrowserWindowConstructorOptions } from 'electron'
@@ -23,6 +24,25 @@ import type { BrowserWindowConstructorOptions } from 'electron'
  * this app names a token instead of spelling one.
  */
 export const WINDOW_BACKGROUND = '#0e1217'
+
+/**
+ * The window's icon, which only development needs.
+ *
+ * A packaged build takes its icon from the executable, which electron-builder
+ * stamps from build/icon.png. Running from source there is no executable, so
+ * the window and the taskbar show Electron's own logo instead of this app's
+ * unless the window is handed the file. It is the same file either way, so
+ * the two can never drift.
+ *
+ * Absent rather than empty when the file is not there: the icon is drawn by
+ * `npm run icon` and a checkout that has not run it should open a window with
+ * a default icon rather than fail to open one.
+ */
+export function windowIcon(): string | undefined {
+  // From apps/desktop/dist/main up to the repository root, where build/ lives.
+  const drawn = join(__dirname, '..', '..', '..', '..', 'build', 'icon.png')
+  return existsSync(drawn) ? drawn : undefined
+}
 
 export const secureWebPreferences = {
   preload: join(__dirname, '..', 'preload', 'preload.cjs'),
