@@ -14,8 +14,8 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI67** (deps: PI53 ✅) **Practice history sits unvalidated in browser storage, and nothing in the app exports or deletes it** — A person's own record wants the settings' treatment: a validated, versioned file in the profile, and plain doors to take it away or erase it. → §PI67
 - 📋 **PI68** (deps: PI66 ✅) **Nothing exercises the file associations an installer writes, so a wrong macro or plist key ships unnoticed** — Installing what was just built and reading back the registry, Launch Services and the desktop entry is what turns a claim in a config file into one the system honours. → §PI68
+- 📋 **PI69** (deps: —) **The report panel's copy button hands over every piece's history from a view about one piece** — It sits beside "Forget this piece" and copies all of it, so somebody asking for what is on screen gets the whole record. → §PI69
 
 ## Done when — Block A
 

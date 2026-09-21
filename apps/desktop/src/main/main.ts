@@ -25,6 +25,8 @@ import {
 } from 'electron'
 
 import { BUNDLED_SCORES } from './bundled'
+import { createHistoryStore } from './history-store'
+import { saveHistory } from './history-save'
 import { registerIpcHandlers } from './ipc'
 import { keepInFile } from './keep-arrangement'
 import { watchLibrary } from './library-watch'
@@ -123,6 +125,9 @@ const library = createLibrary(libraryRoot(), nodeFiles)
 
 /** What the app remembers between launches, in this profile. */
 const settings = createSettingsStore(join(app.getPath('userData'), 'settings.json'))
+
+/** Every attempt that has been graded, in this profile and nowhere else. */
+const history = createHistoryStore(join(app.getPath('userData'), 'practice-history.json'))
 
 /** The sample pack, fetched into wherever the app reads one from. */
 const pack = createPackDownloader({ base: packSourceUrl(), directory: packDirectory() })
@@ -423,6 +428,23 @@ if (firstInstance) {
         libraryScores: async ({ order, ...filter }) =>
           (await library.search(filter, order)).map(libraryItem),
         settings,
+        history,
+        saveHistory: async (window) =>
+          saveHistory(await history.held(), {
+            choose: async (suggested) => {
+              const options: SaveDialogOptions = {
+                title: 'Save the practice history',
+                defaultPath: join(app.getPath('documents'), suggested),
+                filters: [{ name: 'JSON files', extensions: ['json'] }],
+              }
+              const chosen =
+                window === null
+                  ? await dialog.showSaveDialog(options)
+                  : await dialog.showSaveDialog(window, options)
+              return chosen.canceled || chosen.filePath === '' ? null : chosen.filePath
+            },
+            write: (path, text) => writeFile(path, text, 'utf8'),
+          }),
         pack,
         exportScore: (request, window) =>
           exportScore(request, {

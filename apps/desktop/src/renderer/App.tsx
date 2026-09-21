@@ -34,6 +34,7 @@ import { OpenReport, type Report } from './components/OpenReport'
 import { PackDownloadStatus } from './components/PackDownloadStatus'
 import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
+import { HistoryStatus } from './components/HistoryStatus'
 import { SettingsStatus } from './components/SettingsStatus'
 import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
@@ -287,6 +288,7 @@ export function App() {
   // The drill drives the transport itself and hands the keyboard back when it
   // stops, so the parts view follows it rather than the other way round.
   const progress = useMemo(() => createProgress(grader, transport), [grader, transport])
+  const historyNotice = useSyncExternalStore(progress.subscribe, () => progress.notice)
   const drill = useMemo(
     () =>
       createDrill(transport, grader, {
@@ -398,6 +400,11 @@ export function App() {
   useEffect(() => {
     progress.use({ score: scoreId, fingerprint, level, sections })
   }, [progress, scoreId, fingerprint, level, sections])
+  // Main holds the file, so what was practised before today arrives after the
+  // first paint; an attempt graded meanwhile is kept rather than overwritten.
+  useEffect(() => {
+    void progress.load()
+  }, [progress])
   useEffect(() => progress.close, [progress])
 
   // Claude Code reaches the piano through main, and each command lands on the
@@ -914,6 +921,12 @@ export function App() {
               notice={remembered.notice}
               onDismiss={settings.dismiss}
               onReset={resetSettings}
+            />
+            <HistoryStatus
+              notice={historyNotice}
+              onDismiss={progress.dismiss}
+              onSave={progress.keep}
+              onDelete={progress.erase}
             />
             <span data-testid="app-version">Piano {info?.app ?? 'unavailable'}</span>
             <span>Score format v{info?.scoreFormatVersion ?? FORMAT_VERSION}</span>

@@ -76,7 +76,9 @@ function history(suggestion: Suggestion | null): Progress & { readonly forgotten
   let forgotten = 0
   return {
     records: [],
+    notice: null,
     subscribe: () => () => {},
+    load: () => Promise.resolve(),
     use: () => {},
     record: () => {},
     forScore: () => [],
@@ -85,6 +87,9 @@ function history(suggestion: Suggestion | null): Progress & { readonly forgotten
     forget: () => {
       forgotten += 1
     },
+    erase: () => Promise.resolve(),
+    keep: () => Promise.resolve({ kind: 'cancelled' }),
+    dismiss: () => {},
     close: () => {},
     forgotten: () => forgotten,
   }

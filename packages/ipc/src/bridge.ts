@@ -2,6 +2,9 @@ import type {
   AppInfoResponse,
   ExportRequest,
   ExportResult,
+  HistoryReadResponse,
+  HistorySaveResult,
+  HistoryWriteRequest,
   KeepRequest,
   KeepResult,
   LinkAnswerRequest,
@@ -74,6 +77,14 @@ export type PianoBridge = {
   readonly writeSettings: (patch: SettingsPatch) => Promise<Settings>
   /** Every setting back to its default. */
   readonly resetSettings: () => Promise<Settings>
+  /** Every attempt kept so far, and whether any of it could not be read. */
+  readonly readHistory: () => Promise<HistoryReadResponse>
+  /** Keep the history as the window now holds it. */
+  readonly writeHistory: (request: HistoryWriteRequest) => Promise<null>
+  /** Save the history as a file somebody keeps, main asking where. */
+  readonly saveHistory: () => Promise<HistorySaveResult>
+  /** Erase the history, file and all. */
+  readonly clearHistory: () => Promise<null>
   /** The sample pack that could be downloaded, and how big it is. */
   readonly packSource: () => Promise<PackSourceResponse>
   /** Download the sample pack; settles once it is installed, or has stopped. */

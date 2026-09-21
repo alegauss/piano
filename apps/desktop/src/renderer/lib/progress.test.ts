@@ -1,3 +1,4 @@
+import { KEEP_RECORDS, storedHistory, type PracticeRecord } from '@piano/ipc'
 import type { Score, Section } from '@piano/score-format'
 import { resolveTiming } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
@@ -10,19 +11,21 @@ import {
   createProgress,
   describeSuggestion,
   fingerprintOf,
-  KEEP_RECORDS,
+  PROGRESS_KEY,
   recordOf,
   scoreKey,
   suggestFrom,
+  type Kept,
+  type Legacy,
   type PracticeContext,
-  type PracticeRecord,
   type Store,
 } from './progress'
 
 /**
  * The history, and the one thing it is for: a sentence naming the bars to go
  * back to. Everything else here is about not losing it — to a rename, to a
- * correction, or to a store somebody hand-edited into nonsense.
+ * correction, to a store somebody hand-edited into nonsense, or to the move
+ * out of the browser's storage into the file main keeps.
  */
 
 const timing = resolveTiming(undefined)
@@ -72,14 +75,40 @@ function record(over: Partial<PracticeRecord> = {}): PracticeRecord {
   }
 }
 
-function memory(): Store & { readonly held: () => string | null } {
-  let value: string | null = null
-  return {
-    read: () => value,
-    write: (next) => {
-      value = next
+/** Main, as far as the window can tell: a list, a notice, and the two doors. */
+function memory(start: Partial<Kept> = {}) {
+  let held: readonly PracticeRecord[] = start.records ?? []
+  let erased = 0
+  let saved = 0
+  const store: Store = {
+    load: () =>
+      Promise.resolve({ records: held, notice: start.notice ?? null, fresh: start.fresh ?? false }),
+    save: (records) => {
+      held = records
+      return Promise.resolve()
     },
-    held: () => value,
+    erase: () => {
+      held = []
+      erased += 1
+      return Promise.resolve()
+    },
+    keep: () => {
+      saved += 1
+      return Promise.resolve({ kind: 'saved', name: 'piano-practice-2026-01-01.json' })
+    },
+  }
+  return { store, held: () => held, erased: () => erased, saved: () => saved }
+}
+
+/** The browser storage an older version wrote to. */
+function browser(value: string | null): Legacy & { readonly left: () => string | null } {
+  let held = value
+  return {
+    get: (key) => (key === PROGRESS_KEY ? held : null),
+    remove: () => {
+      held = null
+    },
+    left: () => held,
   }
 }
 
@@ -160,7 +189,7 @@ describe('where to start today', () => {
 })
 
 describe('keeping it between sessions', () => {
-  function setup(store = memory()) {
+  function setup(main = memory(), legacy: Legacy = browser(null)) {
     const time = new FakeTime()
     const transport = new Transport(
       new Listener(time),
@@ -177,11 +206,12 @@ describe('keeping it between sessions', () => {
     grader.use(timing, notes, {}, sections)
     let clock = 1000
     const progress = createProgress(grader, transport, {
-      store,
+      store: main.store,
+      legacy,
       now: () => (clock += 1000),
     })
     progress.use(context)
-    return { time, transport, grader, progress, store }
+    return { time, transport, grader, progress, main, legacy }
   }
 
   it('writes an attempt down as the grader finishes one', () => {
@@ -195,25 +225,72 @@ describe('keeping it between sessions', () => {
     expect(progress.forScore('sonata')[0]?.level).toBe('beginner')
   })
 
-  it('reads back what a previous session left', () => {
-    const store = memory()
-    const first = setup(store)
+  it('reads back what a previous session left', async () => {
+    const main = memory()
+    const first = setup(main)
+    await first.progress.load()
     first.progress.record(attemptAt(false))
     first.progress.close()
 
-    const second = setup(store)
+    const second = setup(main)
+    await second.progress.load()
     expect(second.progress.forScore('sonata')).toHaveLength(1)
   })
 
-  it('starts over rather than refusing to practise when the store is nonsense', () => {
-    const store = memory()
-    store.write('not json at all')
-    const { progress } = setup(store)
-    expect(progress.records).toEqual([])
+  it('keeps an attempt graded while the history was still being read', async () => {
+    const main = memory({ records: [record({ at: 500 })] })
+    const { progress } = setup(main)
+    const reading = progress.load()
+    progress.record(attemptAt(false))
+    await reading
+
+    expect(progress.records).toHaveLength(2)
+    expect(main.held()).toHaveLength(2)
   })
 
-  it('can be read out whole and forgotten, per piece and altogether', () => {
-    const { progress } = setup()
+  it('says what could not be read, until it has been read', async () => {
+    const { progress } = setup(memory({ notice: '2 attempts could not be read.' }))
+    await progress.load()
+    expect(progress.notice).toBe('2 attempts could not be read.')
+    progress.dismiss()
+    expect(progress.notice).toBeNull()
+  })
+
+  it('moves what an older version kept in the browser over, exactly once', async () => {
+    const legacy = browser(JSON.stringify(storedHistory([record(), { ...record(), at: 2000 }])))
+    const main = memory({ fresh: true })
+    const first = setup(main, legacy)
+    await first.progress.load()
+
+    expect(first.progress.records).toHaveLength(2)
+    expect(main.held()).toHaveLength(2)
+    expect(legacy.left()).toBeNull()
+
+    const second = setup(memory({ records: main.held() }), legacy)
+    await second.progress.load()
+    expect(second.progress.records).toHaveLength(2)
+  })
+
+  it('leaves a browser store that is nonsense behind rather than refusing to practise', async () => {
+    const legacy = browser('not json at all')
+    const { progress } = setup(memory({ fresh: true }), legacy)
+    await progress.load()
+    expect(progress.records).toEqual([])
+    expect(legacy.left()).toBeNull()
+  })
+
+  it('says so rather than emptying itself when the history cannot be read', async () => {
+    const main = memory()
+    const { progress } = setup({
+      ...main,
+      store: { ...main.store, load: () => Promise.reject(new Error('main is not answering')) },
+    })
+    await progress.load()
+    expect(progress.notice).toContain('main is not answering')
+  })
+
+  it('can be read out whole, forgotten per piece and erased altogether', async () => {
+    const { progress, main } = setup()
     progress.record(attemptAt(false))
     progress.use({ ...context, score: 'other' })
     progress.record(attemptAt(false))
@@ -221,9 +298,31 @@ describe('keeping it between sessions', () => {
     expect(JSON.parse(progress.exported()).records).toHaveLength(2)
     progress.forget('other')
     expect(progress.records).toHaveLength(1)
-    progress.forget()
+    expect(main.held()).toHaveLength(1)
+
+    await progress.erase()
     expect(progress.records).toEqual([])
+    expect(main.erased()).toBe(1)
     expect(JSON.parse(progress.exported()).records).toEqual([])
+  })
+
+  it('keeps what it has when erasing fails, and says why', async () => {
+    const main = memory()
+    const { progress } = setup({
+      ...main,
+      store: { ...main.store, erase: () => Promise.reject(new Error('the file is in use')) },
+    })
+    progress.record(attemptAt(false))
+    await progress.erase()
+
+    expect(progress.records).toHaveLength(1)
+    expect(progress.notice).toContain('the file is in use')
+  })
+
+  it('hands the whole history over through the door main opens', async () => {
+    const { progress, main } = setup()
+    expect(await progress.keep()).toMatchObject({ kind: 'saved' })
+    expect(main.saved()).toBe(1)
   })
 
   it('keeps a bounded history, since a year-old attempt says nothing about today', () => {

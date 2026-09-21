@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { KEEP_RECORDS, practiceRecordSchema } from './history'
 import { linkResultSchema, type Command } from './link'
 import { CHANNEL_NAMES } from './names'
 import { settingsPatchSchema, settingsSchema } from './settings'
@@ -261,6 +262,57 @@ export const settingsReset = {
 } as const satisfies Channel<'settings:reset', z.ZodType, z.ZodType>
 
 /**
+ * The practice history as main holds it, with how many records could not be
+ * read, a sentence about that for the person, and whether there was a file at
+ * all — the one moment the window imports what an older version kept in the
+ * browser's storage.
+ */
+export const historyRead = {
+  channel: CHANNEL_NAMES.historyRead,
+  request: z.null(),
+  response: z.object({
+    records: z.array(practiceRecordSchema).max(KEEP_RECORDS),
+    /** How many records were unreadable and left out; the notice says it in words. */
+    dropped: z.number().int().nonnegative(),
+    notice: z.string().nullable(),
+    fresh: z.boolean(),
+  }),
+} as const satisfies Channel<'history:read', z.ZodType, z.ZodType>
+
+/**
+ * Keep the history as the window now holds it. Written whole rather than one
+ * record at a time: the window is the one that knows which attempts are still
+ * worth keeping, and a whole-file write is the one that cannot half-apply.
+ */
+export const historyWrite = {
+  channel: CHANNEL_NAMES.historyWrite,
+  request: z.object({ records: z.array(practiceRecordSchema).max(KEEP_RECORDS) }).strict(),
+  response: z.null(),
+} as const satisfies Channel<'history:write', z.ZodType, z.ZodType>
+
+/**
+ * Save the history as a file somebody keeps. Main asks where and writes what
+ * it holds: the records are its file's, so nothing has to cross to ask for a
+ * copy of them.
+ */
+export const historySave = {
+  channel: CHANNEL_NAMES.historySave,
+  request: z.null(),
+  response: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('saved'), name: z.string() }),
+    z.object({ kind: z.literal('cancelled') }),
+    z.object({ kind: z.literal('refused'), message: z.string() }),
+  ]),
+} as const satisfies Channel<'history:save', z.ZodType, z.ZodType>
+
+/** Erase the history, file and all, which is what deleting personal data means. */
+export const historyClear = {
+  channel: CHANNEL_NAMES.historyClear,
+  request: z.null(),
+  response: z.null(),
+} as const satisfies Channel<'history:clear', z.ZodType, z.ZodType>
+
+/**
  * The sample pack that could be downloaded, and how big it is, asked before
  * anything is fetched: a download is honest about its size before it starts.
  */
@@ -354,6 +406,10 @@ export const allChannels = [
   settingsRead,
   settingsWrite,
   settingsReset,
+  historyRead,
+  historyWrite,
+  historySave,
+  historyClear,
   packSource,
   packDownload,
   packCancel,
@@ -376,6 +432,9 @@ export type RecentEntry = z.infer<typeof recentEntrySchema>
 export type LibraryQuery = z.infer<typeof libraryQuerySchema>
 export type LibraryItem = z.infer<typeof libraryItemSchema>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>
+export type HistoryReadResponse = z.infer<typeof historyRead.response>
+export type HistoryWriteRequest = z.infer<typeof historyWrite.request>
+export type HistorySaveResult = z.infer<typeof historySave.response>
 export type PackSourceResponse = z.infer<typeof packSource.response>
 export type PackDownloadResponse = z.infer<typeof packDownload.response>
 export type ExportRequest = z.infer<typeof scoreExport.request>

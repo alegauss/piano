@@ -32,24 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI67 The practice history, kept like the settings
-
-The practice history is written on every attempt and read at every launch, and it is the
-one record in the app about a person rather than a piece. Today it sits in the
-renderer's browser storage as JSON nobody validates: a record from a damaged store is
-cast rather than checked, there is no version to migrate from, and nothing in the app
-hands it over or deletes it. It wants the settings' treatment. Main keeps it in its own
-file in the app's profile, written whole through a temporary file; each record is
-validated on read, and one that fails is dropped and counted rather than taking the rest
-down with it; the file carries a version, and the first launch moves what browser
-storage held into it, as the settings did. Beside the reset in the footer go two plain
-doors: save the history as a file somebody can keep, and delete it after asking. Neither
-crosses a non-goal. "Audio recording or export to WAV or MP3" is about sound, and this
-exports records of attempts as JSON. "User accounts, cloud storage or sync across
-machines" is about leaving the machine, and this file stays in the local profile unless
-its owner carries it somewhere. Done when the history survives a restart from the file,
-a damaged record costs only itself, and both doors work.
-
 ### §PI68 Associations checked on the system that registers them
 
 Building a package proves the configuration parses, not that a system acts on it.
@@ -70,3 +52,25 @@ entry the AppImage carries and read its MimeType line. The natural home is the r
 workflow beside packaging, so an installer that does not register what it claims stops
 the release instead of reaching somebody's machine. The same step can start the
 installed app with a score's path and watch the window open it.
+
+### §PI69 The copy button and the piece it is looking at
+
+The footer now carries the doors on the whole history: save it as a file, delete it
+after asking. The report panel kept an older pair from before those existed. "Copy it
+out" puts every record on the clipboard, and it sits beside "Forget this piece", which
+is about the piece on screen. The two disagree about scope, and the one that disagrees
+is the one whose name promises less: somebody reading how the piece they just played
+went, pressing the button under it, gets every piece they have ever practised, in a
+place they cannot see before they paste it.
+
+Make the panel's button say what its neighbour says. Copy the records for this score, in
+the shape the file already uses — a version and a list — so what is pasted can be read
+back and is not a second format to explain. `exported()` on the progress store is the
+whole history today; what this needs is the score to narrow it by, and the footer's save
+keeps the whole-history door it already opened.
+
+Neither door writes. The file main owns stays the one place records live, so nothing
+here can leave the clipboard and the file disagreeing about what was practised.
+
+Done when the report panel's copy hands over the piece on screen and nothing else, the
+footer's save still hands over everything, and a test says which is which.

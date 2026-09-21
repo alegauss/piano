@@ -2,6 +2,10 @@ import {
   allChannels,
   appInfo,
   formatIssues,
+  historyClear,
+  historyRead,
+  historySave,
+  historyWrite,
   libraryList,
   linkAnswer,
   linkListening,
@@ -22,6 +26,7 @@ import {
   type Channel,
   type ExportRequest,
   type ExportResult,
+  type HistorySaveResult,
   type KeepRequest,
   type KeepResult,
   type LibraryItem,
@@ -35,6 +40,7 @@ import { FORMAT_VERSION } from '@piano/score-format'
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { z } from 'zod'
 
+import type { HistoryStore } from './history-store'
 import type { PackDownloader } from './pack-download'
 import { packDirectory, readPackFile, readPackManifest } from './sample-pack'
 import type { SettingsStore } from './settings-store'
@@ -96,6 +102,9 @@ export function registerIpcHandlers(options: {
   readonly recentScores: () => Promise<RecentEntry[]>
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
   readonly settings: SettingsStore
+  readonly history: HistoryStore
+  /** Save the history main holds as a file, asking where in front of that window. */
+  readonly saveHistory: (window: BrowserWindow | null) => Promise<HistorySaveResult>
   readonly pack: PackDownloader
   /** Save the score a window sent as MIDI, asking where in front of that window. */
   readonly exportScore: (
@@ -147,6 +156,25 @@ export function registerIpcHandlers(options: {
   handle(settingsWrite, (patch) => options.settings.update(patch))
 
   handle(settingsReset, () => options.settings.reset())
+
+  handle(historyRead, async () => {
+    const kept = await options.history.read()
+    return { ...kept, records: [...kept.records] }
+  })
+
+  handle(historyWrite, async ({ records }) => {
+    await options.history.write(records)
+    return null
+  })
+
+  handle(historySave, (_request, event) =>
+    options.saveHistory(BrowserWindow.fromWebContents(event.sender)),
+  )
+
+  handle(historyClear, async () => {
+    await options.history.clear()
+    return null
+  })
 
   handle(packSource, () => options.pack.source())
 
