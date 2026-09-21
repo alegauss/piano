@@ -34,31 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI78 Loading the engraver when somebody asks for it
-
-Measured across PI73 and PI74: the renderer bundle was 595 kB before the sheet view and
-is 1,728 kB after it. There are two causes and both are fixable.
-
-The fonts are the first. The vexflow entry embeds six of them as base64, some 774 kB,
-where the app uses Bravura and Academico: Gonville, Petaluma and Petaluma Script are 391
-kB nothing asks for. Importing vexflow/core with vexflow/bravura takes only what is used
-— and must not bring back Font.HOST_URL, since PI76 settled that the fonts come from the
-bundle and this renderer is sandboxed.
-
-The second is that all of it loads at startup. That is parse and compile on every
-launch, paid by a player who only ever watches the roll, rather than a download: the app
-installs from disk and ships a sample bank of several hundred megabytes.
-
-The seam is already in the right place. SheetMusic.tsx is the only importer of
-sheet-draw.ts, which is the only importer of vexflow, so React.lazy with a Suspense
-fallback around App.tsx's branch between PianoRoll and SheetMusic moves the library out
-of the first chunk. The fallback is a line of text, not a spinner.
-
-Confirm rather than assume: the build prints the chunk sizes, and the claim is that the
-entry chunk drops by about a megabyte. A byte count in a test would be a test about
-esbuild, so do not write one. App.browser.test.tsx presses the button and expects the
-panel at once, so it needs findByLabelText instead.
-
 ### §PI79 Beams, so the beat is visible
 
 Measured on the page as it stands: eight eighth notes in a 4/4 bar draw eight flags and

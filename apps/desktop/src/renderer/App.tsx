@@ -24,7 +24,16 @@ import {
   type Score,
 } from '@piano/score-format'
 import { FileMusic } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
@@ -34,7 +43,6 @@ import { OpenReport, type Report } from './components/OpenReport'
 import { PackDownloadStatus } from './components/PackDownloadStatus'
 import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
-import { SheetMusic } from './components/SheetMusic'
 import { HistoryStatus } from './components/HistoryStatus'
 import { SettingsStatus } from './components/SettingsStatus'
 import { SoundStatus } from './components/SoundStatus'
@@ -88,6 +96,19 @@ function searchLibrary(query: LibraryQuery): Promise<LibraryItem[]> {
 function libraryChanges(listener: () => void): () => void {
   return readBridge()?.onLibraryChanged(listener) ?? (() => {})
 }
+
+/**
+ * The stave, fetched when somebody asks for it.
+ *
+ * It brings the engraver and a music font with it, a megabyte that every
+ * launch would otherwise parse for a player who only ever watches the roll.
+ * This is the one seam where that is cheap to avoid: SheetMusic is the only
+ * importer of the drawing code, which is the only importer of VexFlow, so the
+ * whole of it leaves the first chunk for the cost of a lazy import here.
+ */
+const SheetMusic = lazy(async () => ({
+  default: (await import('./components/SheetMusic')).SheetMusic,
+}))
 
 /**
  * What the window shows before anything is opened. A score like any other,
@@ -844,17 +865,28 @@ export function App() {
             a part is about the piece rather than about how it is drawn.
           */}
           {view === 'sheet' ? (
-            <SheetMusic
-              timing={timing}
-              notes={drawn}
-              musicKey={score.metadata.key}
-              position={() => transport.position()}
-              tempoScale={() => transport.tempoScale}
-              /* Read straight from the grader, as the roll does: it changes on
-                 every note played and the page reads it every frame. */
-              feedback={() => grader.state.feedback}
-              className="min-h-0 flex-1"
-            />
+            /* A line of text rather than a spinner: the wait is one local
+               import, and a spinner for it would be the longest-lived thing
+               on screen. */
+            <Suspense
+              fallback={
+                <p className="min-h-0 flex-1 px-6 py-8 text-sm text-text-muted">
+                  Getting the page ready…
+                </p>
+              }
+            >
+              <SheetMusic
+                timing={timing}
+                notes={drawn}
+                musicKey={score.metadata.key}
+                position={() => transport.position()}
+                tempoScale={() => transport.tempoScale}
+                /* Read straight from the grader, as the roll does: it changes
+                   on every note played and the page reads it every frame. */
+                feedback={() => grader.state.feedback}
+                className="min-h-0 flex-1"
+              />
+            </Suspense>
           ) : (
             <PianoRoll
               timing={timing}

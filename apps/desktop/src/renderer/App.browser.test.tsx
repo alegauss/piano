@@ -82,7 +82,9 @@ describe('the app', () => {
     expect(parts().sheet).toBeNull()
 
     screen.getByLabelText('Show the sheet music').click()
-    await new Promise((resolve) => requestAnimationFrame(resolve))
+    // Awaited rather than polled for a frame: the stave is a lazy import, so
+    // the panel arrives when the chunk does.
+    await screen.findByLabelText('Sheet music')
 
     const reading = parts()
     expect(reading.sheet).not.toBeNull()
@@ -100,8 +102,7 @@ describe('the app', () => {
   it('takes the reading from the settings rather than starting fresh', async () => {
     render(<App />)
     screen.getByLabelText('Show the sheet music').click()
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    expect(parts().sheet).not.toBeNull()
+    await screen.findByLabelText('Sheet music')
 
     // Mounted again, the window reads the setting instead of its own initial
     // state, which is the half of "reopens as you left it" that is here. That
@@ -109,8 +110,7 @@ describe('the app', () => {
     // page has no bridge to write one.
     cleanup()
     render(<App />)
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    expect(parts().sheet).not.toBeNull()
+    await screen.findByLabelText('Sheet music')
     expect(parts().roll).toBeNull()
   })
 })

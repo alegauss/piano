@@ -1,4 +1,13 @@
-import { Accidental, Dot, Formatter, Renderer, Stave, StaveNote, Voice, VoiceMode } from 'vexflow'
+import {
+  Accidental,
+  Dot,
+  Formatter,
+  Renderer,
+  Stave,
+  StaveNote,
+  Voice,
+  VoiceMode,
+} from 'vexflow/bravura'
 
 import { STAVE_HEIGHT, type SheetPlan, type SheetStave } from './sheet'
 
@@ -14,6 +23,11 @@ import { STAVE_HEIGHT, type SheetPlan, type SheetStave } from './sheet'
  * SVG rather than canvas, because a stave is text and lines at a fixed size
  * rather than a field redrawn every frame. It also leaves the page inspectable
  * from a test, which is how the staves and clefs are counted.
+ *
+ * Imported from vexflow/bravura and not from vexflow: both embed their fonts as
+ * base64 rather than fetching them, which this sandboxed renderer needs, but
+ * the plain entry embeds six of them and this app draws with two. The other
+ * four were 391 kB of a bundle nobody asked for.
  */
 
 /** Room inside a bar, so the last note is not drawn on the barline. */
