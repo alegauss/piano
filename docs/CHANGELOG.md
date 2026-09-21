@@ -62,6 +62,7 @@
   checked **Frozen per-version fixtures are never edited** A test asserts a checksum over each historical fixture, so a migration can never be made to pass by quietly changing the file it exists to migrate.
 - ✅ **PI17** **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — importMidi reads a MIDI file into a valid score and exportMidi writes one; both list what they dropped, and import marks what it guessed (design recorded in `packages/score-format/src/midi.ts`).
   checked **Export reports what it dropped** Exporting a score carrying fingering, articulation and arrangements lists each thing MIDI cannot represent, instead of writing a file that silently lost them.
+- ✅ **PI88** **A MusicXML file cannot be opened, so the stave guesses spellings, hands and fingering the file already states** — MusicXML opens as a score, keeping the spellings, hands, fingering and articulation the file wrote down, as .musicxml, .xml or a zipped .mxl.
 
 ## Block C — Audio engine and transport
 

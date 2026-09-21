@@ -188,7 +188,10 @@ async function chooseScoreFile(): Promise<string | null> {
     title: 'Open a score',
     properties: ['openFile'],
     filters: [
-      { name: 'Scores and MIDI files', extensions: ['piano', 'json', 'mid', 'midi'] },
+      {
+        name: 'Scores, MIDI and MusicXML',
+        extensions: ['piano', 'json', 'mid', 'midi', 'musicxml', 'mxl', 'xml'],
+      },
       { name: 'All files', extensions: ['*'] },
     ],
   }

@@ -23,6 +23,7 @@ import {
   type PedalEvent,
   type PedalKind,
 } from './expression'
+import { keyNameOf, keySignatureOf } from './metadata'
 import {
   decodeText,
   encodeText,
@@ -94,10 +95,6 @@ const PEDAL_BY_CONTROLLER = new Map<number, PedalKind>(
     pedal,
   ]),
 )
-
-/** A key signature's sharps or flats, from seven flats to seven sharps. */
-const MAJOR_KEYS: readonly string[] = 'Cb Gb Db Ab Eb Bb F C G D A E B F# C#'.split(' ')
-const MINOR_KEYS: readonly string[] = 'Ab Eb Bb F C G D A E B F# C# G# D# A#'.split(' ')
 
 /** Channels a part may use, skipping the drum channel so no part comes back as percussion. */
 const MELODIC_CHANNELS = Array.from({ length: 16 }, (_, channel) => channel).filter(
@@ -180,8 +177,7 @@ function keyName(data: Uint8Array): string | null {
   }
   // A signed byte: 0xFF is one flat.
   const sharps = rawSharps > 127 ? rawSharps - 256 : rawSharps
-  const name = (minor === 1 ? MINOR_KEYS : MAJOR_KEYS)[sharps + 7]
-  return name === undefined ? null : `${name} ${minor === 1 ? 'minor' : 'major'}`
+  return keyNameOf(sharps, minor === 1)
 }
 
 function hearTrack(track: MidiTrack, index: number, heard: Heard): void {
@@ -762,18 +758,11 @@ function meta(tick: number, type: number, data: Uint8Array | readonly number[]):
 
 /** A metadata key such as "D minor" or "Bb", as a key signature's two bytes. */
 function keySignatureBytes(key: string): [number, number] | null {
-  const match = /^\s*([A-G])(#|b)?\s*(major|minor|maj|min|m)?\s*$/i.exec(key)
-  if (match === null) {
+  const signature = keySignatureOf(key)
+  if (signature === null) {
     return null
   }
-  const [, letter = '', accidental = '', mode = ''] = match
-  const minor = mode.toLowerCase().startsWith('min') || mode === 'm'
-  const tonic = `${letter.toUpperCase()}${accidental}`
-  const names: readonly string[] = minor ? MINOR_KEYS : MAJOR_KEYS
-  const sharps = names.indexOf(tonic) - 7
-  if (sharps < -7) {
-    return null
-  }
+  const { sharps, minor } = signature
   return [sharps < 0 ? sharps + 256 : sharps, minor ? 1 : 0]
 }
 

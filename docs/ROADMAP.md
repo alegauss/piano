@@ -6,6 +6,8 @@
 
 ## Block B — Score JSON format
 
+- 📋 **PI90** (deps: PI88 ✅) **A da capo or dal segno is reported and not followed, so an imported piece ends where the writing stops** — Barline repeats and endings are played out, and a jump needs the segno, coda and fine marks read as positions rather than counted as leftovers. → §PI90
+
 ## Block C — Audio engine and transport
 
 ## Block E — Practice mode and difficulty levels
@@ -13,6 +15,8 @@
 ## Block F — Claude Code First: MCP and plugin
 
 ## Block G — Score library and distribution
+
+- 📋 **PI89** (deps: —) **A .musicxml or .mxl double-clicked in the file manager opens something else, the installer claiming neither** — The app reads both now, and the association table still names only .piano and MIDI, so the system hands them to whatever else is registered. → §PI89
 
 ## Block H — Sheet music view
 

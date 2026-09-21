@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { inflateRawSync } from 'node:zlib'
 
 import {
   LIBRARY_DIRECTORY,
@@ -12,7 +13,15 @@ import {
   type OpenResult,
 } from '@piano/ipc'
 import type { LibraryEntry } from '@piano/library'
-import { importMidi, parseScore, type Score } from '@piano/score-format'
+import {
+  importMidi,
+  importMusicXml,
+  musicXmlText,
+  MusicXmlError,
+  parseScore,
+  type InflateRaw,
+  type Score,
+} from '@piano/score-format'
 
 /**
  * Reading a score off the disk, which every way of opening one comes through.
@@ -36,13 +45,30 @@ const MAX_PROBLEMS = 50
  * What each extension is read as. Anything else is refused before it is read.
  * A score is JSON whichever it is called: `.piano` is the name the system
  * hands to the app, and `.json` is what a score written anywhere else is.
+ * `.xml` is here because that is what half the sites handing out MusicXML call
+ * it; one that turns out to be some other XML is refused by name.
  */
-const KINDS: Readonly<Record<string, 'json' | 'midi'>> = {
+const KINDS: Readonly<Record<string, 'json' | 'midi' | 'musicxml'>> = {
   '.piano': 'json',
   '.json': 'json',
   '.mid': 'midi',
   '.midi': 'midi',
+  '.musicxml': 'musicxml',
+  '.mxl': 'musicxml',
+  '.xml': 'musicxml',
 }
+
+/**
+ * Unpacking a .mxl, which is a zip.
+ *
+ * The format package holds the container layout and refuses to hold DEFLATE:
+ * it runs in the renderer too, where there is no zlib, and a hand-written
+ * inflate that is subtly wrong corrupts a score rather than refusing it. So
+ * the one process that reads files off disk supplies the one the platform
+ * already ships.
+ */
+const inflateRaw: InflateRaw = (deflated, expanded) =>
+  inflateRawSync(deflated, { maxOutputLength: Math.max(expanded, MAX_SCORE_BYTES) })
 
 /** Whether a path names a score file, as opposed to a MIDI file, which has nowhere to keep more. */
 export function isScoreFile(path: string): boolean {
@@ -70,12 +96,43 @@ function titleOf(name: string): string {
     .trim()
 }
 
+/**
+ * An import as the two of them answer alike: the score, or the sentence saying
+ * why not. Unwrapping a .mxl can fail before the import starts, and a failure
+ * there reads the same as one inside it.
+ */
+type Imported =
+  | {
+      readonly ok: true
+      readonly score: Score
+      readonly inferred: readonly string[]
+      readonly dropped: readonly string[]
+    }
+  | { readonly ok: false; readonly message: string }
+
+function readImport(kind: 'midi' | 'musicxml', bytes: Uint8Array, name: string): Imported {
+  if (kind === 'midi') {
+    return importMidi(bytes, { title: titleOf(name) })
+  }
+  try {
+    return importMusicXml(musicXmlText(bytes, inflateRaw), { title: titleOf(name) })
+  } catch (error: unknown) {
+    if (error instanceof MusicXmlError) {
+      return { ok: false, message: error.message }
+    }
+    return { ok: false, message: 'it could not be unpacked' }
+  }
+}
+
 /** Read one file as a score, validating it the one way every route does. */
 export async function openScoreFile(path: string): Promise<Opened | Refused> {
   const name = basename(path)
   const kind = KINDS[extname(path).toLowerCase()]
   if (kind === undefined) {
-    return refused(name, `${name} is not a score: open a .piano or .json score, or a .mid file.`)
+    return refused(
+      name,
+      `${name} is not a score: open a .piano or .json score, a .mid file, or MusicXML as .musicxml, .mxl or .xml.`,
+    )
   }
 
   let size: number
@@ -103,10 +160,11 @@ export async function openScoreFile(path: string): Promise<Opened | Refused> {
     return refused(name, `${name} could not be read.`)
   }
 
-  if (kind === 'midi') {
-    const imported = importMidi(new Uint8Array(bytes), { title: titleOf(name) })
+  if (kind === 'midi' || kind === 'musicxml') {
+    const imported = readImport(kind, new Uint8Array(bytes), name)
     if (!imported.ok) {
-      return refused(name, `${name} is not a MIDI file this app can read: ${imported.message}`)
+      const what = kind === 'midi' ? 'a MIDI file' : 'MusicXML'
+      return refused(name, `${name} is not ${what} this app can read: ${imported.message}`)
     }
     return {
       kind: 'opened',

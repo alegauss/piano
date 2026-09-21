@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { deflateRawSync } from 'node:zlib'
 
 import { exportMidi, notesOf, type Score } from '@piano/score-format'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -40,6 +41,91 @@ async function file(name: string, contents: string | Uint8Array): Promise<string
   const path = join(directory, name)
   await writeFile(path, contents)
   return path
+}
+
+/** Three notes with the spelling and the fingering a MIDI file could not have carried. */
+const MUSICXML = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <work><work-title>Three notes</work-title></work>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions><clef><sign>G</sign></clef></attributes>
+    ${[
+      ['C', 0, 1],
+      ['E', -1, 2],
+      ['G', 0, 5],
+    ]
+      .map(
+        ([step, alter, finger]) =>
+          `<note><pitch><step>${String(step)}</step><alter>${String(alter)}</alter><octave>4</octave></pitch><duration>1</duration><notations><technical><fingering>${String(finger)}</fingering></technical></notations></note>`,
+      )
+      .join('')}
+  </measure></part>
+</score-partwise>`
+
+/** The same document as a .mxl: a zip holding a container and the score, deflated. */
+function compressed(xml: string): Uint8Array {
+  const container = Buffer.from(
+    '<container><rootfiles><rootfile full-path="score.xml"/></rootfiles></container>',
+  )
+  const entries = [
+    { name: 'META-INF/container.xml', raw: container },
+    { name: 'score.xml', raw: Buffer.from(xml) },
+  ].map((entry) => ({ ...entry, packed: deflateRawSync(entry.raw) }))
+
+  const out: number[] = []
+  const directoryBytes: number[] = []
+  const push = (into: number[], value: number, width: number): void => {
+    for (let index = 0; index < width; index += 1) {
+      into.push((value >>> (index * 8)) & 0xff)
+    }
+  }
+
+  for (const entry of entries) {
+    const name = [...Buffer.from(entry.name)]
+    const offset = out.length
+    push(out, 0x04034b50, 4)
+    push(out, 20, 2)
+    push(out, 0, 2)
+    push(out, 8, 2)
+    push(out, 0, 4)
+    push(out, 0, 4)
+    push(out, entry.packed.length, 4)
+    push(out, entry.raw.length, 4)
+    push(out, name.length, 2)
+    push(out, 0, 2)
+    out.push(...name, ...entry.packed)
+
+    push(directoryBytes, 0x02014b50, 4)
+    push(directoryBytes, 20, 2)
+    push(directoryBytes, 20, 2)
+    push(directoryBytes, 0, 2)
+    push(directoryBytes, 8, 2)
+    push(directoryBytes, 0, 4)
+    push(directoryBytes, 0, 4)
+    push(directoryBytes, entry.packed.length, 4)
+    push(directoryBytes, entry.raw.length, 4)
+    push(directoryBytes, name.length, 2)
+    push(directoryBytes, 0, 2)
+    push(directoryBytes, 0, 2)
+    push(directoryBytes, 0, 2)
+    push(directoryBytes, 0, 2)
+    push(directoryBytes, 0, 4)
+    push(directoryBytes, offset, 4)
+    directoryBytes.push(...name)
+  }
+
+  const directoryAt = out.length
+  out.push(...directoryBytes)
+  push(out, 0x06054b50, 4)
+  push(out, 0, 2)
+  push(out, 0, 2)
+  push(out, entries.length, 2)
+  push(out, entries.length, 2)
+  push(out, directoryBytes.length, 4)
+  push(out, directoryAt, 4)
+  push(out, 0, 2)
+  return Uint8Array.from(out)
 }
 
 describe('opening a score file', () => {
@@ -100,6 +186,41 @@ describe('opening a score file', () => {
     expect(isOpenable('C:/Windows/win.ini')).toBe(false)
     expect(isOpenable('/home/ada/piece.MID')).toBe(true)
     expect(isOpenable('/home/ada/piece.Piano')).toBe(true)
+    expect(isOpenable('/home/ada/piece.MusicXML')).toBe(true)
+  })
+
+  it('imports MusicXML, keeping what the file wrote down about it', async () => {
+    const opened = await openScoreFile(await file('three_notes.musicxml', MUSICXML))
+    expect(opened.kind).toBe('opened')
+    if (opened.kind === 'opened') {
+      expect(opened.score.metadata.title).toBe('Three notes')
+      expect(notesOf(opened.score).map((note) => note.spelling)).toEqual(['C4', 'Eb4', 'G4'])
+      expect(notesOf(opened.score).map((note) => note.finger)).toEqual([1, 2, 5])
+    }
+  })
+
+  it('unpacks a .mxl, which is the shape most sites hand MusicXML out in', async () => {
+    const opened = await openScoreFile(await file('three_notes.mxl', compressed(MUSICXML)))
+    expect(opened.kind).toBe('opened')
+    if (opened.kind === 'opened') {
+      expect(notesOf(opened.score).map((note) => note.pitch)).toEqual([60, 63, 67])
+    }
+  })
+
+  it('refuses an .xml that turns out to be some other XML, saying which', async () => {
+    const opened = await openScoreFile(await file('feed.xml', '<rss><channel/></rss>'))
+    expect(opened.kind).toBe('refused')
+    if (opened.kind === 'refused') {
+      expect(opened.message).toContain('not MusicXML')
+    }
+  })
+
+  it('refuses a .mxl that is not an archive at all', async () => {
+    const opened = await openScoreFile(await file('broken.mxl', 'PK\u0003\u0004 and then nothing'))
+    expect(opened.kind).toBe('refused')
+    if (opened.kind === 'refused') {
+      expect(opened.message).toContain('not MusicXML')
+    }
   })
 
   it('reads a .piano file as the score it is', async () => {

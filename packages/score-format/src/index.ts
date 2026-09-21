@@ -178,6 +178,15 @@ export {
 } from './midi'
 
 export {
+  importMusicXml,
+  MUSICXML_IMPORT_EXTENSION,
+  type MusicXmlImport,
+  type MusicXmlImportOptions,
+} from './musicxml'
+
+export { isCompressedMusicXml, musicXmlText, MusicXmlError, type InflateRaw } from './musicxml-file'
+
+export {
   barAtTick,
   barFigures,
   barRangeToTicks,

@@ -13,6 +13,33 @@ import type { Level } from './arrangement'
 /** Licences a bundled score may carry. Anything else needs a person to decide. */
 export const PUBLIC_DOMAIN_LICENCES = ['public-domain', 'CC0', 'CC-BY', 'CC-BY-SA'] as const
 
+/** A key signature's tonic, from seven flats to seven sharps. */
+const MAJOR_KEYS: readonly string[] = 'Cb Gb Db Ab Eb Bb F C G D A E B F# C#'.split(' ')
+const MINOR_KEYS: readonly string[] = 'Ab Eb Bb F C G D A E B F# C# G# D# A#'.split(' ')
+
+/**
+ * The `key` a signature means, such as "Eb major", or null for a count of
+ * sharps no signature has. Both importers need it and the field is metadata's,
+ * so the table lives here rather than once per format that carries one.
+ */
+export function keyNameOf(sharps: number, minor: boolean): string | null {
+  const name = (minor ? MINOR_KEYS : MAJOR_KEYS)[sharps + 7]
+  return name === undefined ? null : `${name} ${minor ? 'minor' : 'major'}`
+}
+
+/** The other direction: what a written key means as sharps, or null for prose. */
+export function keySignatureOf(key: string): { sharps: number; minor: boolean } | null {
+  const match = /^\s*([A-G])(#|b)?\s*(major|minor|maj|min|m)?\s*$/i.exec(key)
+  if (match === null) {
+    return null
+  }
+  const [, letter = '', accidental = '', mode = ''] = match
+  const minor = mode.toLowerCase().startsWith('min') || mode === 'm'
+  const sharps =
+    (minor ? MINOR_KEYS : MAJOR_KEYS).indexOf(`${letter.toUpperCase()}${accidental}`) - 7
+  return sharps < -7 ? null : { sharps, minor }
+}
+
 export type Licence = (typeof PUBLIC_DOMAIN_LICENCES)[number] | (string & {})
 
 export type Provenance = {
