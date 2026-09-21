@@ -8,7 +8,6 @@
 
 ## Block C — Audio engine and transport
 
-- 📋 **PI24** (deps: PI19 ✅) **Practising without a beat reference is guesswork, and playback starts with no warning** — A metronome driven by the same clock plus a count-in bar give the learner somewhere to put the first note. → §PI24
 - 📋 **PI59** (deps: PI19 ✅, PI23 ✅) **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — The app is driven from a terminal, so it plays behind another window more often than not, and a throttled wake-up misses the look-ahead. → §PI59
 - 📋 **PI61** (deps: PI21 ✅, PI22 ✅) **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — A key moves from the synthesiser to its recording mid-phrase as registers arrive, and nothing has measured the two voices against each other. → §PI61
 
@@ -55,15 +54,6 @@
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI24
-
-- **The metronome accents the downbeat in any meter** A fixture in seven eight places
-  the accent correctly, read from the time signature map rather than assuming four beats
-  to a bar.
-- **The count-in is never scored** Grading starts at the first written note, so an
-  attempt played correctly after a count-in reports no late first note and no phantom
-  extra note.
 
 ## Done when — PI25
 

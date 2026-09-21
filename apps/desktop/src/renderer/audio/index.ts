@@ -1,9 +1,11 @@
+import { WebAudioClicker, type Clicker } from './clicker'
 import type { AudioTime, PianoEngine } from './engine'
 import { EngineSwitch } from './engine-switch'
 import { PackBank, type PackSource } from './pack-bank'
 import { SampledEngine } from './sampled-engine'
 import { SynthEngine } from './synth-engine'
 
+export type { Clicker } from './clicker'
 export type { AudioTime, EngineKind, PianoEngine } from './engine'
 export { urlPackSource, type PackProgress, type PackSource } from './pack-bank'
 export type { PackBank } from './pack-bank'
@@ -14,6 +16,8 @@ export { Transport, type TransportStatus } from './transport'
 export type Piano = {
   /** The engine to drive. It may change underneath; nothing above this seam needs to know. */
   readonly engine: PianoEngine
+  /** The metronome's voice, on the same clock and its own gain, for a transport to click with. */
+  readonly clicker: Clicker
   /** The audio clock, which is the only clock a note may be scheduled against. */
   now(): AudioTime
   /** Start the clock where the platform holds audio until a gesture. */
@@ -36,6 +40,7 @@ export function pianoOn(
   const engine = new EngineSwitch(new SynthEngine(context))
   return {
     engine,
+    clicker: new WebAudioClicker(context),
     now: () => context.currentTime,
     resume,
     usePack: async (source, options) => {

@@ -98,3 +98,17 @@ export function performance(
 ): Performance {
   return { timing: resolveTiming(timing), notes, ...extra }
 }
+
+/** A metronome voice that writes down every click, and every time it was silenced. */
+export class ClickRecorder {
+  readonly clicks: [number, boolean][] = []
+  stopped = 0
+
+  click(at: AudioTime, accent: boolean): void {
+    this.clicks.push([Math.round(at * 1e6) / 1e6, accent])
+  }
+
+  stopAll(): void {
+    this.stopped += 1
+  }
+}

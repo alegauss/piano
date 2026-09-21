@@ -10,6 +10,8 @@ import {
   type ResolvedTiming,
 } from '@piano/score-format'
 
+import { beatsBetween } from './beats'
+import type { Clicker } from './clicker'
 import type { AudioTime, PianoEngine } from './engine'
 
 /**
@@ -77,17 +79,29 @@ export type TimelineEvent =
       readonly pitch: number
       readonly velocity: number
     }
+  | { readonly tick: number; readonly kind: 'click'; readonly accent: boolean }
 
 /** Within one tick: releases, then pedals, then strikes, so a repeated key sounds twice. */
-const ORDER: Readonly<Record<TimelineEvent['kind'], number>> = { off: 0, pedal: 1, on: 2 }
+const ORDER: Readonly<Record<TimelineEvent['kind'], number>> = {
+  off: 0,
+  click: 1,
+  pedal: 2,
+  on: 3,
+}
 
 /**
  * Every event a performance holds, in the order it happens.
  *
  * Notes are taken as they sound, with dynamics and articulation applied by
- * soundingNote, which is the one place those rules live.
+ * soundingNote, which is the one place those rules live. With `beats`, the
+ * metronome's clicks too, from the time signature map up to the last note,
+ * so a loop, a seek and a tempo change carry them exactly as they carry the
+ * notes.
  */
-export function timelineOf(performance: Performance): TimelineEvent[] {
+export function timelineOf(
+  performance: Performance,
+  options: { readonly beats?: boolean } = {},
+): TimelineEvent[] {
   const events: TimelineEvent[] = []
   for (const note of performance.notes) {
     const sounding = soundingNote(note, performance.expression, note.articulation)
@@ -98,6 +112,12 @@ export function timelineOf(performance: Performance): TimelineEvent[] {
   }
   for (const event of performance.expression?.pedals ?? []) {
     events.push({ tick: event.tick, kind: 'pedal', pedal: event.pedal, value: event.value })
+  }
+  if (options.beats === true && events.length > 0) {
+    const last = Math.max(...events.map((event) => event.tick))
+    for (const beat of beatsBetween(performance.timing, 0, last)) {
+      events.push({ tick: beat.tick, kind: 'click', accent: beat.accent })
+    }
   }
   return events.sort((a, b) => a.tick - b.tick || ORDER[a.kind] - ORDER[b.kind])
 }
@@ -143,6 +163,8 @@ export class Scheduler {
   private started = false
   private ended = false
   private cancel: (() => void) | null = null
+  /** Where the clicks go while the metronome is on. */
+  private clicker: Clicker | null = null
 
   constructor(
     private readonly engine: PianoEngine,
@@ -156,7 +178,7 @@ export class Scheduler {
   load(performance: Performance): void {
     this.stop()
     this.timing = performance.timing
-    this.events = timelineOf(performance)
+    this.events = timelineOf(performance, { beats: true })
     this.pedals = performance.expression?.pedals ?? []
   }
 
@@ -177,6 +199,12 @@ export class Scheduler {
 
   get loop(): LoopRange | null {
     return this.loopRange
+  }
+
+  /** Click the beats through a clicker, or stop clicking with null. Takes effect from the next wake. */
+  setMetronome(clicker: Clicker | null): void {
+    this.clicker?.stopAll()
+    this.clicker = clicker
   }
 
   /**
@@ -236,6 +264,7 @@ export class Scheduler {
       ]
     }
     this.engine.stopAll()
+    this.clicker?.stopAll()
     return tick
   }
 
@@ -394,6 +423,9 @@ export class Scheduler {
       }
       case 'pedal':
         this.engine.pedal(event.pedal, event.value, at)
+        return
+      case 'click':
+        this.clicker?.click(at, event.accent)
         return
     }
   }

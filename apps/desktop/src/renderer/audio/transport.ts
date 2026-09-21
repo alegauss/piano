@@ -1,5 +1,12 @@
-import type { PedalKind, Score } from '@piano/score-format'
+import {
+  ticksToSeconds,
+  type PedalKind,
+  type ResolvedTiming,
+  type Score,
+} from '@piano/score-format'
 
+import { beatTicks, meterAt } from './beats'
+import type { Clicker } from './clicker'
 import type { AudioTime, EngineKind, PianoEngine } from './engine'
 import { Scheduler, type Clock, type LoopRange, type Performance, type Ticker } from './scheduler'
 
@@ -86,12 +93,19 @@ export class Transport {
   private current: TransportStatus = 'stopped'
   /** Where playback resumes from while it is not playing. */
   private resumeTick = 0
+  private timing: ResolvedTiming | null = null
+  private metronomeOn = false
+  private countInOn = false
+  /** When the count-in before this pass ends and the piece begins; null with no count-in. */
+  private countInUntil: AudioTime | null = null
   private readonly listeners = new Set<() => void>()
 
   constructor(
     engine: PianoEngine,
     private readonly clock: Clock,
     ticker?: Ticker,
+    /** The metronome's voice; without one there is no metronome and no count-in. */
+    private readonly clicker: Clicker | null = null,
   ) {
     this.transposer = new Transposer(engine)
     this.scheduler = new Scheduler(this.transposer, clock, ticker, () => {
@@ -115,6 +129,23 @@ export class Transport {
     return this.scheduler.loop
   }
 
+  get metronome(): boolean {
+    return this.metronomeOn
+  }
+
+  get countIn(): boolean {
+    return this.countInOn
+  }
+
+  /**
+   * Whether an audio time falls in the count-in before the piece: clicks the
+   * player hears and plays nothing to. Whatever grades an attempt asks this
+   * first, so the bar before the music is never scored.
+   */
+  isCountIn(time: AudioTime): boolean {
+    return this.countInUntil !== null && time < this.countInUntil
+  }
+
   /** The tick sounding now: read from the audio clock while playing, held while not. */
   position(): number {
     return this.current === 'playing' ? this.scheduler.tickAt(this.clock.now()) : this.resumeTick
@@ -128,16 +159,38 @@ export class Transport {
   /** Replace the piece. Stops, and puts the position back to the start. */
   load(performance: Performance): void {
     this.scheduler.load(performance)
+    this.timing = performance.timing
+    this.countInUntil = null
     this.current = 'stopped'
     this.resumeTick = 0
     this.changed()
   }
 
+  /**
+   * Play from where the transport stands, after a bar of count-in when that
+   * is on: the meter's beats at the practice tempo, the first one accented,
+   * so a player arrives on the first note instead of chasing it.
+   */
   play(): void {
     if (this.current === 'playing') {
       return
     }
-    this.scheduler.start(this.resumeTick, this.clock.now() + START_LEAD_SECONDS)
+    let at = this.clock.now() + START_LEAD_SECONDS
+    this.countInUntil = null
+    const timing = this.timing
+    if (this.countInOn && this.clicker !== null && timing !== null) {
+      const meter = meterAt(timing, this.resumeTick)
+      const beat = beatTicks(meter, timing.ticksPerQuarter)
+      const beatSeconds =
+        (ticksToSeconds(timing, this.resumeTick + beat) - ticksToSeconds(timing, this.resumeTick)) /
+        this.scheduler.tempoScale
+      for (let index = 0; index < meter.numerator; index += 1) {
+        this.clicker.click(at + index * beatSeconds, index === 0)
+      }
+      at += meter.numerator * beatSeconds
+      this.countInUntil = at
+    }
+    this.scheduler.start(this.resumeTick, at)
     this.current = 'playing'
     this.changed()
   }
@@ -147,6 +200,7 @@ export class Transport {
       return
     }
     this.resumeTick = this.scheduler.stop()
+    this.silenceCountIn()
     this.current = 'paused'
     this.changed()
   }
@@ -154,6 +208,7 @@ export class Transport {
   /** Stop and go back to the start: of the loop when there is one, of the piece otherwise. */
   stop(): void {
     this.scheduler.stop()
+    this.silenceCountIn()
     this.current = 'stopped'
     this.resumeTick = this.scheduler.loop?.start ?? 0
     this.changed()
@@ -163,7 +218,9 @@ export class Transport {
   seek(tick: number): void {
     const target = Math.max(0, tick)
     if (this.current === 'playing') {
+      // A seek while playing carries straight on: the count-in is for starting.
       this.scheduler.stop()
+      this.silenceCountIn()
       this.scheduler.start(target, this.clock.now() + START_LEAD_SECONDS)
     } else {
       this.resumeTick = target
@@ -192,6 +249,19 @@ export class Transport {
     this.changed()
   }
 
+  /** Click the beats while playing. Off by default: it helps practice and spoils listening. */
+  setMetronome(on: boolean): void {
+    this.metronomeOn = on && this.clicker !== null
+    this.scheduler.setMetronome(this.metronomeOn ? this.clicker : null)
+    this.changed()
+  }
+
+  /** A bar of clicks before playback starts. Off by default, for the same reason. */
+  setCountIn(on: boolean): void {
+    this.countInOn = on && this.clicker !== null
+    this.changed()
+  }
+
   /** For a view, told whenever the status, loop, tempo or transposition changes. */
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
@@ -209,6 +279,14 @@ export class Transport {
     this.current = 'stopped'
     this.resumeTick = 0
     this.changed()
+  }
+
+  /** Cancel a count-in's clicks not yet sounded. */
+  private silenceCountIn(): void {
+    if (this.countInUntil !== null && this.clock.now() < this.countInUntil) {
+      this.clicker?.stopAll()
+    }
+    this.countInUntil = null
   }
 
   private changed(): void {

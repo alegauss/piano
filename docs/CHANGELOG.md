@@ -77,6 +77,9 @@
 - ✅ **PI23** **There is no transport: nothing plays, pauses, seeks, loops or changes tempo** — A transport plays, pauses, seeks, loops, rescales tempo and transposes on the audio clock; each note sounds at the reported tick (design recorded in `apps/desktop/src/renderer/audio/transport.ts`).
   checked **Reported position never disagrees with what is sounding** After a minute of playback the position the interface shows still matches the audio clock, with no drift accumulated from a second independent counter.
   checked **Seek, loop, tempo and transpose compose cleanly** Looping a named section at 60 percent tempo transposed up two semitones behaves exactly as each operation separately implies, asserted end to end.
+- ✅ **PI24** **Practising without a beat reference is guesswork, and playback starts with no warning** — The transport clicks every beat of the meter with the downbeat accented, and counts in a bar at practice tempo it marks unscored (design recorded in `apps/desktop/src/renderer/audio/beats.ts`).
+  checked **The metronome accents the downbeat in any meter** A fixture in seven eight places the accent correctly, read from the time signature map rather than assuming four beats to a bar.
+  checked **The count-in is never scored** Grading starts at the first written note, so an attempt played correctly after a count-in reports no late first note and no phantom extra note.
 
 ## Block D — Piano roll and on-screen keyboard
 

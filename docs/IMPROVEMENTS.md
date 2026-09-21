@@ -24,19 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI24 A beat to play against, and a bar before it starts
-
-Two small features the practice mode is unusable without. The metronome is scheduled by
-the same look-ahead scheduler as the notes, reading the time signature map so the
-downbeat is accented and an odd meter is counted correctly, and it sits on its own gain
-so it can stay audible against a loud passage. The count-in gives a full bar of clicks
-before playback starts, at the practice tempo rather than the written one, which is what
-lets a player arrive on the first note instead of chasing it. Both are off by default
-when listening and on by default when practising, because the same feature is helpful in
-one mode and irritating in the other. The count-in also matters to the grader: without
-it the first note of every attempt is scored late through no fault of the player, and a
-scoring system that punishes a fair attempt is one people quickly stop trusting.
-
 ### §PI59 Playing behind another window
 
 The scheduler wakes on setInterval every 25 milliseconds and looks 100 ahead, so any
@@ -266,7 +253,9 @@ moving window and is allowed to skip rather than shifting the whole sequence by 
 report is per bar and per named section instead of a single percentage, because a number
 tells nobody what to do next while bars 17 to 20 failed four attempts out of five does.
 Velocity is graded only where the input can express it, and dynamic accuracy is reported
-apart from note accuracy, since they are different skills.
+apart from note accuracy, since they are different skills. Nothing played during the
+count-in is matched or scored: the transport's isCountIn(time) says where the piece
+begins.
 
 ### §PI38 Feedback where the eye already is
 

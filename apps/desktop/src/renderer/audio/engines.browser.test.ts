@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { WebAudioClicker } from './clicker'
 import type { PianoEngine } from './engine'
 import { EngineSwitch } from './engine-switch'
 import { createPiano } from './index'
@@ -197,5 +198,27 @@ describe('createPiano', () => {
     const piano = createPiano()
     expect(piano.engine.kind).toBe('synth')
     expect(piano.now()).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('the metronome click', () => {
+  it('sounds each click, the downbeat higher and louder than the rest', async () => {
+    const context = new OfflineAudioContext(1, Math.round(1 * RATE), RATE)
+    const clicker = new WebAudioClicker(context)
+    clicker.click(0.1, true)
+    clicker.click(0.5, false)
+    const data = (await context.startRendering()).getChannelData(0)
+    expect(loudness(data, 0.1, 0.13)).toBeGreaterThan(loudness(data, 0.5, 0.53) * 1.3)
+    expect(frequency(data, 0.1, 0.14)).toBeGreaterThan(frequency(data, 0.5, 0.54))
+    expect(loudness(data, 0.3, 0.45)).toBeLessThan(SILENT)
+  })
+
+  it('silences the clicks not yet sounded', async () => {
+    const context = new OfflineAudioContext(1, Math.round(1 * RATE), RATE)
+    const clicker = new WebAudioClicker(context)
+    clicker.click(0.5, true)
+    clicker.stopAll()
+    const data = (await context.startRendering()).getChannelData(0)
+    expect(loudness(data, 0, 1)).toBeLessThan(SILENT)
   })
 })
