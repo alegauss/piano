@@ -80,6 +80,7 @@
 - ✅ **PI24** **Practising without a beat reference is guesswork, and playback starts with no warning** — The transport clicks every beat of the meter with the downbeat accented, and counts in a bar at practice tempo it marks unscored (design recorded in `apps/desktop/src/renderer/audio/beats.ts`).
   checked **The metronome accents the downbeat in any meter** A fixture in seven eight places the accent correctly, read from the time signature map rather than assuming four beats to a bar.
   checked **The count-in is never scored** Grading starts at the first written note, so an attempt played correctly after a count-in reports no late first note and no phantom extra note.
+- ✅ **PI59** **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — Minimised, the window woke 3 times in 2.5 s; unthrottled, every 25 ms wake stays inside the look-ahead, checked live (design recorded in `apps/desktop/src/main/window-preferences.ts`).
 
 ## Block D — Piano roll and on-screen keyboard
 

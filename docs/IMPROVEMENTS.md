@@ -45,22 +45,6 @@ message telling somebody which side to update names a number they cannot find.
 
 ## Block C — Audio engine and transport
 
-### §PI59 Playing behind another window
-
-The scheduler wakes on setInterval every 25 milliseconds and looks 100 ahead, so any
-wake-up later than about 75 milliseconds costs a note its onset. Chromium throttles
-timers in a page that is hidden or occluded, down to about one wake-up a second, and
-this app is driven from a terminal, so it spends most of its playing life behind another
-window. Chromium exempts a page that is audibly playing from part of that throttling,
-but not the silent stretch before the first note or a rest long enough for the page to
-count as quiet, and the exemption is not something to build on without measuring it.
-Measure first: a live test that minimises the window, starts the scheduler against a
-recording engine and checks that no wake-up gap exceeds the look-ahead. The expected fix
-is backgroundThrottling set to false in the window's web preferences, kept beside
-secureWebPreferences rather than inside it, since it is about timing and not trust. If
-that proves insufficient, the wake-up moves to a Worker, whose timers the page's
-visibility does not govern, posting to the scheduler instead of calling it.
-
 ### §PI61 One instrument across the handover
 
 A key plays synthesised until its register arrives and recorded afterwards, often within

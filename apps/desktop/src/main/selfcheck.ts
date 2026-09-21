@@ -235,6 +235,35 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     ),
   )
 
+  // 9a. Playing behind another window. The scheduler wakes every 25 ms and
+  //     looks 100 ms ahead, so a wake-up more than 75 ms after the last costs
+  //     a note its onset; Chromium throttles a hidden page's timers to about
+  //     one a second. Measured in the live page, minimised, the way the app
+  //     spends most of its playing life behind a terminal.
+  window.minimize()
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  const behind = (await webContents.executeJavaScript(`new Promise((resolve) => {
+    const gaps = []
+    let last = performance.now()
+    const id = setInterval(() => {
+      const now = performance.now()
+      gaps.push(now - last)
+      last = now
+    }, 25)
+    setTimeout(() => {
+      clearInterval(id)
+      resolve({ wakes: gaps.length, worst: Math.round(Math.max(0, ...gaps)), hidden: document.hidden })
+    }, 2500)
+  })`)) as { wakes: number; worst: number; hidden: boolean }
+  window.restore()
+  results.push(
+    check(
+      'timers keep time with the window minimised',
+      behind.worst < 75,
+      `worst wake-up gap ${String(behind.worst)} ms over ${String(behind.wakes)} wakes, hidden=${String(behind.hidden)}`,
+    ),
+  )
+
   // 10a. A page opens only what a person chose. A path it names is refused
   //      unless the recent list holds it, and a File it made up has no path
   //      for the preload to find, so neither door reads the disk for it.

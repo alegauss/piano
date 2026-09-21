@@ -38,7 +38,12 @@ import { createSettingsStore } from './settings-store'
 import { exportScore } from './score-export'
 import { launchPath, libraryItem, libraryRoot, openScoreFile } from './score-files'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
-import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
+import {
+  secureWebPreferences,
+  timingWebPreferences,
+  WINDOW_BACKGROUND,
+  windowIcon,
+} from './window-preferences'
 
 /**
  * Set by scripts/dev.mjs. Present means the renderer is served by Vite; absent
@@ -286,7 +291,7 @@ function createWindow(theme: Settings['theme']): void {
     // The renderer holds no privilege; window-preferences.ts says exactly how,
     // and the self-check asserts both that object and what the live page can
     // actually reach.
-    webPreferences: secureWebPreferences,
+    webPreferences: { ...secureWebPreferences, ...timingWebPreferences },
   })
 
   confineNavigation(mainWindow, devServerUrl, pathToFileURL(rendererPage()).href)

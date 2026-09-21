@@ -44,6 +44,21 @@ export function windowIcon(): string | undefined {
   return existsSync(drawn) ? drawn : undefined
 }
 
+/**
+ * The window's timing, kept apart from its security because it is about
+ * something else entirely.
+ *
+ * The scheduler wakes every 25 ms and looks 100 ms ahead, and the app is
+ * driven from a terminal, so it plays behind another window more often than
+ * not. Chromium throttles a hidden page's timers to about one a second; the
+ * self-check measured a minimised window waking three times in two and a half
+ * seconds, which is every note in that stretch sounding late. So the window
+ * is never throttled for being out of sight.
+ */
+export const timingWebPreferences = {
+  backgroundThrottling: false,
+} as const satisfies BrowserWindowConstructorOptions['webPreferences']
+
 export const secureWebPreferences = {
   preload: join(__dirname, '..', 'preload', 'preload.cjs'),
   /** The renderer gets its own world; the preload's objects are copied, not shared. */

@@ -9,7 +9,6 @@
 
 ## Block C — Audio engine and transport
 
-- 📋 **PI59** (deps: PI19 ✅, PI23 ✅) **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — The app is driven from a terminal, so it plays behind another window more often than not, and a throttled wake-up misses the look-ahead. → §PI59
 - 📋 **PI61** (deps: PI21 ✅, PI22 ✅) **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — A key moves from the synthesiser to its recording mid-phrase as registers arrive, and nothing has measured the two voices against each other. → §PI61
 
 ## Block E — Practice mode and difficulty levels
