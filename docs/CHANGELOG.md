@@ -65,6 +65,10 @@
 - ✅ **PI18** **There is no way to produce sound, and no seam between the engine and everything that drives it** — PianoEngine fronts a synthesised and a sampled engine that swap mid-piece, and lint keeps Web Audio inside renderer/audio (design recorded in `apps/desktop/src/renderer/audio/engine.ts`).
   checked **Two engines satisfy one interface and swap at runtime** A test drives the same fixture through the synthesised engine and the sampled engine using identical calls, and nothing above the interface changes between the two runs.
   checked **No code above the audio layer touches a Web Audio node** A lint rule finds no AudioContext, oscillator or buffer source outside the engine package, so the seam is enforced rather than merely intended in a document.
+- ✅ **PI19** **Notes scheduled from timers drift audibly: timing wanders and chords stop landing together** — A look-ahead scheduler stamps each event with its exact audio time; chords share one time and late wake-ups miss no onset (design recorded in `apps/desktop/src/renderer/audio/scheduler.ts`).
+  checked **Scheduled onsets stay within a few milliseconds of target** Driving the scheduler over a fake clock across a hundred bars asserts every note scheduled inside tolerance, including under a simulated main-thread stall.
+  checked **A chord lands as a single event** Every note of a chord is scheduled at an identical audio time, asserted exactly rather than within a window, because a spread chord is the defect a listener notices first.
+  checked **The scheduler is tested against a fake clock** Scheduler tests advance a synthetic time source and assert note ordering and offsets deterministically, with no real timers, no sleeps and no audible output.
 
 ## Block D — Piano roll and on-screen keyboard
 

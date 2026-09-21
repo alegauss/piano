@@ -24,22 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI19 A look-ahead scheduler, not a timer per note
-
-Timers in a renderer process are not accurate enough for music. A setTimeout can be tens
-of milliseconds late under layout work or garbage collection, and a chord whose notes
-land twenty milliseconds apart sounds broken rather than merely late. The standard
-answer applies: a periodic wake-up roughly every 25 milliseconds looks about 100
-milliseconds ahead in the score and schedules every note falling inside that window at
-an exact time on the Web Audio clock, which runs on the audio thread and does not care
-what the interface is doing. The scheduler owns the single conversion from ticks to
-seconds, reading the tempo map, so tempo changes and practice slow-down are handled in
-one place rather than three. It is written against an injectable clock, which is what
-makes it testable without playing anything: a test advances synthetic time and asserts
-exactly which notes were scheduled at which offsets. The renderer reads that same clock
-instead of counting frames, and that is what keeps the falling notes and the sound in
-agreement.
-
 ### §PI20 Turning a sample library into a shippable pack
 
 The Salamander Grand is the usual starting point: a well recorded piano under a
@@ -99,7 +83,9 @@ compose without special cases between them. Tempo scale multiplies the tempo map
 than editing it, keeping the displayed BPM and the written score separable. Transpose
 shifts pitch at the engine boundary, which keeps the score and the roll honest about
 what is actually written. Seeking while the pedal is held has to restore pedal state,
-and that edge case is worth writing down before it is discovered.
+and the scheduler already does: its start(fromTick) sends the pedals as they stand at
+that tick, so a seek is a stop and a start. The transport builds on the scheduler's
+start, stop, setTempoScale and tickAt rather than keeping a clock of its own.
 
 ### §PI24 A beat to play against, and a bar before it starts
 
@@ -113,6 +99,22 @@ when listening and on by default when practising, because the same feature is he
 one mode and irritating in the other. The count-in also matters to the grader: without
 it the first note of every attempt is scored late through no fault of the player, and a
 scoring system that punishes a fair attempt is one people quickly stop trusting.
+
+### §PI59 Playing behind another window
+
+The scheduler wakes on setInterval every 25 milliseconds and looks 100 ahead, so any
+wake-up later than about 75 milliseconds costs a note its onset. Chromium throttles
+timers in a page that is hidden or occluded, down to about one wake-up a second, and
+this app is driven from a terminal, so it spends most of its playing life behind another
+window. Chromium exempts a page that is audibly playing from part of that throttling,
+but not the silent stretch before the first note or a rest long enough for the page to
+count as quiet, and the exemption is not something to build on without measuring it.
+Measure first: a live test that minimises the window, starts the scheduler against a
+recording engine and checks that no wake-up gap exceeds the look-ahead. The expected fix
+is backgroundThrottling set to false in the window's web preferences, kept beside
+secureWebPreferences rather than inside it, since it is about timing and not trust. If
+that proves insufficient, the wake-up moves to a Worker, whose timers the page's
+visibility does not govern, posting to the scheduler instead of calling it.
 
 ## Block D — Piano roll and on-screen keyboard
 
