@@ -12,6 +12,8 @@
  * play rather than an error anybody can read.
  */
 
+import { resolveTiming, type ResolvedTiming, type Timing } from './time'
+
 /**
  * Bumped only by a breaking change. PI14 adds the migration chain that reads
  * it, so that a file written against version 1 still opens years later.
@@ -27,6 +29,18 @@ export type ScoreMetadata = {
 export type Score = {
   readonly formatVersion: number
   readonly metadata: ScoreMetadata
+  /**
+   * Where things happen. Optional, because a score with none means the
+   * defaults everyone assumes: 480 ticks to the quarter, 120 bpm, four four,
+   * no pickup. Read it through timingOf rather than directly, so a score that
+   * left it out and one that wrote the defaults behave identically.
+   */
+  readonly timing?: Timing
+}
+
+/** The timing a score actually plays under, with every default filled in. */
+export function timingOf(score: Score): ResolvedTiming {
+  return resolveTiming(score.timing)
 }
 
 /**

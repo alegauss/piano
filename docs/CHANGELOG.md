@@ -27,6 +27,10 @@
 
 ## Block B — Score JSON format
 
+- ✅ **PI7** **There is no time model: nothing says where a note starts, and seconds break the moment tempo changes** — Positions are integer ticks converted through one tempo map, so a mid-piece tempo change lands on its bar and halving the tempo moves nothing.
+  checked **A mid-piece tempo change plays at the right bar** A fixture whose tempo doubles at bar 9 is scheduled from the tempo map, and asserted note onset times match computed values to within a millisecond on both sides of the change.
+  checked **Halving the tempo moves no note relative to the bar** Playing at 50 percent leaves every note on the same tick and in the same bar; only the tick-to-seconds conversion changes, proven by a test over that function alone.
+
 ## Block C — Audio engine and transport
 
 ## Block D — Piano roll and on-screen keyboard

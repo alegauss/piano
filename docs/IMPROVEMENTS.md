@@ -22,22 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI7 Ticks, PPQ and a tempo map
-
-Positions are integers on a ticks grid, with ticksPerQuarter declared once at the top of
-the file and 480 as the default, the value most sequencers already use. Seconds are
-never stored. The tempo map is a sorted list of events, each carrying a tick and a
-microseconds-per-quarter value, exactly as a MIDI file carries it, and the playback
-clock converts ticks to seconds by walking that list. This is what survives the
-operations the app exists to perform: halving the tempo for practice, looping four bars,
-transposing, and a piece that changes tempo mid-phrase. If positions were seconds, every
-one of those would mean rewriting the whole score, and rounding error would accumulate
-across a long piece. Time signatures are a second sorted list, because bar lines and the
-measure numbers drawn on the roll are derived from them rather than stored per note. A
-pickup bar is expressed by starting the first full bar at a non-zero tick, with an
-explicit pickupTicks field so the renderer never has to guess. Bar selection, the
-metronome and the scrubber all read bars from this one place.
-
 ### §PI8 One note object for playing, drawing and teaching
 
 A note carries pitch as a MIDI number, which is what the sampler and the on-screen

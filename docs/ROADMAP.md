@@ -6,11 +6,10 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI7** (deps: PI2 ✅) **There is no time model: nothing says where a note starts, and seconds break the moment tempo changes** — Ticks on a PPQ grid plus a tempo map keep positions exact under tempo change, looping and slow practice, which wall-clock seconds cannot. → §PI7
-- 📋 **PI8** (deps: PI7) **There is no note model: pitch, length, dynamics, hand and fingering have nowhere to live** — One note object carrying MIDI pitch, optional spelling, tick length, velocity, voice, hand and finger serves playback, drawing and teaching at once. → §PI8
+- 📋 **PI8** (deps: PI7 ✅) **There is no note model: pitch, length, dynamics, hand and fingering have nowhere to live** — One note object carrying MIDI pitch, optional spelling, tick length, velocity, voice, hand and finger serves playback, drawing and teaching at once. → §PI8
 - 📋 **PI9** (deps: PI8) **A score is one flat list of notes, so the parts panel has nothing to mute, solo or colour** — Grouping notes into named parts with their own colour and role is what lets a listener silence the left hand or follow a single voice. → §PI9
 - 📋 **PI10** (deps: PI8) **Sustain pedal, dynamics and articulation are unrepresented, so playback sounds mechanical** — Timed pedal events plus dynamic and articulation marks that shape velocity and length are the difference between music and a metronome. → §PI10
-- 📋 **PI11** (deps: PI7) **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — Named ranges give the loop selector, the practice tools and Claude Code one vocabulary for talking about part of a piece. → §PI11
+- 📋 **PI11** (deps: PI7 ✅) **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — Named ranges give the loop selector, the practice tools and Claude Code one vocabulary for talking about part of a piece. → §PI11
 - 📋 **PI12** (deps: PI8, PI9) **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Difficulty arrangements as views over one note source, with overrides instead of copies, keep three levels from drifting into three different pieces. → §PI12
 - 📋 **PI13** (deps: PI2 ✅) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
 - 📋 **PI14** (deps: PI12, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
@@ -21,7 +20,7 @@
 ## Block C — Audio engine and transport
 
 - 📋 **PI18** (deps: PI1 ✅) **There is no way to produce sound, and no seam between the engine and everything that drives it** — One narrow engine interface lets a synthesised fallback and a sampled piano swap without the transport, the roll or the practice code knowing. → §PI18
-- 📋 **PI19** (deps: PI7, PI18) **Notes scheduled from timers drift audibly: timing wanders and chords stop landing together** — A look-ahead scheduler reading the Web Audio clock is the only way to get timing that survives a busy main thread. → §PI19
+- 📋 **PI19** (deps: PI7 ✅, PI18) **Notes scheduled from timers drift audibly: timing wanders and chords stop landing together** — A look-ahead scheduler reading the Web Audio clock is the only way to get timing that survives a busy main thread. → §PI19
 - 📋 **PI20** (deps: PI1 ✅) **There is no piano sound: raw sample libraries are gigabytes of WAV, unusable as they ship** — A repeatable pipeline that converts, trims and indexes the samples into a compressed pack with its licence turns a download into a shippable asset. → §PI20
 - 📋 **PI21** (deps: PI18, PI20) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Lazy loading by register with a memory budget, and a synthesised fallback while samples arrive, let the first note sound immediately. → §PI21
 - 📋 **PI22** (deps: PI10, PI21) **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity layers, release samples and a real sustain model are what separate a piano from a sine wave, and they are cheap once the pack is indexed. → §PI22
@@ -70,15 +69,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI7
-
-- **A mid-piece tempo change plays at the right bar** A fixture whose tempo doubles at
-  bar 9 is scheduled from the tempo map, and asserted note onset times match computed
-  values to within a millisecond on both sides of the change.
-- **Halving the tempo moves no note relative to the bar** Playing at 50 percent leaves
-  every note on the same tick and in the same bar; only the tick-to-seconds conversion
-  changes, proven by a test over that function alone.
 
 ## Done when — PI8
 
