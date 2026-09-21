@@ -32,28 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI69 The copy button and the piece it is looking at
-
-The footer now carries the doors on the whole history: save it as a file, delete it
-after asking. The report panel kept an older pair from before those existed. "Copy it
-out" puts every record on the clipboard, and it sits beside "Forget this piece", which
-is about the piece on screen. The two disagree about scope, and the one that disagrees
-is the one whose name promises less: somebody reading how the piece they just played
-went, pressing the button under it, gets every piece they have ever practised, in a
-place they cannot see before they paste it.
-
-Make the panel's button say what its neighbour says. Copy the records for this score, in
-the shape the file already uses — a version and a list — so what is pasted can be read
-back and is not a second format to explain. `exported()` on the progress store is the
-whole history today; what this needs is the score to narrow it by, and the footer's save
-keeps the whole-history door it already opened.
-
-Neither door writes. The file main owns stays the one place records live, so nothing
-here can leave the clipboard and the file disagreeing about what was practised.
-
-Done when the report panel's copy hands over the piece on screen and nothing else, the
-footer's save still hands over everything, and a test says which is which.
-
 ### §PI70 Starting the installed app with a score
 
 PI68 reads back what an installer wrote: the registry says a score is claimed and starts

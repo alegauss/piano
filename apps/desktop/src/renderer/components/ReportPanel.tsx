@@ -178,8 +178,9 @@ function Report({ attempt }: { readonly attempt: Attempt }) {
  *
  * A sentence naming bars rather than a chart, for the same reason the report
  * above names them: somebody about to practise needs somewhere to start, not
- * a history to interpret. The two buttons are here because practice history
- * is personal data even though it never leaves the machine.
+ * a history to interpret. Both buttons are about the piece on screen, which is
+ * what this panel is: the doors on the whole history — save it as a file,
+ * delete it — are in the footer, beside the settings' own reset.
  */
 function History({ progress, score }: { readonly progress: Progress; readonly score: string }) {
   useSyncExternalStore(progress.subscribe, () => progress.records)
@@ -215,11 +216,14 @@ function History({ progress, score }: { readonly progress: Progress; readonly sc
           size="sm"
           variant="ghost"
           onClick={() => {
-            void navigator.clipboard?.writeText(progress.exported())
+            // Read out first: `clipboard?.writeText(...)` never evaluates its
+            // argument where there is no clipboard, and the read is the thing.
+            const text = progress.exported(score)
+            void navigator.clipboard?.writeText(text)
             setCopied(true)
           }}
         >
-          {copied ? 'Copied' : 'Copy it out'}
+          {copied ? 'Copied' : 'Copy this piece'}
         </Button>
         <Button
           size="sm"

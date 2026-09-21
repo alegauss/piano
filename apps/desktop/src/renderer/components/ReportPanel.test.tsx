@@ -71,9 +71,13 @@ async function open(grader: Grader, progress?: Progress) {
   await screen.findByText('How it went', { selector: 'h2' })
 }
 
-/** A history that answers with one suggestion and remembers being forgotten. */
-function history(suggestion: Suggestion | null): Progress & { readonly forgotten: () => number } {
+/** A history that answers with one suggestion, and remembers what was asked of it. */
+function history(suggestion: Suggestion | null): Progress & {
+  readonly forgotten: () => number
+  readonly copied: () => (string | undefined)[]
+} {
   let forgotten = 0
+  const copied: (string | undefined)[] = []
   return {
     records: [],
     notice: null,
@@ -83,7 +87,10 @@ function history(suggestion: Suggestion | null): Progress & { readonly forgotten
     record: () => {},
     forScore: () => [],
     suggest: () => suggestion,
-    exported: () => '{}',
+    exported: (score) => {
+      copied.push(score)
+      return '{}'
+    },
     forget: () => {
       forgotten += 1
     },
@@ -92,6 +99,7 @@ function history(suggestion: Suggestion | null): Progress & { readonly forgotten
     dismiss: () => {},
     close: () => {},
     forgotten: () => forgotten,
+    copied: () => copied,
   }
 }
 
@@ -182,7 +190,7 @@ describe('ReportPanel', () => {
     expect(screen.getByTestId('history-stale').textContent).toContain('since changed')
   })
 
-  it('offers to hand the history over and to forget it', async () => {
+  it('copies and forgets the piece on screen, never the whole history', async () => {
     const kept = history({
       bars: [4],
       section: null,
@@ -192,6 +200,9 @@ describe('ReportPanel', () => {
       stale: false,
     })
     await open(stub(null), kept)
+
+    fireEvent.click(screen.getByText('Copy this piece'))
+    expect(kept.copied()).toEqual(['sonata'])
 
     fireEvent.click(screen.getByText('Forget this piece'))
     expect(kept.forgotten()).toBe(1)

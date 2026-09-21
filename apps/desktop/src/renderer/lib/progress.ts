@@ -62,8 +62,11 @@ export type Progress = {
   readonly record: (attempt: Attempt) => void
   readonly forScore: (score: string) => readonly PracticeRecord[]
   readonly suggest: (score: string) => Suggestion | null
-  /** Everything, as it is stored, for somebody who wants it out of here. */
-  readonly exported: () => string
+  /**
+   * The history as it is stored, for somebody who wants it out of here: one
+   * piece's where a score is named, all of it where none is.
+   */
+  readonly exported: (score?: string) => string
   /** Forget one piece's history. */
   readonly forget: (score: string) => void
   /** Erase all of it, file and all. */
@@ -400,7 +403,14 @@ export function createProgress(
         records.filter((record) => record.score === score),
         context?.sections ?? [],
       ),
-    exported: () => JSON.stringify(storedHistory(records), null, 2),
+    exported: (score) =>
+      JSON.stringify(
+        storedHistory(
+          score === undefined ? records : records.filter((record) => record.score === score),
+        ),
+        null,
+        2,
+      ),
     forget: (score) => {
       records = records.filter((record) => record.score !== score)
       changed()

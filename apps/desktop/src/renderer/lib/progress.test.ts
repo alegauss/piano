@@ -1,4 +1,4 @@
-import { KEEP_RECORDS, storedHistory, type PracticeRecord } from '@piano/ipc'
+import { HISTORY_VERSION, KEEP_RECORDS, storedHistory, type PracticeRecord } from '@piano/ipc'
 import type { Score, Section } from '@piano/score-format'
 import { resolveTiming } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
@@ -287,6 +287,20 @@ describe('keeping it between sessions', () => {
     })
     await progress.load()
     expect(progress.notice).toContain('main is not answering')
+  })
+
+  it('reads out one piece where a piece is named, and all of it where none is', () => {
+    const { progress } = setup()
+    progress.record(attemptAt(false))
+    progress.use({ ...context, score: 'other' })
+    progress.record(attemptAt(false))
+
+    const one = JSON.parse(progress.exported('sonata'))
+    expect(one.records).toHaveLength(1)
+    expect(one.records[0].score).toBe('sonata')
+    expect(one.version).toBe(HISTORY_VERSION)
+    expect(JSON.parse(progress.exported()).records).toHaveLength(2)
+    expect(JSON.parse(progress.exported('never-practised')).records).toEqual([])
   })
 
   it('can be read out whole, forgotten per piece and erased altogether', async () => {
