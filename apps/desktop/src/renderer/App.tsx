@@ -37,7 +37,6 @@ import { PianoRoll } from './components/PianoRoll'
 import { HistoryStatus } from './components/HistoryStatus'
 import { SettingsStatus } from './components/SettingsStatus'
 import { SoundStatus } from './components/SoundStatus'
-import { TokenGallery } from './components/TokenGallery'
 import { TransportBar } from './components/TransportBar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/cn'
@@ -907,9 +906,7 @@ export function App() {
       </main>
 
       {full ? null : (
-        <div className="flex flex-col gap-10 px-6 py-8">
-          <TokenGallery />
-
+        <div className="px-6 py-8">
           <footer className="flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
             <SoundStatus state={soundState} />
             <PackDownloadStatus

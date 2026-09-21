@@ -25,7 +25,7 @@ function parts() {
     keyboard: screen.queryByLabelText('Piano keyboard, 88 keys'),
     bar: screen.queryByLabelText('Transport'),
     heading: screen.queryByRole('heading', { name: 'Piano' }),
-    gallery: screen.queryByRole('button', { name: 'Play' }),
+    footer: screen.queryByTestId('app-version'),
   }
 }
 
@@ -56,6 +56,7 @@ describe('the app', () => {
   it('leaves only the roll and the keyboard in full screen, and comes back on escape', async () => {
     render(<App />)
     expect(parts().heading).not.toBeNull()
+    expect(parts().footer).not.toBeNull()
 
     screen.getByLabelText('Full screen').click()
     await new Promise((resolve) => requestAnimationFrame(resolve))
@@ -66,7 +67,7 @@ describe('the app', () => {
     // The bar stays: it is how someone playing gets back out.
     expect(full.bar).not.toBeNull()
     expect(full.heading).toBeNull()
-    expect(full.gallery).toBeNull()
+    expect(full.footer).toBeNull()
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await new Promise((resolve) => requestAnimationFrame(resolve))

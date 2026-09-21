@@ -24,6 +24,11 @@ import { Switch } from './ui/switch'
  * canvas strip below is how the other half of the claim gets checked — that
  * the roll, which cannot use a Tailwind class, still draws from the same
  * tokens the chrome does.
+ *
+ * For whoever builds the app, not whoever plays it: the app itself does not
+ * render this, and a row of buttons that play nothing read as an unfinished
+ * part of the piano. Its own browser test mounts it, which is what keeps the
+ * tokens covered now that nothing else reaches it.
  */
 export function TokenGallery() {
   return (
@@ -73,7 +78,7 @@ export function TokenGallery() {
           </PopoverTrigger>
           <PopoverContent>
             <p className="text-sm text-text-muted">
-              Mute, solo and colour per part arrive with PI31.
+              Body text inside a popover, at the muted weight.
             </p>
           </PopoverContent>
         </Popover>
@@ -88,7 +93,7 @@ export function TokenGallery() {
             <DialogHeader>
               <DialogTitle>Share this score</DialogTitle>
               <DialogDescription>
-                Nothing to share yet. The library arrives with PI52.
+                A title and a description, which is every dialog in the app.
               </DialogDescription>
             </DialogHeader>
           </DialogContent>

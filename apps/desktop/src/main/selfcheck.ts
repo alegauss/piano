@@ -341,7 +341,7 @@ export async function captureThemes(window: BrowserWindow, directory: string): P
     // One frame for the new custom properties to resolve and paint.
     await new Promise((resolve) => setTimeout(resolve, 250))
     const image = await window.webContents.capturePage()
-    const file = join(directory, `gallery-${theme}.png`)
+    const file = join(directory, `window-${theme}.png`)
     await writeFile(file, image.toPNG())
     written.push(file)
   }

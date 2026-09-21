@@ -26,6 +26,7 @@
   checked **The packaged app runs with no development dependency present** Installed on a clean machine the window opens and a bundled score plays, with no Node runtime, no dev server and no source checkout available to it.
 - ✅ **PI60** **The format-ownership guard reads a split "type Score," import line as a declaration and fails the lint** — The ownership guard now matches a Score type only where a declaration follows the name, so a split import passes and a local declaration still fails.
 - ✅ **PI64** **Nothing is published to download: the plugin sends a person without the app to an empty releases page** — A v* tag builds installers on each OS into a draft release, serves the pack from Pages, checks it downloads, then publishes (design recorded in `.github/workflows/release.yml`).
+- ✅ **PI71** **The design system's gallery renders in the app, showing sample controls to whoever opens the piano** — The app ends at its footer: the design system's gallery is a page for whoever builds it, mounted by its own test and nothing else.
 
 ## Block B — Score JSON format
 
