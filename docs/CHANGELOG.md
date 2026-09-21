@@ -72,7 +72,7 @@
   checked **The scheduler is tested against a fake clock** Scheduler tests advance a synthetic time source and assert note ordering and offsets deterministically, with no real timers, no sleeps and no audible output.
 - ✅ **PI20** **There is no piano sound: raw sample libraries are gigabytes of WAV, unusable as they ship** — npm run pack:samples builds a reproducible 16 MB Opus pack from pinned, checksummed Salamander sources, with manifest and licence (design recorded in `packages/sample-pack/scripts/build-pack.mts`).
   checked **The pack builds from scratch with one command** A clean machine runs the script, which fetches the source, verifies its checksum and produces the versioned pack and manifest with no manual step in between.
-- ✅ **PI21 (staged loading in the audio layer)** **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — PackBank loads registers outward from middle C within a decoded-audio budget, and the sampled engine plays synthesised notes until each register lands.
+- ✅ **PI21** **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — The app reads the installed pack through a checked bridge channel, loads it behind the synthesiser and credits it in the footer (design recorded in `apps/desktop/src/renderer/audio/pack-bank.ts`).
 
 ## Block D — Piano roll and on-screen keyboard
 

@@ -49,13 +49,54 @@ export const windowSetTitle = {
   }),
 } as const satisfies Channel<'window:set-title', z.ZodType, z.ZodType>
 
+/**
+ * The installed sample pack's manifest, or where main looked and found none.
+ *
+ * The manifest crosses as JSON not yet trusted: the renderer checks it with
+ * the pack's own schema before it decodes anything, because a pack is a
+ * download and not part of this app.
+ */
+export const packManifest = {
+  channel: CHANNEL_NAMES.packManifest,
+  request: z.null(),
+  response: z.discriminatedUnion('installed', [
+    z.object({ installed: z.literal(false), location: z.string() }),
+    z.object({ installed: z.literal(true), manifest: z.unknown() }),
+  ]),
+} as const satisfies Channel<'pack:manifest', z.ZodType, z.ZodType>
+
+/**
+ * One recording from the installed pack.
+ *
+ * Named by the path the manifest gives it, and refused unless it is one:
+ * main serves only files the manifest lists, from inside the pack, so this
+ * channel cannot become a way to read the disk.
+ */
+export const packFile = {
+  channel: CHANNEL_NAMES.packFile,
+  request: z.object({
+    path: z
+      .string()
+      .regex(
+        /^samples\/[A-Za-z0-9_-]+\.(?:ogg|wav)$/,
+        'a recording the manifest names, such as samples/C4-v8.ogg',
+      ),
+  }),
+  response: z.object({
+    bytes: z.instanceof(Uint8Array),
+  }),
+} as const satisfies Channel<'pack:file', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
-export const allChannels = [appInfo, windowSetTitle] as const
+export const allChannels = [appInfo, windowSetTitle, packManifest, packFile] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
 export type AppInfoResponse = z.infer<typeof appInfo.response>
 export type WindowSetTitleRequest = z.infer<typeof windowSetTitle.request>
 export type WindowSetTitleResponse = z.infer<typeof windowSetTitle.response>
+export type PackManifestResponse = z.infer<typeof packManifest.response>
+export type PackFileRequest = z.infer<typeof packFile.request>
+export type PackFileResponse = z.infer<typeof packFile.response>
 
 /**
  * A validation failure, in words the next reader can act on.

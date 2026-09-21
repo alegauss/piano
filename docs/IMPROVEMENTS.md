@@ -24,25 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI21 First note now, full piano shortly
-
-A piano pack is large enough that waiting for it makes the app feel broken, and the
-moment that matters most is the first one: somebody opens a score and presses play. So
-loading is staged. The synthesised engine is ready instantly and takes the first notes.
-The sampled pack loads by register, starting with the two octaves around middle C where
-most material lives, and the engine switches voice by voice as real samples arrive
-rather than waiting for the whole pack to land. A memory budget caps how much stays
-decoded at once, evicting least recently used registers, because decoded audio is far
-larger than the compressed file and an app that grows without limit will be blamed on
-the piano. Progress is visible but never modal: the user can play while it loads. The
-switch between the two engines has to be inaudible in the ordinary case, which means
-matching gain and attack across them, and that is worth testing deliberately rather than
-discovering by ear during a lesson. The pack arrives as a directory whose manifest.json
-goes through parseManifest from @piano/sample-pack before anything is decoded, and its
-credit is shown in the app (an about panel naming the library, its author and its
-licence) once a pack is loaded: PI20 made the licence travel with the pack and left
-showing it to the code that loads it.
-
 ### §PI22 Velocity layers, release and a sustain model
 
 A sampled piano only convinces when the mapping is right. Velocity chooses a layer
@@ -106,6 +87,22 @@ is backgroundThrottling set to false in the window's web preferences, kept besid
 secureWebPreferences rather than inside it, since it is about timing and not trust. If
 that proves insufficient, the wake-up moves to a Worker, whose timers the page's
 visibility does not govern, posting to the scheduler instead of calling it.
+
+### §PI61 One instrument across the handover
+
+A key plays synthesised until its register arrives and recorded afterwards, often within
+one phrase, so the two have to sound like one instrument at the level of loudness and
+onset even though they cannot in timbre. Today they are set independently: the
+synthesised voice peaks at a fixed fraction of full scale, while a recording plays at
+the level the pack normalised it to, with the velocity gain applied on top of a layer
+that already carries its own loudness. Nothing has measured the two against each other.
+Measure first: render middle C at a few velocities through both voices offline and
+compare loudness over the first half second, with the real pack in a development run and
+a stand-in recording of known level in the test suite. Then calibrate the synthesised
+voice to the pack rather than the other way round, since the recordings are the
+reference, and carry the calibration in the manifest if packs differ. The onset matters
+as much: the recordings keep three milliseconds before the hammer, and the synthesised
+attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
@@ -552,10 +549,12 @@ download leaves a working app rather than a broken one and can be retried later 
 settings. The pack is versioned, so a later release can ship a better one without a
 reinstall; npm run pack:samples builds it reproducibly as a directory whose manifest
 lists every file with its size and sha256, which is what the download verifies against,
-and the app tolerates holding an older pack than it would prefer. For an offline or
-restricted machine there is a manual path: a documented location to drop the pack file
-by hand. That is not an edge case, it is every corporate laptop the app will ever run
-on.
+and the app tolerates holding an older pack than it would prefer. Main already reads the
+installed pack from a sample-pack directory in the app's user data, or from wherever
+PIANO_SAMPLE_PACK points, so the download only has to put a verified pack there. For an
+offline or restricted machine there is a manual path: a documented location to drop the
+pack file by hand. That is not an edge case, it is every corporate laptop the app will
+ever run on.
 
 ### §PI55 Something to hear on the first launch
 

@@ -12,6 +12,8 @@
 export const CHANNEL_NAMES = {
   appInfo: 'app:info',
   windowSetTitle: 'window:set-title',
+  packManifest: 'pack:manifest',
+  packFile: 'pack:file',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]

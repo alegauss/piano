@@ -1,11 +1,13 @@
 import type { AppInfoResponse } from '@piano/ipc'
 import { describeScore, FORMAT_VERSION, type Score } from '@piano/score-format'
 import { Moon, Sun } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { readBridge } from './bridge'
+import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { Button } from './components/ui/button'
+import { appSound } from './lib/sound'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
 
 /**
@@ -27,6 +29,14 @@ export function App() {
     readBridge() === null ? 'no bridge: this page is not running inside the app' : null,
   )
   const [theme, setThemeState] = useState<ThemeName>(getTheme)
+  const sound = appSound()
+  const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
+
+  // The piano starts synthesised and moves onto the installed pack as its
+  // recordings arrive; nothing waits for that.
+  useEffect(() => {
+    sound.start()
+  }, [sound])
 
   useEffect(() => {
     const bridge = readBridge()
@@ -89,6 +99,7 @@ export function App() {
         <TokenGallery />
 
         <footer className="mt-auto flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
+          <SoundStatus state={soundState} />
           <span>Score format v{info?.scoreFormatVersion ?? FORMAT_VERSION}</span>
           <span>Electron {info?.electron ?? 'unavailable'}</span>
           <span>Chromium {info?.chrome ?? 'unavailable'}</span>

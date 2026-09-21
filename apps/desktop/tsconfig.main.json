@@ -10,6 +10,9 @@
   "references": [
     {
       "path": "../../packages/ipc"
+    },
+    {
+      "path": "../../packages/sample-pack"
     }
   ]
 }

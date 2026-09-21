@@ -28,6 +28,8 @@ async function invoke<Result>(channel: string, payload: unknown): Promise<Result
 const bridge: PianoBridge = {
   appInfo: async () => invoke(CHANNEL_NAMES.appInfo, null),
   setWindowTitle: async (request) => invoke(CHANNEL_NAMES.windowSetTitle, request),
+  packManifest: async () => invoke(CHANNEL_NAMES.packManifest, null),
+  packFile: async (request) => invoke(CHANNEL_NAMES.packFile, request),
 }
 
 contextBridge.exposeInMainWorld('piano', bridge)

@@ -1,7 +1,17 @@
-import { allChannels, appInfo, formatIssues, windowSetTitle, type Channel } from '@piano/ipc'
+import {
+  allChannels,
+  appInfo,
+  formatIssues,
+  packFile,
+  packManifest,
+  windowSetTitle,
+  type Channel,
+} from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { z } from 'zod'
+
+import { packDirectory, readPackFile, readPackManifest } from './sample-pack'
 
 /**
  * Every channel is registered through this one function, so no handler can
@@ -66,6 +76,10 @@ export function registerIpcHandlers(): void {
     window.setTitle(title)
     return { title }
   })
+
+  handle(packManifest, () => readPackManifest(packDirectory()))
+
+  handle(packFile, async ({ path }) => ({ bytes: await readPackFile(packDirectory(), path) }))
 }
 
 /**

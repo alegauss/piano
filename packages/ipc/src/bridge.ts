@@ -1,4 +1,11 @@
-import type { AppInfoResponse, WindowSetTitleRequest, WindowSetTitleResponse } from './channels'
+import type {
+  AppInfoResponse,
+  PackFileRequest,
+  PackFileResponse,
+  PackManifestResponse,
+  WindowSetTitleRequest,
+  WindowSetTitleResponse,
+} from './channels'
 
 /**
  * What the preload puts on `window.piano`, declared once.
@@ -14,4 +21,8 @@ import type { AppInfoResponse, WindowSetTitleRequest, WindowSetTitleResponse } f
 export type PianoBridge = {
   readonly appInfo: () => Promise<AppInfoResponse>
   readonly setWindowTitle: (request: WindowSetTitleRequest) => Promise<WindowSetTitleResponse>
+  /** The installed sample pack's manifest, or where there is none. */
+  readonly packManifest: () => Promise<PackManifestResponse>
+  /** One recording the installed pack's manifest names. */
+  readonly packFile: (request: PackFileRequest) => Promise<PackFileResponse>
 }

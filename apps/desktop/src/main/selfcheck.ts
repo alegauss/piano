@@ -172,6 +172,60 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
   )) as string
   results.push(check('window:set-title accepts a valid payload', accepted === 'Piano', accepted))
 
+  // 8. The sample pack reaches the renderer one listed file at a time, and
+  //    nothing else does: not a climb out of the pack, not a file it does not
+  //    name. Whether a pack is installed depends on the machine, so the check
+  //    that a real recording arrives runs only where one is.
+  const pack = (await webContents.executeJavaScript(
+    `window.piano.packManifest().then(async (r) => r.installed
+      ? { installed: true, bytes: (await window.piano.packFile({ path: r.manifest.samples[0].file })).bytes.length }
+      : { installed: false, location: r.location }, (e) => ({ error: String(e && e.message || e) }))`,
+  )) as { installed?: boolean; bytes?: number; location?: string; error?: string }
+  results.push(
+    check(
+      'pack:manifest answers, and a listed recording arrives where a pack is installed',
+      pack.error === undefined && (pack.installed === false || (pack.bytes ?? 0) > 0),
+      JSON.stringify(pack),
+    ),
+  )
+  for (const path of ['../../package.json', 'samples/not-a-recording.ogg']) {
+    const outcome = (await webContents.executeJavaScript(
+      `window.piano.packFile({ path: ${JSON.stringify(path)} }).then(() => ({ rejected: false, message: '' }), (e) => ({ rejected: true, message: String(e && e.message || e) }))`,
+    )) as { rejected: boolean; message: string }
+    results.push(
+      check(
+        `pack:file refuses ${path}`,
+        outcome.rejected && outcome.message.includes('pack:file'),
+        outcome.rejected ? outcome.message : 'resolved instead of rejecting',
+      ),
+    )
+  }
+
+  // 9. Where a pack is installed, the renderer decodes it: the footer's count
+  //    of loaded registers leaves zero. This is the check that Chromium in
+  //    this Electron plays what the pack pipeline encodes.
+  if (pack.installed === true) {
+    const footer = (await webContents.executeJavaScript(`new Promise((resolve) => {
+      const started = Date.now()
+      const look = () => {
+        const line = [...document.querySelectorAll('footer span')]
+          .map((span) => span.textContent || '')
+          .find((text) => text.startsWith('Sound:')) || ''
+        const decoded = line.includes('Sound: ') && !line.includes('synthesised') && !/loading 0 of/.test(line)
+        if (decoded || Date.now() - started > 15000) resolve(line)
+        else setTimeout(look, 200)
+      }
+      look()
+    })`)) as string
+    results.push(
+      check(
+        'the installed pack decodes in the renderer',
+        !footer.includes('synthesised') && !/loading 0 of/.test(footer) && footer !== '',
+        footer,
+      ),
+    )
+  }
+
   return results
 }
 

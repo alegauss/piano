@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { allChannels, appInfo, formatIssues, windowSetTitle } from './channels'
+import {
+  allChannels,
+  appInfo,
+  formatIssues,
+  packFile,
+  packManifest,
+  windowSetTitle,
+} from './channels'
 import { CHANNEL_NAMES } from './names'
 
 describe('the channel contract', () => {
@@ -50,6 +57,46 @@ describe('app:info', () => {
     expect(appInfo.response.safeParse({ electron: '44', chrome: '152', node: '24' }).success).toBe(
       false,
     )
+  })
+})
+
+describe('pack:manifest', () => {
+  it('says where it looked when no pack is installed', () => {
+    expect(
+      packManifest.response.safeParse({ installed: false, location: '/profile/sample-pack' })
+        .success,
+    ).toBe(true)
+    expect(packManifest.response.safeParse({ installed: false }).success).toBe(false)
+  })
+
+  it('passes an installed manifest through for the renderer to check', () => {
+    expect(
+      packManifest.response.safeParse({ installed: true, manifest: { any: 'json' } }).success,
+    ).toBe(true)
+  })
+})
+
+describe('pack:file', () => {
+  it('accepts a recording path as the manifest spells one', () => {
+    expect(packFile.request.safeParse({ path: 'samples/Ds1-v8.ogg' }).success).toBe(true)
+  })
+
+  it.each([
+    ['a climb out of the pack', '../../package.json'],
+    ['a climb hidden inside the folder', 'samples/../manifest.json'],
+    ['an absolute path', '/etc/passwd'],
+    ['a Windows path', 'C:\\Windows\\win.ini'],
+    ['a backslash climb', 'samples\\..\\..\\secret.ogg'],
+    ['the manifest itself', 'manifest.json'],
+    ['another kind of file', 'samples/C4-v8.exe'],
+    ['nothing', ''],
+  ])('refuses %s', (_label, path) => {
+    expect(packFile.request.safeParse({ path }).success).toBe(false)
+  })
+
+  it('answers with bytes', () => {
+    expect(packFile.response.safeParse({ bytes: new Uint8Array([1, 2]) }).success).toBe(true)
+    expect(packFile.response.safeParse({ bytes: [1, 2] }).success).toBe(false)
   })
 })
 
