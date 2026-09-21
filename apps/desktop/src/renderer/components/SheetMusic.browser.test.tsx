@@ -115,6 +115,24 @@ describe('SheetMusic', () => {
     )
   })
 
+  it('says on the page which readings are its own, not the score’s', async () => {
+    // No spellings and no key in TWO_BARS, so there is something to own up to.
+    const { container } = await mount(TWO_BARS)
+    const readings = container.querySelector('[data-testid="sheet-readings"]')
+    expect(readings).not.toBeNull()
+    // Visible without opening it: a page of inference must not look like a
+    // manuscript, so the count is in the summary.
+    expect(readings?.querySelector('summary')?.textContent).toContain('not the score')
+    const listed = readings?.querySelectorAll('li') ?? []
+    expect(listed.length).toBeGreaterThan(0)
+    expect(readings?.textContent).toContain('No key signature')
+  })
+
+  it('has nothing to own up to with no page to draw', async () => {
+    const { container } = await mount([])
+    expect(container.querySelector('[data-testid="sheet-readings"]')).toBeNull()
+  })
+
   it('says so rather than drawing an empty page when nothing is open', async () => {
     const { container, svg } = await mount([])
     expect(svg).toBeNull()

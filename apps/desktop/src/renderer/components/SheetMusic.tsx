@@ -6,6 +6,7 @@ import { noteLook, type Feedback } from '../lib/grading'
 import { planSheet } from '../lib/sheet'
 import { drawSheet } from '../lib/sheet-draw'
 import { bandFor, colouring, systemFor, type Band } from '../lib/sheet-follow'
+import { readings } from '../lib/sheet-readings'
 import type { CanvasToken } from '../lib/theme'
 
 /**
@@ -83,6 +84,11 @@ export function SheetMusic({
   const plan = useMemo(
     () => planSheet({ timing, notes, key: musicKey, width }),
     [timing, notes, musicKey, width],
+  )
+
+  const inferred = useMemo(
+    () => readings({ timing, notes, key: musicKey, plan }),
+    [timing, notes, musicKey, plan],
   )
 
   // Read through a ref so that a new score does not tear down and rebuild the
@@ -170,6 +176,23 @@ export function SheetMusic({
             className="pointer-events-none absolute top-0 left-0 hidden rounded-(--radius) bg-sheet-band"
           />
           <div ref={page} className="relative" />
+          {/*
+            Said once for the piece, and never off the page: a stave drawn from
+            inference looks exactly like one drawn from a manuscript, so the
+            summary stays visible and the readings are one click behind it, the
+            way a refused file keeps where-in-the-file one click away.
+          */}
+          <details data-testid="sheet-readings" className="mt-2 px-4 pb-4 text-xs text-text-muted">
+            <summary className="cursor-pointer">
+              {inferred.length} {inferred.length === 1 ? 'reading' : 'readings'} on this page are
+              the app&rsquo;s, not the score&rsquo;s
+            </summary>
+            <ul className="mt-2 flex list-disc flex-col gap-1 pl-5">
+              {inferred.map((reading) => (
+                <li key={reading}>{reading}</li>
+              ))}
+            </ul>
+          </details>
         </>
       )}
     </section>

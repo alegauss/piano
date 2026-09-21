@@ -34,30 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI77 Saying which part of the page is a guess
-
-Engraving reads as fact, which is the problem: a stave drawn from inference looks
-exactly like a stave drawn from a manuscript.
-
-What is actually inferred is worth listing. There are no clefs in the format, so the
-view reads hand, which note.ts warns is not the same thing as part. There is no key
-signature over time, only metadata.key as a free-form string; MIDI import keeps the
-first one it finds and drops any change mid-piece. There are no ties, no beams and no
-rests: a tied note is one long duration, and a gap is either a rest somebody wrote or a
-beat somebody forgot. barFigures reads one line per hand, so a held inner voice loses
-its figure, and a triplet's leftover is tied or rounded: name both.
-
-MIDI export already answers this shape of problem honestly. The score:export response
-carries a dropped list of what the file could not hold, and describeExport turns it into
-a sentence. Do the same here, shown the way OpenReport shows what an import guessed.
-
-Say it once for the piece rather than once per bar, and name the reading rather than the
-field: which clef came from which hand, that accidentals came from spelling where it was
-written and from the sharps-upward fallback where it was not, and that a bar which does
-not add up was filled with rests.
-
-A test asserts the sentence for a score with no key, mixed hands and a short bar.
-
 ### §PI78 Loading the engraver when somebody asks for it
 
 Measured across PI73 and PI74: the renderer bundle was 595 kB before the sheet view and
@@ -82,3 +58,29 @@ Confirm rather than assume: the build prints the chunk sizes, and the claim is t
 entry chunk drops by about a megabyte. A byte count in a test would be a test about
 esbuild, so do not write one. App.browser.test.tsx presses the button and expects the
 panel at once, so it needs findByLabelText instead.
+
+### §PI79 Beams, so the beat is visible
+
+Measured on the page as it stands: eight eighth notes in a 4/4 bar draw eight flags and
+no beams. The figures are right — PI72 spells them correctly — but beaming is how a
+reader sees where the beat is, and a row of flags leaves them to work the grouping out.
+
+VexFlow does this and is not being asked. sheet-draw.ts uses Formatter.format with a
+voice it draws itself, so no Beam is ever built. Beam.generateBeams(notes, groups) is
+the call, per stave per bar, with the beams drawn after the voice.
+
+The groups come from the meter, never assumed: 4/4 beams in twos or fours, 6/8 in
+threes, and 7/8 has no obvious answer. Take them from the bar's own time signature,
+which the plan carries, and leave an odd meter unbeamed rather than grouped wrongly.
+
+Beams are their own SVG elements, class vf-beam, and styles/sheet.css has no rule for
+them: without one they draw in VexFlow's default black and are invisible in the dark
+theme, which is the defect PI76 closed arriving by a new door. Add the rule with the
+code.
+
+Two things not to do. Beaming across a barline is not on: PI75 clips a note at the line
+and the two halves are separate figures. And a rest breaks a beam group, so a group is
+the run of figures between rests rather than the whole beat.
+
+A browser test counts vf-beam for a bar of eighths, and asserts a 6/8 bar beams in
+threes.

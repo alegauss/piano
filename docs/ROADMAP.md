@@ -16,8 +16,8 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI77** (deps: PI73 ✅) **The view infers clefs, accidentals and rests, then shows the guess as if it were the score** — The format carries no clefs, no key changes and no rests, so a reader is misled unless the page says what was inferred. → §PI77
 - 📋 **PI78** (deps: PI74 ✅) **Every launch loads the engraver and its music font, even for a player who never opens the stave** — The sheet view took the renderer bundle from 595 kB to 1.7 MB, and everyone pays that parse cost at every start. → §PI78
+- 📋 **PI79** (deps: —) **Eighth notes and shorter are drawn with a flag each, so the page shows no beat grouping** — Beaming is how a reader sees the beat, and eight flagged eighths read as eight separate notes rather than two groups of four. → §PI79
 
 ## Done when — Block A
 
