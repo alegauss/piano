@@ -9,8 +9,6 @@
 
 ## Block C — Audio engine and transport
 
-- 📋 **PI61** (deps: PI21 ✅, PI22 ✅) **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — A key moves from the synthesiser to its recording mid-phrase as registers arrive, and nothing has measured the two voices against each other. → §PI61
-
 ## Block E — Practice mode and difficulty levels
 
 - 📋 **PI62** (deps: PI38 ✅) **The roll says a note was late but not by how much, so a player who is always a hair early cannot see it** — A consistent bias is a shape on the roll rather than a word, and seeing it is what makes somebody fix it instead of guessing. → §PI62

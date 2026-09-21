@@ -45,22 +45,6 @@ message telling somebody which side to update names a number they cannot find.
 
 ## Block C — Audio engine and transport
 
-### §PI61 One instrument across the handover
-
-A key plays synthesised until its register arrives and recorded afterwards, often within
-one phrase, so the two have to sound like one instrument at the level of loudness and
-onset even though they cannot in timbre. Today they are set independently: the
-synthesised voice peaks at a fixed fraction of full scale, while a recording plays at
-the level the pack normalised it to, with the velocity gain applied on top of a layer
-that already carries its own loudness. Nothing has measured the two against each other.
-Measure first: render middle C at a few velocities through both voices offline and
-compare loudness over the first half second, with the real pack in a development run and
-a stand-in recording of known level in the test suite. Then calibrate the synthesised
-voice to the pack rather than the other way round, since the recordings are the
-reference, and carry the calibration in the manifest if packs differ. The onset matters
-as much: the recordings keep three milliseconds before the hammer, and the synthesised
-attack should land at the same point.
-
 ## Block E — Practice mode and difficulty levels
 
 ### §PI62 Timing error as a shape

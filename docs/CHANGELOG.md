@@ -81,6 +81,7 @@
   checked **The metronome accents the downbeat in any meter** A fixture in seven eight places the accent correctly, read from the time signature map rather than assuming four beats to a bar.
   checked **The count-in is never scored** Grading starts at the first written note, so an attempt played correctly after a count-in reports no late first note and no phantom extra note.
 - ✅ **PI59** **With the window hidden, Chromium may throttle the timer that wakes the scheduler, and notes then arrive late** — Minimised, the window woke 3 times in 2.5 s; unthrottled, every 25 ms wake stays inside the look-ahead, checked live (design recorded in `apps/desktop/src/main/window-preferences.ts`).
+- ✅ **PI61** **The synthesised fallback and the recordings are not matched in loudness or onset, so the handover can be heard** — Measured on the pack, the synth was 7-30 dB loud and 3 ms early; fitted, it is 3 dB off on average and on the hammer (design recorded in `apps/desktop/src/renderer/audio/synth-engine.ts`).
 
 ## Block D — Piano roll and on-screen keyboard
 

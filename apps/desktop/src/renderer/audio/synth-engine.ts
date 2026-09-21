@@ -1,3 +1,4 @@
+import { DEFAULT_TRIM } from '@piano/sample-pack'
 import type { Score } from '@piano/score-format'
 
 import {
@@ -9,8 +10,45 @@ import {
 } from './engine'
 import { WebAudioEngine, type VoiceNodes } from './web-audio-engine'
 
-/** Loudness of one note at full velocity, leaving room for a chord before the limiter works. */
+/**
+ * The synthesised voice, matched to the recordings it stands in for.
+ *
+ * A key plays synthesised until its register of recordings arrives, often in
+ * the middle of a phrase, so the two have to sound like one instrument in
+ * loudness and onset even though they cannot in timbre. The recordings are the
+ * reference and this voice is fitted to them, measured by rendering both
+ * offline across the keyboard (handover.browser.test.ts repeats it wherever
+ * the pack is installed).
+ *
+ * Loudness: at velocity 50 and 90, from C1 to F#7, the voice was louder than
+ * the pack by 14.5 dB at middle C on a least-squares line rising 0.22 dB a
+ * semitone, since recordings grow quieter towards the treble; single keys sit
+ * a few decibels either side of that line, as recordings do. The velocity
+ * curves already agreed, both rising about 31 dB from 20 to 120, so the level
+ * is what moved.
+ *
+ * Onset: the pack keeps a few milliseconds of silence before each hammer, and
+ * this voice's attack starts that much after the strike, so the two land
+ * together.
+ */
+
+/** Loudness of one note at full velocity before the fit: the level it was measured at. */
 const VOICE_PEAK = 0.3
+
+/** How much louder than the recordings the voice measured, at middle C. */
+const GAP_AT_MIDDLE_C_DB = 14.5
+
+/** How much that grew per semitone upwards. */
+const GAP_PER_SEMITONE_DB = 0.22
+
+/** The voice's peak at a pitch, fitted to the recordings. */
+export function voicePeak(pitch: number): number {
+  const gap = GAP_AT_MIDDLE_C_DB + GAP_PER_SEMITONE_DB * (pitch - 60)
+  return VOICE_PEAK * 10 ** (-gap / 20)
+}
+
+/** Where a recording's hammer lands after the strike: the silence the pack keeps before it. */
+export const ONSET_SECONDS = DEFAULT_TRIM.prerollSeconds
 
 const ATTACK_SECONDS = 0.004
 
@@ -49,10 +87,12 @@ export function synthVoice(
 ): VoiceNodes {
   const frequency = pitchToFrequency(pitch)
   const envelope = context.createGain()
-  const peak = VOICE_PEAK * velocityGain(velocity)
+  const peak = voicePeak(pitch) * velocityGain(velocity)
+  const struck = at + ONSET_SECONDS
   envelope.gain.setValueAtTime(0, at)
-  envelope.gain.linearRampToValueAtTime(peak, at + ATTACK_SECONDS)
-  envelope.gain.setTargetAtTime(0, at + ATTACK_SECONDS, decaySeconds(pitch))
+  envelope.gain.setValueAtTime(0, struck)
+  envelope.gain.linearRampToValueAtTime(peak, struck + ATTACK_SECONDS)
+  envelope.gain.setTargetAtTime(0, struck + ATTACK_SECONDS, decaySeconds(pitch))
   envelope.connect(into)
 
   const sources = PARTIALS.map(({ multiple, type, level }) => {
@@ -65,7 +105,7 @@ export function synthVoice(
     oscillator.start(at)
     // Whatever the pedals do, the string has died by then; without this an
     // undamped or pedalled note would keep its oscillators running for good.
-    oscillator.stop(at + ATTACK_SECONDS + decaySeconds(pitch) * 10)
+    oscillator.stop(struck + ATTACK_SECONDS + decaySeconds(pitch) * 10)
     return oscillator
   })
 
