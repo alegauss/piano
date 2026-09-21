@@ -114,6 +114,7 @@ export class Transport {
   private countInUntil: AudioTime | null = null
   private readonly listeners = new Set<() => void>()
   private readonly strikeListeners = new Set<(strike: StrikeEvent) => void>()
+  private readonly holdListeners = new Set<(tick: number) => void>()
 
   constructor(
     engine: PianoEngine,
@@ -133,6 +134,17 @@ export class Transport {
       (strike) => {
         for (const listener of this.strikeListeners) {
           listener(strike)
+        }
+      },
+      (tick) => {
+        // Arriving at a hold stops playback where it stands, so the position
+        // is exactly the tick being waited on and nothing drifts past it.
+        this.resumeTick = tick
+        this.scheduler.stop()
+        this.current = 'paused'
+        this.changed()
+        for (const listener of this.holdListeners) {
+          listener(tick)
         }
       },
     )
@@ -230,8 +242,12 @@ export class Transport {
       at += meter.numerator * beatSeconds
       this.countInUntil = at
     }
-    this.scheduler.start(this.resumeTick, at)
+    // Playing is set before the scheduler starts, not after: starting it
+    // wakes it, and a hold already at this tick comes straight back through
+    // the callback to say playback is paused. Setting it afterwards would
+    // overwrite that answer with the one this method assumed.
     this.current = 'playing'
+    this.scheduler.start(this.resumeTick, at)
     this.changed()
   }
 
@@ -318,6 +334,29 @@ export class Transport {
           this.strikeListeners.delete(listener)
         }
       },
+    }
+  }
+
+  /**
+   * Stop playback dead at a tick, or let it run.
+   *
+   * Wait mode is built on this: nothing at or after the tick is scheduled,
+   * so no note sounds ahead of a learner who has not played it yet, and the
+   * position comes to rest exactly there.
+   */
+  hold(tick: number | null): void {
+    this.scheduler.setHold(tick)
+  }
+
+  get heldAt(): number | null {
+    return this.scheduler.hold
+  }
+
+  /** Told when playback has reached a hold and come to rest on it. */
+  onHold(listener: (tick: number) => void): () => void {
+    this.holdListeners.add(listener)
+    return () => {
+      this.holdListeners.delete(listener)
     }
   }
 

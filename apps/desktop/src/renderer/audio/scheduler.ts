@@ -204,6 +204,17 @@ export class Scheduler {
    * already sounding: the release of a note already struck still goes.
    */
   private filter: PlaybackFilter = {}
+  /**
+   * A tick playback will not pass until it is let through.
+   *
+   * Wait mode needs this rather than a pause when the clock arrives: the
+   * scheduler hands notes over up to a tenth of a second early, so a pause
+   * at the moment of arrival would already have sounded the next few notes.
+   * Nothing at or after the hold is handed over at all.
+   */
+  private holdTick: number | null = null
+  /** Whether the clock has been told it reached the hold, so it is said once. */
+  private held = false
 
   constructor(
     private readonly engine: PianoEngine,
@@ -213,6 +224,8 @@ export class Scheduler {
     private readonly onEnd: () => void = () => {},
     /** Told of every strike as it is handed over, for anything that draws it. */
     private readonly onStrike: (strike: StrikeEvent) => void = () => {},
+    /** Told once when the clock reaches a hold, which is where wait mode stops. */
+    private readonly onHold: (tick: number) => void = () => {},
   ) {}
 
   /** Replace what is to be played. Stops first, since a timeline cannot change under a cursor. */
@@ -240,6 +253,19 @@ export class Scheduler {
 
   get loop(): LoopRange | null {
     return this.loopRange
+  }
+
+  /**
+   * Stop playback dead at a tick, or let it run. Nothing at or after the
+   * tick is scheduled, and onHold is called once the clock reaches it.
+   */
+  setHold(tick: number | null): void {
+    this.holdTick = tick
+    this.held = false
+  }
+
+  get hold(): number | null {
+    return this.holdTick
   }
 
   /** What sounds. Takes effect at the next note handed over, not at the next chord cut off. */
@@ -410,12 +436,22 @@ export class Scheduler {
       if (event === undefined) {
         break
       }
+      if (this.holdTick !== null && event.tick >= this.holdTick) {
+        break
+      }
       const at = this.timeAt(event.tick)
       if (at >= horizon) {
         break
       }
       this.hand(event, at)
       this.cursor += 1
+    }
+
+    // The clock has arrived at the hold: whoever set it decides what happens
+    // next, and is told exactly once.
+    if (this.holdTick !== null && !this.held && this.tickAt(now) >= this.holdTick) {
+      this.held = true
+      this.onHold(this.holdTick)
     }
     this.scheduledUntil = Math.max(this.scheduledUntil, horizon)
 

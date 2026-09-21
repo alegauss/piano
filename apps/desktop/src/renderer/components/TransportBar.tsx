@@ -5,6 +5,7 @@ import {
   Moon,
   Pause,
   Play,
+  PauseCircle,
   Repeat,
   SkipBack,
   Sparkles,
@@ -67,6 +68,9 @@ export type TransportBarProps = {
   readonly midi?: MidiInput
   /** The typing keyboard as an instrument, for the panel that switches it on. */
   readonly keys?: KeysInput
+  /** Whether the score waits for the player, and the way to change it. */
+  readonly waiting?: boolean
+  readonly onWaiting?: (waiting: boolean) => void
   /** The machine's measured lag, shown rather than hidden. */
   readonly latency?: Latency
   readonly calibrator?: Calibrator
@@ -99,6 +103,8 @@ export function TransportBar({
   onFull,
   midi,
   keys,
+  waiting = false,
+  onWaiting,
   latency,
   calibrator,
   onMeasuredLatency,
@@ -257,6 +263,19 @@ export function TransportBar({
             />
           </label>
 
+          {onWaiting === undefined ? null : (
+            <Button
+              variant={waiting ? 'secondary' : 'ghost'}
+              size="icon"
+              aria-label="Wait for me"
+              aria-pressed={waiting}
+              onClick={() => {
+                onWaiting(!waiting)
+              }}
+            >
+              <PauseCircle />
+            </Button>
+          )}
           {latency === undefined || calibrator === undefined ? null : (
             <LatencyPanel
               latency={latency}

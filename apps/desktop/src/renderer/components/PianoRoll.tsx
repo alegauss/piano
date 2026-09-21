@@ -63,6 +63,11 @@ export type PianoRollProps = {
    * part does not recolour the ones still on the field.
    */
   readonly colours?: ReadonlyMap<string, CanvasToken>
+  /**
+   * Keys the player owes now, lit while wait mode holds the score. Read once
+   * a frame like the position, since it changes as notes are played.
+   */
+  readonly expected?: () => readonly number[]
   /** The stretch marked for repeat, drawn behind the notes. */
   readonly loop?: LoopRange | null
   /**
@@ -95,6 +100,7 @@ export function PianoRoll({
   leadSeconds = DEFAULT_LEAD_SECONDS,
   strikes,
   effects = true,
+  expected = () => [],
   colours,
   loop = null,
   onSelectLoop,
@@ -120,9 +126,27 @@ export function PianoRoll({
   // The draw loop reads these through a ref so that changing the lead or the
   // score does not tear down and rebuild the loop mid-flight. Kept current
   // after each render rather than during it, which is not a ref's moment.
-  const frame = useRef({ timing, score, position, tempoScale, leadSeconds, palette, loop })
+  const frame = useRef({
+    timing,
+    score,
+    position,
+    tempoScale,
+    leadSeconds,
+    palette,
+    loop,
+    expected,
+  })
   useEffect(() => {
-    frame.current = { timing, score, position, tempoScale, leadSeconds, palette, loop }
+    frame.current = {
+      timing,
+      score,
+      position,
+      tempoScale,
+      leadSeconds,
+      palette,
+      loop,
+      expected,
+    }
   })
 
   useEffect(() => {
@@ -202,12 +226,21 @@ export function PianoRoll({
         field.draw(context, audioNow, view, current.palette)
       }
 
-      const pitches = soundingPitches(current.score, view.position)
-      // Only when the chord changes: 88 keys re-rendering every frame buys
-      // nothing, since a key is struck a few times a second at most.
+      // What the keyboard shows: the notes sounding, and the ones the player
+      // owes. An expected key wins, because it is the one being asked for.
+      const owed = current.expected()
+      const pitches = [...soundingPitches(current.score, view.position), ...owed]
+      // Only when it changes: 88 keys re-rendering every frame buys nothing,
+      // since a key is struck a few times a second at most.
       if (pitches.length !== shown.length || pitches.some((p, i) => p !== shown[i])) {
         shown = pitches
-        setSounding(new Map<number, KeyState>(pitches.map((pitch) => [pitch, 'sounding'])))
+        const states = new Map<number, KeyState>(
+          soundingPitches(current.score, view.position).map((pitch) => [pitch, 'sounding']),
+        )
+        for (const pitch of owed) {
+          states.set(pitch, 'expected')
+        }
+        setSounding(states)
       }
 
       times.record(performance.now() - started)

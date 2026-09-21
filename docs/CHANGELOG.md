@@ -116,6 +116,9 @@
   checked **Auto-repeat never produces a stream of note-ons** Holding a key sounds one note that sustains until release, asserted by a test over synthetic key events rather than by trying it by hand.
 - ✅ **PI35** **Input and output latency are unknown, so a player who is in time gets graded late** — Output latency comes from the platform and input latency from a dozen strikes against a click, kept per device and shown plainly (design recorded in `apps/desktop/src/renderer/lib/latency.ts`).
   checked **Calibration produces a stable figure from a dozen strikes** Repeating the measurement on the same hardware lands within a few milliseconds of the previous result, and the median absorbs one deliberately mistimed strike.
+- ✅ **PI36** **Playback runs away from a beginner, who cannot keep up and has nothing to practise against** — The transport holds at the next note the player owes, lights those keys, and carries on when they are struck (design recorded in `apps/desktop/src/renderer/lib/practice.ts`).
+  checked **The score waits for a chord and resumes cleanly** Playback holds until every note of the chord is struck inside the grouping window, then continues from that note without replaying it or jumping the accompaniment.
+  checked **Extra notes while waiting never block** Pressing wrong keys during a hold is recorded for the report but does not prevent the correct notes from releasing it.
 
 ## Block F — Claude Code First: MCP and plugin
 

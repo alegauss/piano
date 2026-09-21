@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI36 Letting the learner set the pace
-
-The single most useful practice feature is also the simplest: the score does not advance
-until the correct notes have been played. The transport reaches the next note event and
-stops, the expected keys light up, and playback resumes the moment they are struck. A
-chord requires all of its notes within a short grouping window, so they do not have to
-be exactly simultaneous. Getting the resume right is what makes it feel good: playback
-continues from the note just played rather than replaying the event, and the
-accompaniment, meaning any part the learner is not playing, keeps its relative position
-instead of jumping. Extra notes played while waiting are noted but never block, because
-a beginner exploring the keyboard is not committing an error. Wait mode composes with
-the parts panel, so waiting on the right hand while the left plays through is the
-ordinary way to use it. It is off while listening, and the grader observes the same code
-path, so there is exactly one notion of a correct note.
-
 ### §PI37 Saying how it went, in a way that helps
 
 Playing along without judgement is entertainment; practice needs to know what went

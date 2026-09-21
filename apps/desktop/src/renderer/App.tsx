@@ -32,6 +32,7 @@ import {
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { appPiano, appSound } from './lib/sound'
+import { createWaitMode } from './lib/wait-mode'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
 
 /**
@@ -84,6 +85,7 @@ export function App() {
   const [full, setFull] = useState(false)
   const [loop, setLoop] = useState<LoopRange | null>(null)
   const [partsView, setPartsView] = useState<PartsView>(NOTHING_TOUCHED)
+  const [waiting, setWaiting] = useState(false)
   const sound = appSound()
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
   const midi = appMidi()
@@ -132,6 +134,19 @@ export function App() {
   )
 
   const calibrator = useMemo(() => createCalibrator(piano.clicker, () => piano.now()), [piano])
+  const wait = useMemo(() => createWaitMode(transport), [transport])
+  const waitState = useSyncExternalStore(wait.subscribe, () => wait.state)
+
+  // Wait mode is told the score and who is playing which part of it: the
+  // notes it waits for are the ones the app has been told not to play.
+  const filter = useMemo(() => playbackFilter(partsView), [partsView])
+  useEffect(() => {
+    wait.use(notes, filter)
+  }, [wait, notes, filter])
+  useEffect(() => {
+    wait.setOn(waiting)
+  }, [wait, waiting])
+  useEffect(() => wait.close, [wait])
   // Told the lag rather than asked for it: the calibrator outlives this view.
   useEffect(() => {
     calibrator.useLatency(latency)
@@ -143,10 +158,12 @@ export function App() {
     const sound = (event: Parameters<typeof playLive>[2]) => {
       void piano.resume()
       playLive(piano.engine, () => piano.now(), event)
-      // A calibration in progress counts the strike, whichever input it came from.
+      // A calibration in progress counts the strike, and wait mode decides
+      // whether the score may move on; both take either input.
       if (event.kind === 'on') {
         calibrator.strike(piano.now())
       }
+      wait.played(event)
     }
     const stopMidi = midi.onEvent(sound)
     const stopKeys = keys.onEvent(sound)
@@ -154,13 +171,13 @@ export function App() {
       stopMidi()
       stopKeys()
     }
-  }, [piano, midi, keys, calibrator])
+  }, [piano, midi, keys, calibrator, wait])
 
   // What is heard follows the panel. The transport takes it at the next note
   // it schedules, so nothing already sounding is cut.
   useEffect(() => {
-    transport.setFilter(playbackFilter(partsView))
-  }, [transport, partsView])
+    transport.setFilter(filter)
+  }, [transport, filter])
 
   // The piano starts synthesised and moves onto the installed pack as its
   // recordings arrive; nothing waits for that.
@@ -272,6 +289,7 @@ export function App() {
             leadSeconds={leadSeconds}
             strikes={transport.strikes}
             effects={effects}
+            expected={() => waitState.outstanding}
             loop={loop}
             onSelectLoop={chooseLoop}
             className="min-h-0 flex-1"
@@ -293,6 +311,8 @@ export function App() {
           onFull={setFull}
           midi={midi}
           keys={keys}
+          waiting={waiting}
+          onWaiting={setWaiting}
           latency={latency}
           calibrator={calibrator}
           latencySetup={device ?? 'the typing keyboard'}
