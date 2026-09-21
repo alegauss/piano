@@ -147,6 +147,11 @@ jobs:
     name: serve the sample pack
     needs: [installers, pack]
     runs-on: ubuntu-latest
+    # The same group pages.yml deploys under, so a release and a pack published
+    # on its own never write the site at the same time.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write

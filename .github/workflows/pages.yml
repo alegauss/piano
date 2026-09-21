@@ -1,0 +1,109 @@
+name: Sample pack
+
+# The sample pack, served from GitHub Pages at the address the app downloads
+# it from, without waiting for a release.
+#
+# A release publishes the pack too (see release.yml), because the pack a
+# release points at must go up with it. This workflow is for the times there
+# is no release: the first deployment, before v0.1.0 is tagged, so a person
+# who builds the app from source has a pack to fetch; and a change to the
+# sources the pack is built from, which nothing else would publish.
+#
+# Both workflows deploy the same layout — the pack as a folder under /pack —
+# so whichever ran last, the site holds one pack and the app finds it. They
+# share a concurrency group, so a release deployment and this one never race.
+#
+# Once per repository, before the first run: Settings → Pages → Source:
+# GitHub Actions.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/sample-pack/sources.lock.json'
+      - 'packages/sample-pack/scripts/**'
+      - 'packages/sample-pack/src/**'
+      - '.github/workflows/pages.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    name: build the pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: ffmpeg, with libopus
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      # Hundreds of megabytes of FLAC, pinned by commit and checksum, so a copy
+      # from an earlier run is as good as a fresh download.
+      - uses: actions/cache@v4
+        with:
+          path: packages/sample-pack/.cache
+          key: salamander-${{ hashFiles('packages/sample-pack/sources.lock.json') }}
+
+      - name: build the pack
+        run: npm run pack:samples
+
+      - name: lay out the site
+        run: |
+          mkdir -p site/pack
+          cp -R packages/sample-pack/out/*/. site/pack/
+          test -f site/pack/manifest.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: serve it
+    needs: pack
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # The same check the release runs: the pack downloads, with the app's own
+  # downloader, from the address the app has compiled in.
+  verify:
+    name: it downloads from where the app looks
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # A fresh deployment can take a minute to be served everywhere.
+      - name: the pack downloads
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if npm run pack:verify-published; then exit 0; fi
+            sleep 30
+          done
+          exit 1
