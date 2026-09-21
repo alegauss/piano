@@ -116,6 +116,81 @@ export const linkListening = {
   response: z.null(),
 } as const satisfies Channel<'link:listening', z.ZodType, z.ZodType>
 
+/** Long enough for any path a file system will hand over, and no longer. */
+const PATH = z.string().min(1).max(4096)
+
+/**
+ * Where a score to open comes from. Never a path the page made up: a dropped
+ * file's path is worked out by the preload from the file itself, a recent one
+ * must be on the list main keeps, and a library score is named by its id.
+ */
+export const openRequestSchema = z.discriminatedUnion('from', [
+  /** Ask the person, with the system's own file dialog. */
+  z.object({ from: z.literal('dialog') }),
+  /** A file somebody dropped on the window. */
+  z.object({ from: z.literal('dropped'), path: PATH }),
+  /** One of the scores opened before, by the path the recent list holds. */
+  z.object({ from: z.literal('recent'), path: PATH }),
+  /** A score in the library, by the id Claude Code saved it under. */
+  z.object({ from: z.literal('library'), id: z.string().min(1).max(200) }),
+  /** Whatever the app was started to open, asked for once the window can show it. */
+  z.object({ from: z.literal('launch') }),
+])
+
+/** One thing wrong with a file, in the halves a person acts on and the path a model does. */
+export const openProblemSchema = z.object({
+  kind: z.string(),
+  path: z.string(),
+  received: z.string(),
+  expected: z.string(),
+  fix: z.string().optional(),
+})
+
+/**
+ * What became of an open. A refused file names what is wrong with it and
+ * nothing else changes; opened, the score has already been validated by main,
+ * which is the one place every route goes through.
+ */
+export const openResultSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('opened'),
+    /** The file's name, as a person would recognise it. */
+    name: z.string(),
+    score: z.unknown(),
+    /** What opening it changed or guessed, one sentence each: a migration, a MIDI import. */
+    notices: z.array(z.string()),
+  }),
+  z.object({
+    kind: z.literal('refused'),
+    name: z.string(),
+    message: z.string(),
+    problems: z.array(openProblemSchema),
+  }),
+  /** Nothing to open: the dialog was closed, or the app was started with no file. */
+  z.object({ kind: z.literal('none') }),
+])
+
+/** Open a score from one of the places a score comes from, through one validation. */
+export const scoreOpen = {
+  channel: CHANNEL_NAMES.scoreOpen,
+  request: openRequestSchema,
+  response: openResultSchema,
+} as const satisfies Channel<'score:open', z.ZodType, z.ZodType>
+
+export const recentEntrySchema = z.object({
+  path: PATH,
+  /** The file's name, which is how two scores with one title are told apart. */
+  name: z.string(),
+  title: z.string(),
+})
+
+/** The scores opened lately, newest first. */
+export const scoreRecent = {
+  channel: CHANNEL_NAMES.scoreRecent,
+  request: z.null(),
+  response: z.array(recentEntrySchema),
+} as const satisfies Channel<'score:recent', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
 export const allChannels = [
   appInfo,
@@ -124,6 +199,8 @@ export const allChannels = [
   packFile,
   linkAnswer,
   linkListening,
+  scoreOpen,
+  scoreRecent,
 ] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
@@ -134,6 +211,10 @@ export type PackManifestResponse = z.infer<typeof packManifest.response>
 export type PackFileRequest = z.infer<typeof packFile.request>
 export type PackFileResponse = z.infer<typeof packFile.response>
 export type LinkAnswerRequest = z.infer<typeof linkAnswer.request>
+export type OpenRequest = z.infer<typeof openRequestSchema>
+export type OpenProblem = z.infer<typeof openProblemSchema>
+export type OpenResult = z.infer<typeof openResultSchema>
+export type RecentEntry = z.infer<typeof recentEntrySchema>
 
 /** What main pushes the window: a command, and the id its answer must carry. */
 export type LinkCommandPush = {

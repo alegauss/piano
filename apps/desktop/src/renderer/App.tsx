@@ -1,4 +1,4 @@
-import type { AppInfoResponse } from '@piano/ipc'
+import type { AppInfoResponse, OpenRequest, OpenResult } from '@piano/ipc'
 import {
   arrangementForLevel,
   arrangementsOf,
@@ -14,10 +14,12 @@ import {
   type Note,
   type Score,
 } from '@piano/score-format'
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
+import { OpenControls } from './components/OpenControls'
+import { OpenReport, type Report } from './components/OpenReport'
 import { PartsPanel } from './components/PartsPanel'
 import { PianoRoll } from './components/PianoRoll'
 import { SoundStatus } from './components/SoundStatus'
@@ -32,7 +34,7 @@ import {
   type PartsView,
 } from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
-import { runCommand, type Controls } from './lib/commands'
+import { runCommand, type Controls, type Opening } from './lib/commands'
 import { createDrill } from './lib/drill'
 import { createGrader } from './lib/grader'
 import { createProgress, fingerprintOf, scoreKey } from './lib/progress'
@@ -54,13 +56,14 @@ import {
 } from './lib/latency'
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
+import { outcomeOf, type Opened } from './lib/open'
 import { appPiano, appSound } from './lib/sound'
 import { createWaitMode } from './lib/wait-mode'
 import { getTheme, setTheme, type ThemeName } from './lib/theme'
 
 /**
- * A stand-in until PI51 can open a real file. It exists so the renderer reads
- * the score format from the shared package rather than describing a score its
+ * What the window shows before anything is opened. A score like any other,
+ * read through the shared package, so the renderer never describes one its
  * own way, which is the drift PI2 exists to prevent.
  *
  * It carries a few notes in two parts so there is something to play, draw
@@ -118,10 +121,22 @@ export function App() {
   const midiState = useSyncExternalStore(midi.subscribe, () => midi.state)
   /** Figures measured in this session, over whatever was stored before it. */
   const [measured, setMeasured] = useState<Readonly<Record<string, number>>>({})
+  /**
+   * The piece that is open. Replaced whole, and only by a score main read and
+   * validated: a file that fails to open never reaches this, so there is no
+   * state in which the old piece is partly replaced by the new one.
+   */
+  const [score, setScore] = useState<Score>(placeholder)
+  /** What an open had to say: why a file was refused, or what a MIDI import guessed. */
+  const [report, setReport] = useState<Report | null>(null)
+  /** A file is being dragged over the window. */
+  const [dragging, setDragging] = useState(false)
+  /** Opens waiting for the transport to hold what they opened, settled when it does. */
+  const loaded = useRef<(() => void)[]>([])
 
-  const timing = useMemo(() => timingOf(placeholder), [])
-  const written = useMemo(() => notesOf(placeholder), [])
-  const arrangements = useMemo(() => arrangementsOf(placeholder), [])
+  const timing = useMemo(() => timingOf(score), [score])
+  const written = useMemo(() => notesOf(score), [score])
+  const arrangements = useMemo(() => arrangementsOf(score), [score])
   /**
    * The piece at the level chosen: the score's own arrangement for it where
    * there is one, and one worked out from the rules where there is not. A
@@ -136,14 +151,14 @@ export function App() {
       const resolved = resolveArrangement(authored, written)
       return { notes: resolved.notes, source: describeAuthored(resolved.label) }
     }
-    const reduced = reduceScore(placeholder, level, LEVEL_PRESETS[level].reduction)
+    const reduced = reduceScore(score, level, LEVEL_PRESETS[level].reduction)
     return { notes: reduced.notes, source: describeReduction(reduced) }
-  }, [level, arrangements, written])
+  }, [score, level, arrangements, written])
   const notes = version?.notes ?? written
-  const parts = useMemo(() => partsOf(placeholder), [])
-  const sections = useMemo(() => placeholder.sections ?? [], [])
-  const scoreId = useMemo(() => scoreKey(placeholder), [])
-  const fingerprint = useMemo(() => fingerprintOf(placeholder), [])
+  const parts = useMemo(() => partsOf(score), [score])
+  const sections = useMemo(() => score.sections ?? [], [score])
+  const scoreId = useMemo(() => scoreKey(score), [score])
+  const fingerprint = useMemo(() => fingerprintOf(score), [score])
   // Settled once from the whole piece, so hiding a part leaves the others
   // the colour they had.
   const colours = useMemo(() => partColours(notes), [notes])
@@ -168,6 +183,13 @@ export function App() {
   )
   useEffect(() => {
     transport.load({ timing, notes })
+    // An open that asked to be told, a tool call about to play what it
+    // opened, is told now that the transport holds it and not before.
+    const waiting = loaded.current
+    loaded.current = []
+    for (const settle of waiting) {
+      settle()
+    }
   }, [transport, timing, notes])
 
   /**
@@ -209,6 +231,76 @@ export function App() {
     [transport, grader, wait],
   )
 
+  /**
+   * Put an opened score in place of the open one, in one step. What belonged
+   * to the old piece — a drill, a loop, which parts were muted — goes with
+   * it; the level stays, because it is about the player and not the piece.
+   */
+  const replace = useCallback(
+    (opened: Opened) => {
+      drill.stop()
+      transport.setLoop(null)
+      setLoop(null)
+      setPartsView(NOTHING_TOUCHED)
+      setScore(opened.score)
+      setReport(
+        opened.notices.length > 0
+          ? { kind: 'notices', name: opened.name, notices: opened.notices }
+          : null,
+      )
+    },
+    [drill, transport],
+  )
+
+  /** Act on an answer to an open: replace the piece, or say why not and leave it. */
+  const show = useCallback(
+    (result: OpenResult) => {
+      const outcome = outcomeOf(result)
+      if (outcome.kind === 'opened') {
+        replace(outcome)
+      } else if (outcome.kind === 'refused') {
+        setReport(outcome)
+      }
+    },
+    [replace],
+  )
+
+  const openFrom = useCallback(
+    (request: Exclude<OpenRequest, { from: 'dropped' }>) => {
+      const bridge = readBridge()
+      if (bridge === null) {
+        return
+      }
+      void bridge.openScore(request).then(show, (cause: unknown) => {
+        setError(cause instanceof Error ? cause.message : String(cause))
+      })
+    },
+    [show],
+  )
+
+  /** Open a library score for Claude Code, and settle once it is the one the transport holds. */
+  const openForClaude = useCallback(
+    async (id: string): Promise<Opening> => {
+      const bridge = readBridge()
+      if (bridge === null) {
+        return { ok: false, text: 'This window has no way to open files.' }
+      }
+      const outcome = outcomeOf(await bridge.openScore({ from: 'library', id }))
+      if (outcome.kind !== 'opened') {
+        return {
+          ok: false,
+          text: outcome.kind === 'refused' ? outcome.message : `Nothing was opened for "${id}".`,
+        }
+      }
+      await new Promise<void>((resolve) => {
+        loaded.current.push(resolve)
+        replace(outcome)
+      })
+      return { ok: true, title: outcome.score.metadata.title }
+    },
+    [replace],
+  )
+
   // Wait mode is told the score and who is playing which part of it: the
   // notes it waits for are the ones the app has been told not to play. The
   // grader is told the same thing, because those are the notes it grades.
@@ -244,13 +336,14 @@ export function App() {
       transport,
       timing,
       sections,
-      title: placeholder.metadata.title,
+      title: score.metadata.title,
       level: () => level,
       chooseLevel,
       drill,
       wake: () => {
         void piano.resume()
       },
+      open: openForClaude,
     }
   })
   useEffect(() => {
@@ -260,13 +353,85 @@ export function App() {
     }
     return bridge.onLinkCommand(({ id, command }) => {
       const current = controls.current
-      const result =
-        current === null
-          ? { ok: false, text: 'The piano window is still starting. Ask again in a moment.' }
-          : runCommand(command, current)
-      void bridge.answerLinkCommand({ id, result })
+      void (async () => {
+        const result =
+          current === null
+            ? { ok: false, text: 'The piano window is still starting. Ask again in a moment.' }
+            : await runCommand(command, current).catch((cause: unknown) => ({
+                ok: false,
+                text: `The window could not do that: ${cause instanceof Error ? cause.message : String(cause)}`,
+              }))
+        await bridge.answerLinkCommand({ id, result })
+      })()
     })
   }, [])
+
+  // A score opened from outside the page arrives here: the menu, the file
+  // manager, a second launch. Then the window asks for whatever it was started
+  // to open, which it does only now that it is listening for the answer.
+  useEffect(() => {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    const stop = bridge.onScoreOpened(show)
+    void bridge.openScore({ from: 'launch' }).then(show, () => {})
+    return stop
+  }, [show])
+
+  // A file dropped anywhere on the window opens. Every drag carrying files is
+  // caught, because one that is not becomes a navigation to the file.
+  useEffect(() => {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    const carriesFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false
+    const over = (event: DragEvent) => {
+      if (!carriesFiles(event)) {
+        return
+      }
+      event.preventDefault()
+      if (event.dataTransfer !== null) {
+        event.dataTransfer.dropEffect = 'copy'
+      }
+      setDragging(true)
+    }
+    const leave = (event: DragEvent) => {
+      // Moving from one element to another inside the window is not leaving it.
+      if (event.relatedTarget === null) {
+        setDragging(false)
+      }
+    }
+    const drop = (event: DragEvent) => {
+      event.preventDefault()
+      setDragging(false)
+      const file = event.dataTransfer?.files[0]
+      if (file !== undefined) {
+        void bridge.openDroppedFile(file).then(show, () => {})
+      }
+    }
+    window.addEventListener('dragenter', over)
+    window.addEventListener('dragover', over)
+    window.addEventListener('dragleave', leave)
+    window.addEventListener('drop', drop)
+    return () => {
+      window.removeEventListener('dragenter', over)
+      window.removeEventListener('dragover', over)
+      window.removeEventListener('dragleave', leave)
+      window.removeEventListener('drop', drop)
+    }
+  }, [show])
+
+  // The title belongs to main; the renderer asks for it by intent.
+  useEffect(() => {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    const title = `Piano — ${describeScore(score)}`.slice(0, 200)
+    void bridge.setWindowTitle({ title }).catch(() => {})
+  }, [score])
 
   // Told the lag rather than asked for it: the calibrator and the grader both
   // outlive this view.
@@ -325,8 +490,6 @@ export function App() {
         if (!cancelled) {
           setInfo(next)
         }
-        // The title belongs to main; the renderer asks for it by intent.
-        await bridge.setWindowTitle({ title: `Piano — ${describeScore(placeholder)}` })
       } catch (cause: unknown) {
         if (!cancelled) {
           setError(cause instanceof Error ? cause.message : String(cause))
@@ -410,10 +573,33 @@ export function App() {
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border-subtle px-6 py-4">
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-text-strong">Piano</h1>
-            <p className="text-sm text-text-muted">{describeScore(placeholder)}</p>
+            <p className="text-sm text-text-muted">{describeScore(score)}</p>
           </div>
+          {readBridge() === null ? null : (
+            <OpenControls
+              open={openFrom}
+              recent={() => readBridge()?.recentScores() ?? Promise.resolve([])}
+            />
+          )}
         </header>
       )}
+
+      <OpenReport
+        report={report}
+        open={describeScore(score)}
+        onClose={() => {
+          setReport(null)
+        }}
+      />
+
+      {dragging ? (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center border-4 border-dashed border-accent bg-surface-base/80 text-lg font-semibold text-text-strong"
+        >
+          Drop a score or a MIDI file to open it
+        </div>
+      ) : null}
 
       {/*
         The player owns the window: the roll takes whatever is left after the

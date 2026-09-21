@@ -235,6 +235,26 @@ export async function runSelfCheck(window: BrowserWindow): Promise<CheckResult[]
     ),
   )
 
+  // 10a. A page opens only what a person chose. A path it names is refused
+  //      unless the recent list holds it, and a File it made up has no path
+  //      for the preload to find, so neither door reads the disk for it.
+  const named = join(__dirname, '..', '..', 'package.json')
+  const forged = (await webContents.executeJavaScript(
+    `Promise.all([
+      window.piano.openScore({ from: 'recent', path: ${JSON.stringify(named)} }),
+      window.piano.openDroppedFile(new File(['{}'], 'made-up.json')),
+    ]).then((answers) => answers.map((one) => one.kind + ': ' + (one.message || '')), (e) => ['error: ' + String(e && e.message || e)])`,
+  )) as string[]
+  results.push(
+    check(
+      'a page cannot open a file nobody chose',
+      forged.length === 2 &&
+        forged.every((answer) => answer.startsWith('refused')) &&
+        (forged[0] ?? '').includes('recent list'),
+      forged.join(' | '),
+    ),
+  )
+
   // 10. The window has this app's icon rather than Electron's. Development
   //     has no executable to take one from, so the file has to resolve.
   const icon = windowIcon()

@@ -1,5 +1,7 @@
 import { shell, type BrowserWindow, type Session } from 'electron'
 
+import { isInternal } from './navigation'
+
 /**
  * The renderer holds no privilege, and these are the walls that keep it that
  * way once contextIsolation and the sandbox have done their part.
@@ -99,8 +101,17 @@ export function applyPermissions(session: Session): void {
 /**
  * The window shows this app and never becomes a browser. A link goes to the
  * real browser, where the user can see the address bar.
+ *
+ * The one file it may show is its own page. A score dropped where the page
+ * does not catch it is a navigation to that file, and it would replace the
+ * app with the file's text; so a file URL is internal only when it is the
+ * page the window was built to show.
  */
-export function confineNavigation(window: BrowserWindow, allowedOrigin: string | undefined): void {
+export function confineNavigation(
+  window: BrowserWindow,
+  allowedOrigin: string | undefined,
+  appPage: string,
+): void {
   const { webContents } = window
 
   webContents.setWindowOpenHandler(({ url }) => {
@@ -109,29 +120,18 @@ export function confineNavigation(window: BrowserWindow, allowedOrigin: string |
   })
 
   webContents.on('will-navigate', (event, url) => {
-    if (isInternal(url, allowedOrigin)) {
+    if (isInternal(url, allowedOrigin, appPage)) {
       return
     }
     event.preventDefault()
-    void shell.openExternal(url)
+    // Somebody's own file is not opened in a browser either: it goes nowhere.
+    if (!url.startsWith('file:')) {
+      void shell.openExternal(url)
+    }
   })
 
   // A webview is a second renderer with its own settings; this app has none.
   webContents.on('will-attach-webview', (event) => {
     event.preventDefault()
   })
-}
-
-function isInternal(url: string, allowedOrigin: string | undefined): boolean {
-  if (url.startsWith('file://')) {
-    return true
-  }
-  if (allowedOrigin === undefined || allowedOrigin === '') {
-    return false
-  }
-  try {
-    return new URL(url).origin === new URL(allowedOrigin).origin
-  } catch {
-    return false
-  }
 }

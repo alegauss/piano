@@ -1,4 +1,4 @@
-import { PRESENCE_DIRECTORY } from '@piano/ipc'
+import { LIBRARY_DIRECTORY, PRESENCE_DIRECTORY } from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -26,7 +26,7 @@ import { PLUGIN_VERSION } from './version'
 /** Where scores are kept, unless a caller says otherwise. */
 export function defaultLibraryRoot(): string {
   const named = process.env['PIANO_LIBRARY']
-  return named !== undefined && named.trim() !== '' ? named : join(homedir(), '.piano', 'library')
+  return named !== undefined && named.trim() !== '' ? named : join(homedir(), ...LIBRARY_DIRECTORY)
 }
 
 /** Node's filesystem, as the library asks for it. */

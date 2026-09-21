@@ -1,3 +1,4 @@
+import { libraryFileName, safeName, SCORE_SUFFIX } from '@piano/ipc'
 import {
   compareForLibrary,
   matchesFilter,
@@ -6,6 +7,10 @@ import {
   type Score,
   type ScoreMetadata,
 } from '@piano/score-format'
+
+// How an id becomes a file name is shared with the app, which opens what this
+// writes; it is re-exported here because it is also this module's contract.
+export { safeName, SCORE_SUFFIX }
 
 /**
  * The scores on disk, and the only part of the filesystem this server touches.
@@ -20,12 +25,6 @@ import {
  * Validation is the shared package's, never this server's: a file the app
  * would refuse must not be one the server writes.
  */
-
-/** How the file for a score is named, so a listing can find it again. */
-export const SCORE_SUFFIX = '.score.json'
-
-/** Long enough for a title, short enough to stay a file name everywhere. */
-const MAX_NAME = 64
 
 export type LibraryEntry = {
   readonly id: string
@@ -56,30 +55,6 @@ export type Library = {
   readonly search: (filter: LibraryFilter) => Promise<LibraryEntry[]>
 }
 
-/**
- * A name reduced to what a file system and a URL both accept.
- *
- * Everything else goes, rather than being escaped: an id is an address and not
- * a title, and the one thing it must never do is climb out of the library.
- */
-export function safeName(name: string): string {
-  const reduced = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .slice(0, MAX_NAME)
-    .replace(/^-+/, '')
-    .replace(/-+$/, '')
-  if (reduced === '') {
-    return 'score'
-  }
-  // Windows keeps these names for devices whatever follows them: a score
-  // called "con" written as con.score.json is a write to the console.
-  return WINDOWS_DEVICES.test(reduced) ? `${reduced}-score` : reduced
-}
-
-/** The names Windows reserves for devices, which no file may take. */
-const WINDOWS_DEVICES = /^(con|prn|aux|nul|com\d|lpt\d)$/
-
 /** What a score is filed under: its own id where it has one, its title otherwise. */
 export function libraryId(score: Score): string {
   const id = score.metadata.id
@@ -87,7 +62,7 @@ export function libraryId(score: Score): string {
 }
 
 export function createLibrary(root: string, files: Files): Library {
-  const pathFor = (id: string) => `${root}/${safeName(id)}${SCORE_SUFFIX}`
+  const pathFor = (id: string) => `${root}/${libraryFileName(id)}`
 
   const readScore = async (path: string): Promise<Score> => {
     const parsed = parseScore(JSON.parse(await files.read(path)))

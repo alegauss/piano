@@ -127,25 +127,6 @@ validation, so the app can show the same ones to somebody opening a file.
 
 ## Block G — Score library and distribution
 
-### §PI51 The three ways people open a file
-
-Everyone expects the same three. Dragging a file onto the window, which in Electron
-means handling the drop in the renderer and passing a path across the boundary rather
-than reading it there. A file dialog reachable from a menu item and a keyboard shortcut.
-And a recent list, which is the one most used after the first week and the one most
-often forgotten. The operating system side matters too: double-clicking a score file
-should open it here, which means registering the extension during packaging and handling
-the open-file event on macOS and the command-line argument on Windows, including the
-case where the app is already running. Every route goes through the same validation, so
-a malformed file produces the same readable error however it arrived, shown to a person
-as the expected and fix halves of each problem with the JSON paths kept out of the way.
-A file that fails to open must not leave the app half-loaded with the previous score
-partly replaced, which is the bug this feature is most likely to grow. Claude Code
-already asks for a score by library id: the window refuses that until it can open files,
-and opening one is this same route. A .mid file takes the same routes through importMidi
-from the score-format package, and the lists of what it dropped and what it guessed are
-shown to whoever opened it rather than swallowed.
-
 ### §PI52 A collection that stays usable as it grows
 
 One score in a folder needs no library. Two hundred, which is roughly what a month of
@@ -244,3 +225,21 @@ it named have since been edited: naming a note that is no longer there is alread
 validation error, so the choice is between dropping the stale arrangement and
 re-deriving it, and that is a judgement about whose work is worth more rather than
 something the code can settle.
+
+### §PI66 A file type the system can hand to the piano
+
+The app already opens whatever the system hands it: the file on its command line at
+launch, the one a second launch passes to the running window, and the macOS open-file
+event, early or late. What is missing is the system knowing to hand it over, and that is
+blocked on a name rather than on code. Scores are saved as `name.score.json`, and
+neither Windows nor macOS registers a double extension: a claim on `.score.json` is a
+claim on every `.json` somebody has, which no piano app should make. So the choice comes
+first. A single extension of the app's own, such as `.piano`, holding the same JSON, is
+the one that can be registered honestly; the library then writes it, reads both suffixes
+while old files remain, and the MCP server and the app keep sharing the one naming
+function in the IPC package. MIDI is different: `.mid` belongs to whatever the person
+already uses, so the piano should appear under Open With and never become the default,
+which is `rank: Alternate` on macOS and an OpenWithProgids entry rather than a default
+verb on Windows. The Linux AppImage gets a desktop entry and a MIME type with the same
+split. Done when a score double-clicked in the file manager opens in the piano, and a
+MIDI file offers it without taking it over.

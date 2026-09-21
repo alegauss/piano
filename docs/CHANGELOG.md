@@ -164,3 +164,6 @@
 
 ## Block G — Score library and distribution
 
+- ✅ **PI51** **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Dialog, drop, recent list, command line and Claude Code's library id open a score through one validation; a refused file leaves the open piece (design recorded in `apps/desktop/src/main/opener.ts`).
+  checked **All three open routes reach the same validation** Drag and drop, the file dialog and the recent list each produce the identical readable error on a malformed score, with no route bypassing the validator.
+  checked **A failed open leaves the previous score intact** Opening a bad file keeps the currently loaded score playable, rather than leaving the app stranded half-way between the two.

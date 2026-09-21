@@ -18,18 +18,18 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI50** (deps: PI26 ✅, PI46 ✅, PI48 ✅, PI51) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
+- 📋 **PI50** (deps: PI26 ✅, PI46 ✅, PI48 ✅, PI51 ✅) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 - 📋 **PI65** (deps: PI46 ✅) **validate_score passes a score with the left hand above the right, a chord no hand can reach, or a bar half full** — The arithmetic half of the skill's list, returned as warnings beside a valid result, is what a model acts on when it would skip rereading. → §PI65
 
 ## Block G — Score library and distribution
 
-- 📋 **PI51** (deps: PI3 ✅, PI15 ✅) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
-- 📋 **PI52** (deps: PI13 ✅, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
+- 📋 **PI52** (deps: PI13 ✅, PI51 ✅) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-- 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-- 📋 **PI63** (deps: PI51) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
+- 📋 **PI58** (deps: PI17 ✅, PI51 ✅) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
+- 📋 **PI63** (deps: PI51 ✅) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
+- 📋 **PI66** (deps: PI51 ✅) **Double-clicking a score in the file manager never reaches the piano: no file type is registered** — A .score.json cannot be registered without claiming every .json, so the extension a score is saved under has to be settled before packaging can claim it. → §PI66
 
 ## Done when — PI50
 
@@ -39,15 +39,6 @@
 - **The chain is gated in CI without a live model** A recorded model response is the
   default path so every push is checked, with a live run available on demand for when
   the prompt itself changes.
-
-## Done when — PI51
-
-- **All three open routes reach the same validation** Drag and drop, the file dialog and
-  the recent list each produce the identical readable error on a malformed score, with
-  no route bypassing the validator.
-- **A failed open leaves the previous score intact** Opening a bad file keeps the
-  currently loaded score playable, rather than leaving the app stranded half-way between
-  the two.
 
 ## Done when — PI52
 

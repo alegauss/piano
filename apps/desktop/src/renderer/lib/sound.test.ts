@@ -22,6 +22,10 @@ function bridge(overrides: Partial<PianoBridge> = {}): PianoBridge {
     packFile: () => Promise.resolve({ bytes: new Uint8Array([1, 2, 3]) }),
     onLinkCommand: () => () => {},
     answerLinkCommand: () => Promise.resolve(null),
+    openScore: () => Promise.resolve({ kind: 'none' }),
+    openDroppedFile: () => Promise.resolve({ kind: 'none' }),
+    recentScores: () => Promise.resolve([]),
+    onScoreOpened: () => () => {},
     ...overrides,
   }
 }

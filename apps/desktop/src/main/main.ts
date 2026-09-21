@@ -1,13 +1,26 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
-import { APP_RECORD, needsWindow, PRESENCE_DIRECTORY, PUSH_NAMES, type AppRecord } from '@piano/ipc'
-import { app, BrowserWindow, session } from 'electron'
+import {
+  APP_RECORD,
+  needsWindow,
+  PRESENCE_DIRECTORY,
+  PUSH_NAMES,
+  type AppRecord,
+  type OpenResult,
+  type RecentEntry,
+} from '@piano/ipc'
+import { app, BrowserWindow, dialog, Menu, session, type OpenDialogOptions } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
 import { startLinkHost, type LinkHost } from './link-host'
 import { createRelay } from './link-relay'
+import { menuTemplate } from './menu'
+import { createOpener } from './opener'
+import { createRecent } from './recent'
+import { launchPath, libraryRoot, openScoreFile } from './score-files'
 import { applyContentSecurityPolicy, applyPermissions, confineNavigation } from './security'
 import { secureWebPreferences, WINDOW_BACKGROUND, windowIcon } from './window-preferences'
 
@@ -79,6 +92,93 @@ const relay = createRelay((message) => {
 
 let linkHost: LinkHost | null = null
 let listening = false
+
+/** The scores opened lately, kept in this profile. */
+const recent = createRecent(join(app.getPath('userData'), 'recent-scores.json'))
+
+/**
+ * What the app was started to open, held until the window asks for it: a
+ * score pushed before the page is listening would be opened and lost.
+ */
+let launchFile: string | null = launchPath(process.argv, process.cwd())
+
+/** Whether the window has asked, after which a score opened from outside is sent straight to it. */
+let windowAsked = false
+
+const opener = createOpener({
+  read: openScoreFile,
+  recent,
+  choose: chooseScoreFile,
+  libraryRoot: () => libraryRoot(),
+  launched: () => {
+    const file = launchFile
+    launchFile = null
+    return file
+  },
+  remembered: (entries, opened) => {
+    app.addRecentDocument(opened.path)
+    setMenu(entries)
+  },
+})
+
+async function chooseScoreFile(): Promise<string | null> {
+  const options: OpenDialogOptions = {
+    title: 'Open a score',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Scores and MIDI files', extensions: ['json', 'mid', 'midi'] },
+      { name: 'All files', extensions: ['*'] },
+    ],
+  }
+  const window = mainWindow
+  const chosen =
+    window === null || window.isDestroyed()
+      ? await dialog.showOpenDialog(options)
+      : await dialog.showOpenDialog(window, options)
+  return chosen.canceled ? null : (chosen.filePaths[0] ?? null)
+}
+
+/**
+ * Open a score for the window from outside the page — the menu, the file
+ * manager, a second launch — and bring the window forward with the outcome,
+ * a refusal included: somebody who asked for a file is owed an answer.
+ */
+async function openForWindow(open: () => Promise<OpenResult>): Promise<void> {
+  const result = await open()
+  const window = mainWindow
+  if (result.kind === 'none' || window === null || window.isDestroyed()) {
+    return
+  }
+  raise(window)
+  window.webContents.send(PUSH_NAMES.scoreOpened, result)
+}
+
+/** A file named from outside: sent to the window once it is listening, held for it until then. */
+function openFromOutside(path: string): void {
+  if (!windowAsked) {
+    launchFile = path
+    return
+  }
+  void openForWindow(() => opener.openPath(path))
+}
+
+function setMenu(entries: readonly RecentEntry[]): void {
+  const template = menuTemplate(process.platform, entries, {
+    open: () => {
+      void openForWindow(() => opener.open({ from: 'dialog' }))
+    },
+    openRecent: (path) => {
+      void openForWindow(() => opener.open({ from: 'recent', path }))
+    },
+    clearRecent: () => {
+      void recent.clear().then(() => {
+        app.clearRecentDocuments()
+        setMenu([])
+      })
+    },
+  })
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
 
 /** Where running apps leave word of themselves for the MCP server. */
 function presenceDirectory(): string {
@@ -157,7 +257,7 @@ function createWindow(): void {
     webPreferences: secureWebPreferences,
   })
 
-  confineNavigation(mainWindow, devServerUrl)
+  confineNavigation(mainWindow, devServerUrl, pathToFileURL(rendererPage()).href)
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
@@ -180,8 +280,13 @@ function createWindow(): void {
   if (devServerUrl !== undefined && devServerUrl !== '') {
     void mainWindow.loadURL(devServerUrl)
   } else {
-    void mainWindow.loadFile(join(__dirname, '..', 'renderer', 'index.html'))
+    void mainWindow.loadFile(rendererPage())
   }
+}
+
+/** The page the window shows when the renderer was built to disk. */
+function rendererPage(): string {
+  return join(__dirname, '..', 'renderer', 'index.html')
 }
 
 function armHeadlessRun(window: BrowserWindow): void {
@@ -228,11 +333,23 @@ function armHeadlessRun(window: BrowserWindow): void {
   }, HEADLESS_TIMEOUT_MS).unref()
 }
 
-// A second launch lands here instead of opening another window.
-app.on('second-instance', () => {
+// A second launch lands here instead of opening another window, and a file it
+// was started to open — a double-click in the file manager — opens in this one.
+app.on('second-instance', (_event, commandLine, workingDirectory) => {
   if (mainWindow !== null && !mainWindow.isDestroyed()) {
     raise(mainWindow)
   }
+  const path = launchPath(commandLine, workingDirectory)
+  if (path !== null) {
+    openFromOutside(path)
+  }
+})
+
+// macOS hands a file over as an event rather than an argument, and can do so
+// before the app is ready, which is why it is listened for from the start.
+app.on('open-file', (event, path) => {
+  event.preventDefault()
+  openFromOutside(path)
 })
 
 if (firstInstance) {
@@ -246,8 +363,19 @@ if (firstInstance) {
         linkListening: () => {
           void listenForClaude()
         },
+        openScore: (request) => {
+          // The window asking for what it was launched with is the window
+          // listening, so anything opened from outside after this is sent.
+          if (request.from === 'launch') {
+            windowAsked = true
+          }
+          return opener.open(request)
+        },
+        recentScores: () => recent.list(),
       })
 
+      setMenu([])
+      void recent.list().then(setMenu)
       createWindow()
       void recordInstallation()
 

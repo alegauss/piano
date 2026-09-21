@@ -6,9 +6,14 @@ import {
   linkListening,
   packFile,
   packManifest,
+  scoreOpen,
+  scoreRecent,
   windowSetTitle,
   type Channel,
   type LinkResult,
+  type OpenRequest,
+  type OpenResult,
+  type RecentEntry,
 } from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
@@ -68,6 +73,9 @@ export function registerIpcHandlers(options: {
   readonly answerLink: (id: string, result: LinkResult) => void
   /** The window is ready for commands, which is when the app may say it is there. */
   readonly linkListening: () => void
+  /** Open a score, through the one road every source takes. */
+  readonly openScore: (request: OpenRequest) => Promise<OpenResult>
+  readonly recentScores: () => Promise<RecentEntry[]>
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -98,6 +106,10 @@ export function registerIpcHandlers(options: {
     options.linkListening()
     return null
   })
+
+  handle(scoreOpen, (request) => options.openScore(request))
+
+  handle(scoreRecent, () => options.recentScores())
 }
 
 /**

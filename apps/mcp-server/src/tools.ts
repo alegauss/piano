@@ -200,16 +200,15 @@ export function toolsFor(library: Library, link: Link): Tool[] {
       name: 'play',
       title: 'Play',
       description:
-        'Start the piano playing in the open window, from where it is, and say what is ' +
-        'playing. The window cannot open a library score yet: naming one is refused rather ' +
-        'than playing the wrong piece. Answers whether a window was listening.',
+        'Start the piano playing in the open window and say what is playing. Name a library ' +
+        'score to open it in the window and play it from the start; without one, what is ' +
+        'open plays from where it stands. A score that cannot be opened is refused and the ' +
+        'open piece is left as it was. Answers whether a window was listening.',
       shape: {
         score: z
           .string()
           .optional()
-          .describe(
-            'The id of a library score to open first; refused until the app can open files.',
-          ),
+          .describe('The id of a library score to open and play, as save_score reported it.'),
       },
       run: async ({ score }) => fromLink(await link.send({ kind: 'play', score })),
     }),

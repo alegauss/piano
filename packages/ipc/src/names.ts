@@ -16,6 +16,8 @@ export const CHANNEL_NAMES = {
   packFile: 'pack:file',
   linkAnswer: 'link:answer',
   linkListening: 'link:listening',
+  scoreOpen: 'score:open',
+  scoreRecent: 'score:recent',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
@@ -24,9 +26,12 @@ export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]
  * Messages main sends the renderer without being asked.
  *
  * Apart from the channels because they run the other way: a channel is the
- * renderer asking and main answering, and a push is main telling. There is
- * one, and it carries a command from Claude Code to the window.
+ * renderer asking and main answering, and a push is main telling: a command
+ * from Claude Code for the window, and a score main opened because somebody
+ * asked it to from outside the page — the menu, the file manager, a second
+ * launch.
  */
 export const PUSH_NAMES = {
   linkCommand: 'link:command',
+  scoreOpened: 'score:opened',
 } as const

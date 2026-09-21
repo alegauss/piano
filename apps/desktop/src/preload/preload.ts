@@ -1,6 +1,6 @@
-import type { LinkCommandPush, PianoBridge } from '@piano/ipc'
+import type { LinkCommandPush, OpenResult, PianoBridge } from '@piano/ipc'
 import { CHANNEL_NAMES, PUSH_NAMES } from '@piano/ipc/names'
-import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
 
 /**
  * ipcRenderer.invoke is typed as Promise<any>, because it cannot know what is
@@ -45,6 +45,38 @@ const bridge: PianoBridge = {
     }
   },
   answerLinkCommand: async (answer) => invoke(CHANNEL_NAMES.linkAnswer, answer),
+  openScore: async (request) => invoke(CHANNEL_NAMES.scoreOpen, request),
+  // The path is asked of Electron here, from the File itself. A page can make
+  // a File out of nothing, but only one somebody dropped has a path, so this
+  // door opens what a person dropped and nothing a script names.
+  openDroppedFile: async (file) => {
+    let path = ''
+    try {
+      path = webUtils.getPathForFile(file as File)
+    } catch {
+      // Not a File at all, which is a page trying something rather than a drop.
+    }
+    if (path === '') {
+      const { name } = file as { readonly name?: unknown }
+      return {
+        kind: 'refused',
+        name: typeof name === 'string' ? name : 'that',
+        message: 'Only a file dropped from the computer can be opened this way.',
+        problems: [],
+      }
+    }
+    return invoke(CHANNEL_NAMES.scoreOpen, { from: 'dropped', path })
+  },
+  recentScores: async () => invoke(CHANNEL_NAMES.scoreRecent, null),
+  onScoreOpened: (listener) => {
+    const forward = (_event: IpcRendererEvent, result: OpenResult) => {
+      listener(result)
+    }
+    ipcRenderer.on(PUSH_NAMES.scoreOpened, forward)
+    return () => {
+      ipcRenderer.removeListener(PUSH_NAMES.scoreOpened, forward)
+    }
+  },
 }
 
 contextBridge.exposeInMainWorld('piano', bridge)

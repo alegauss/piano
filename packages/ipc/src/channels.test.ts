@@ -7,6 +7,8 @@ import {
   formatIssues,
   packFile,
   packManifest,
+  scoreOpen,
+  scoreRecent,
   windowSetTitle,
 } from './channels'
 import { CHANNEL_NAMES } from './names'
@@ -98,6 +100,51 @@ describe('pack:file', () => {
   it('answers with bytes', () => {
     expect(packFile.response.safeParse({ bytes: new Uint8Array([1, 2]) }).success).toBe(true)
     expect(packFile.response.safeParse({ bytes: [1, 2] }).success).toBe(false)
+  })
+})
+
+describe('score:open', () => {
+  it.each([
+    ['the dialog', { from: 'dialog' }],
+    ['a dropped file', { from: 'dropped', path: '/home/ada/aria.json' }],
+    ['a recent file', { from: 'recent', path: 'C:\\Music\\aria.json' }],
+    ['a library id', { from: 'library', id: 'bwv-846' }],
+    ['what the app was launched with', { from: 'launch' }],
+  ])('accepts %s', (_label, request) => {
+    expect(scoreOpen.request.safeParse(request).success).toBe(true)
+  })
+
+  it.each([
+    ['a source nobody declared', { from: 'anywhere', path: '/etc/passwd' }],
+    ['a drop with no path', { from: 'dropped' }],
+    ['an empty library id', { from: 'library', id: '' }],
+    ['a library id longer than any title', { from: 'library', id: 'x'.repeat(201) }],
+    ['nothing', null],
+  ])('refuses %s', (_label, request) => {
+    expect(scoreOpen.request.safeParse(request).success).toBe(false)
+  })
+
+  it('answers opened, refused with its reasons, or nothing', () => {
+    const { response } = scoreOpen
+    expect(
+      response.safeParse({ kind: 'opened', name: 'a.json', score: {}, notices: [] }).success,
+    ).toBe(true)
+    expect(
+      response.safeParse({ kind: 'refused', name: 'a.json', message: 'no', problems: [] }).success,
+    ).toBe(true)
+    expect(response.safeParse({ kind: 'none' }).success).toBe(true)
+    expect(response.safeParse({ kind: 'refused', name: 'a.json' }).success).toBe(false)
+  })
+})
+
+describe('score:recent', () => {
+  it('lists entries with a path, a file name and a title', () => {
+    expect(
+      scoreRecent.response.safeParse([{ path: '/m/a.json', name: 'a.json', title: 'A' }]).success,
+    ).toBe(true)
+    expect(scoreRecent.response.safeParse([{ path: '', name: 'a.json', title: 'A' }]).success).toBe(
+      false,
+    )
   })
 })
 

@@ -38,7 +38,15 @@ export type Controls = {
   readonly drill: Drill
   /** Let the audio start, since a command is not a click and a platform may want one. */
   readonly wake?: () => void
+  /**
+   * Open a library score by its id, the way any other open goes, and settle
+   * once the transport holds it. A refusal leaves the open piece where it was.
+   */
+  readonly open: (id: string) => Promise<Opening>
 }
+
+export type Opening =
+  { readonly ok: true; readonly title: string } | { readonly ok: false; readonly text: string }
 
 const percent = (scale: number) => `${String(Math.round(scale * 100))}%`
 
@@ -52,19 +60,24 @@ function barNow(controls: Controls): number {
   return barAtTick(controls.timing, controls.transport.position()).bar
 }
 
-export function runCommand(command: Command, controls: Controls): LinkResult {
+export async function runCommand(command: Command, controls: Controls): Promise<LinkResult> {
   const { transport } = controls
   switch (command.kind) {
     case 'play': {
       if (command.score !== undefined) {
-        // Playing the piece that is open when somebody asked for another one
-        // is the wrong answer given confidently.
-        return {
-          ok: false,
-          text:
-            `This window cannot open "${command.score}" yet: it plays what is open, which is ` +
-            `"${controls.title}". Ask to play without naming a score to hear that.`,
+        const opened = await controls.open(command.score)
+        if (!opened.ok) {
+          // Playing the piece that is open when somebody asked for another
+          // one is the wrong answer given confidently, so nothing plays.
+          const said = /[.!?]$/.test(opened.text) ? opened.text : `${opened.text}.`
+          return {
+            ok: false,
+            text: `${said} "${controls.title}" is still open, and nothing was played.`,
+          }
         }
+        controls.wake?.()
+        transport.play()
+        return { ok: true, text: `Opened "${opened.title}" and playing it from the start.` }
       }
       controls.wake?.()
       transport.play()

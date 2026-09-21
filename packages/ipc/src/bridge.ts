@@ -2,9 +2,12 @@ import type {
   AppInfoResponse,
   LinkAnswerRequest,
   LinkCommandPush,
+  OpenRequest,
+  OpenResult,
   PackFileRequest,
   PackFileResponse,
   PackManifestResponse,
+  RecentEntry,
   WindowSetTitleRequest,
   WindowSetTitleResponse,
 } from './channels'
@@ -34,4 +37,20 @@ export type PianoBridge = {
   readonly onLinkCommand: (listener: (push: LinkCommandPush) => void) => () => void
   /** Say what became of a command, by the id it arrived with. */
   readonly answerLinkCommand: (answer: LinkAnswerRequest) => Promise<null>
+  /**
+   * Open a score from the dialog, the recent list, the library or whatever
+   * the app was launched with. A dropped file has its own door below.
+   */
+  readonly openScore: (request: Exclude<OpenRequest, { from: 'dropped' }>) => Promise<OpenResult>
+  /**
+   * Open a file somebody dropped on the window. It takes the dropped File
+   * itself rather than a path: the preload asks Electron where it is, so a
+   * page can only ever open a file a person really dropped. Typed as an object
+   * because this contract carries no DOM.
+   */
+  readonly openDroppedFile: (file: object) => Promise<OpenResult>
+  /** The scores opened lately, newest first. */
+  readonly recentScores: () => Promise<RecentEntry[]>
+  /** Be told when main opened a score: from the menu, the file manager or a second launch. */
+  readonly onScoreOpened: (listener: (result: OpenResult) => void) => () => void
 }

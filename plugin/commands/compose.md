@@ -18,6 +18,6 @@ Write a score for: $ARGUMENTS
    exactly the fields the problems name and check again, until it is valid.
    Then read it once against the skill's list of mistakes validation misses.
 5. Keep it with `save_score`, and tell me the id it was saved under.
-6. Ask the piano what is open with `piano_state`. If the window can play it,
-   play it with `play`; if it says it cannot open a library score yet, tell me
-   the score is saved and ready for when it can.
+6. Play it with `play`, naming the id it was saved under, which opens it in the
+   window. If the window refuses it, tell me why in its words: the score is
+   still saved.
