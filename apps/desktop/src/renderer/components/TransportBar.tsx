@@ -1,4 +1,4 @@
-import { ticksToSeconds, type ResolvedTiming } from '@piano/score-format'
+import { ticksToSeconds, type Level, type ResolvedTiming } from '@piano/score-format'
 import {
   Maximize2,
   Minimize2,
@@ -18,6 +18,7 @@ import type { LoopRange, Transport } from '../audio'
 import type { Grader } from '../lib/grader'
 import type { KeysInput } from '../lib/keys-input'
 import type { Calibrator, Latency } from '../lib/latency'
+import type { LevelSettings } from '../lib/levels'
 import type { MidiInput } from '../lib/midi-input'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
@@ -26,6 +27,7 @@ import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
 import { KeysPanel } from './KeysPanel'
 import { LatencyPanel } from './LatencyPanel'
+import { LevelPanel } from './LevelPanel'
 import { MidiMonitor } from './MidiMonitor'
 import { ReportPanel } from './ReportPanel'
 import { Button } from './ui/button'
@@ -75,6 +77,11 @@ export type TransportBarProps = {
   readonly onWaiting?: (waiting: boolean) => void
   /** What the last attempt was worth, for the panel that reports it. */
   readonly grader?: Grader
+  /** The level chosen, where its knobs stand now, and the way to choose another. */
+  readonly level?: Level | null
+  readonly levelSettings?: () => LevelSettings
+  readonly onLevel?: (level: Level) => void
+  readonly arrangementTempo?: (level: Level) => number | null
   /** The machine's measured lag, shown rather than hidden. */
   readonly latency?: Latency
   readonly calibrator?: Calibrator
@@ -110,6 +117,10 @@ export function TransportBar({
   waiting = false,
   onWaiting,
   grader,
+  level = null,
+  levelSettings,
+  onLevel,
+  arrangementTempo,
   latency,
   calibrator,
   onMeasuredLatency,
@@ -280,6 +291,14 @@ export function TransportBar({
             >
               <PauseCircle />
             </Button>
+          )}
+          {onLevel === undefined || levelSettings === undefined ? null : (
+            <LevelPanel
+              level={level}
+              settings={levelSettings}
+              onLevel={onLevel}
+              arrangementTempo={arrangementTempo}
+            />
           )}
           {grader === undefined ? null : <ReportPanel grader={grader} />}
           {latency === undefined || calibrator === undefined ? null : (

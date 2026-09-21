@@ -1,11 +1,15 @@
 import type { AppInfoResponse } from '@piano/ipc'
 import {
+  arrangementForLevel,
+  arrangementsOf,
   describeScore,
   FORMAT_VERSION,
   noteEnd,
   notesOf,
   partsOf,
+  resolveArrangement,
   timingOf,
+  type Level,
   type Note,
   type Score,
 } from '@piano/score-format'
@@ -23,6 +27,7 @@ import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from '.
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
 import { createGrader } from './lib/grader'
 import { appKeys } from './lib/keys-input'
+import { handsPlayed, LEVEL_PRESETS, viewFor, type LevelSettings } from './lib/levels'
 import {
   calibrationKey,
   createCalibrator,
@@ -87,6 +92,8 @@ export function App() {
   const [loop, setLoop] = useState<LoopRange | null>(null)
   const [partsView, setPartsView] = useState<PartsView>(NOTHING_TOUCHED)
   const [waiting, setWaiting] = useState(false)
+  /** Null until somebody chooses one, which is the piece as written. */
+  const [level, setLevel] = useState<Level | null>(null)
   const sound = appSound()
   const soundState = useSyncExternalStore(sound.subscribe, () => sound.state)
   const midi = appMidi()
@@ -96,7 +103,18 @@ export function App() {
   const [measured, setMeasured] = useState<Readonly<Record<string, number>>>({})
 
   const timing = useMemo(() => timingOf(placeholder), [])
-  const notes = useMemo(() => notesOf(placeholder), [])
+  const written = useMemo(() => notesOf(placeholder), [])
+  const arrangements = useMemo(() => arrangementsOf(placeholder), [])
+  /**
+   * The piece at the level chosen: the score's own arrangement for it where
+   * there is one, and what is written where there is not. A level is never a
+   * reason to have nothing to play.
+   */
+  const arrangement = useMemo(() => {
+    const chosen = level === null ? null : arrangementForLevel(arrangements, level)
+    return chosen === null ? null : resolveArrangement(chosen, written)
+  }, [level, arrangements, written])
+  const notes = arrangement?.notes ?? written
   const parts = useMemo(() => partsOf(placeholder), [])
   // Settled once from the whole piece, so hiding a part leaves the others
   // the colour they had.
@@ -111,13 +129,18 @@ export function App() {
     [notes],
   )
 
-  // One transport for the life of the window, on the one audio clock.
+  // One transport for the life of the window, on the one audio clock. The
+  // piece is loaded into it rather than being a reason to build another:
+  // changing level swaps the arrangement, and a new transport would take wait
+  // mode, the grader and the position down with it.
   const piano = appPiano()
-  const transport = useMemo(() => {
-    const made = new Transport(piano.engine, { now: () => piano.now() }, undefined, piano.clicker)
-    made.load({ timing, notes })
-    return made
-  }, [piano, timing, notes])
+  const transport = useMemo(
+    () => new Transport(piano.engine, { now: () => piano.now() }, undefined, piano.clicker),
+    [piano],
+  )
+  useEffect(() => {
+    transport.load({ timing, notes })
+  }, [transport, timing, notes])
 
   /**
    * Which calibration applies: one figure per device and per output, since a
@@ -250,6 +273,39 @@ export function App() {
     transport.setLoop(range)
   }
 
+  /**
+   * Where the level's knobs stand now. Read when the panel draws rather than
+   * held in state: the tempo belongs to the transport and the window to the
+   * grader, and this is the one place that wants both at once.
+   */
+  function levelSettings(): LevelSettings {
+    return {
+      tempoScale: transport.tempoScale,
+      plays: handsPlayed(partsView),
+      waiting,
+      strictness: grader.state.strictness,
+    }
+  }
+
+  /** The tempo a score's own arrangement for a level asks for, where it carries one. */
+  function arrangementTempo(next: Level): number | null {
+    return arrangementForLevel(arrangements, next)?.tempoScale ?? null
+  }
+
+  /**
+   * Choosing a level sets every knob it names, once. Nothing here is put back
+   * afterwards: a preset is where to start, and the panel says which of them
+   * the session has moved since.
+   */
+  function chooseLevel(next: Level) {
+    const preset = LEVEL_PRESETS[next]
+    setLevel(next)
+    setPartsView((view) => viewFor(preset, view))
+    setWaiting(preset.waiting)
+    grader.setStrictness(preset.strictness)
+    transport.setTempoScale(arrangementTempo(next) ?? preset.tempoScale)
+  }
+
   return (
     <div
       className={cn(
@@ -328,6 +384,10 @@ export function App() {
           waiting={waiting}
           onWaiting={setWaiting}
           grader={grader}
+          level={level}
+          levelSettings={levelSettings}
+          onLevel={chooseLevel}
+          arrangementTempo={arrangementTempo}
           latency={latency}
           calibrator={calibrator}
           latencySetup={device ?? 'the typing keyboard'}

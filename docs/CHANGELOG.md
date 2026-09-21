@@ -125,6 +125,9 @@
 - ✅ **PI38** **The player gets no feedback: nothing on screen says which note was right, wrong or late** — The key and the note take the judgement's colour as each strike lands, and a note nobody played goes by outlined instead of vanishing.
   checked **Judgement appears on the key and the note, not a panel** Expected, correct, wrong and missed each have a visible state on the keyboard and on the roll, and a missed note stays visible instead of silently vanishing.
   checked **Feedback fires on the judgement event** A test over a fake clock shows the visual state changing at the judged timestamp rather than waiting for the next frame boundary.
+- ✅ **PI39** **Beginner, intermediate and advanced are only words: nothing says what changes between them** — Each level names a tempo, the hands you take, the window and what a reduction keeps, and choosing one sets them without locking them (design recorded in `apps/desktop/src/renderer/lib/levels.ts`).
+  checked **Each level names a concrete value for every knob** Tempo fraction, hands, voices, ornaments, chord reduction, wait mode and timing window each have a stated value per level, readable from one place rather than inferred.
+  checked **Every knob stays adjustable after choosing a level** Selecting beginner and then widening one setting keeps the rest of the preset intact and records the customised level alongside the progress.
 
 ## Block F — Claude Code First: MCP and plugin
 

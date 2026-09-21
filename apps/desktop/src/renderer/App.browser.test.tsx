@@ -29,6 +29,21 @@ describe('the app', () => {
     expect(bar).not.toBeNull()
   })
 
+  it('sets every knob a level names when one is chosen', async () => {
+    render(<App />)
+    screen.getByLabelText('Level').click()
+    await screen.findByText('Level', { selector: 'h2' })
+    screen.getByText('Beginner').click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+
+    // Two thirds of the written 120, the score waiting, and the right hand
+    // left for the player while the app keeps the bass.
+    expect(screen.getByTestId('Tempo').textContent).toBe('80 bpm')
+    expect(screen.getByLabelText('Wait for me').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByTestId('knob-hands-you-play').textContent).toContain('right')
+    expect(screen.getByTestId('knob-tempo').textContent).not.toContain('moved')
+  })
+
   it('leaves only the roll and the keyboard in full screen, and comes back on escape', async () => {
     render(<App />)
     expect(parts().heading).not.toBeNull()

@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI39 What the three levels actually promise
-
-Beginner, intermediate and advanced have to mean something specific or they are
-decoration. A level is a named preset over concrete knobs: tempo as a fraction of
-written, which hands are played against which are accompanied, how many voices are kept,
-whether ornaments and grace notes are included, whether chords are reduced toward root
-and a third, whether wait mode is on by default, and how wide the timing window is.
-Beginner means the melody in one hand at around two thirds tempo, wait mode on, a
-generous window and simplified chords. Advanced means the score as written, both hands,
-no waiting and a tight window. Intermediate sits between them and its definition is
-written down rather than assumed. The presets are defaults and not a cage: every knob
-stays adjustable, because somebody advanced in the left hand and a beginner in the right
-is an ordinary person rather than an edge case. The level a score was practised at is
-recorded alongside the progress, or the history means nothing later.
-
 ### §PI40 Generating the simple version
 
 The format allows three arrangements per score, but writing three by hand for every
@@ -86,7 +71,10 @@ separately testable against fixtures, which matters because the failure mode her
 reduction that is technically simpler and musically unrecognisable. The result is
 offered as a proposal the user or Claude Code can adjust rather than as a fact, and it
 is stored as an arrangement inside the score so it stays reviewable and correctable.
-Reduction never edits the source notes.
+Reduction never edits the source notes. What each level asks of these rules is already
+written down: the level preset carries how many voices it keeps, whether ornaments
+survive and whether chords come down towards a root and one interval, so a rule is
+parameterised by the level rather than by a table of its own.
 
 ### §PI41 The three things practice actually is
 
