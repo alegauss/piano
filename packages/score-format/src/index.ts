@@ -2,10 +2,32 @@ export {
   describeScore,
   FORMAT_VERSION,
   isSupportedVersion,
+  notesOf,
   timingOf,
+  validateScoreNotes,
   type Score,
   type ScoreMetadata,
 } from './score'
+
+export {
+  findOverlaps,
+  MAX_PITCH,
+  MIN_PITCH,
+  noteEnd,
+  noteProblems,
+  noteRef,
+  PIANO_HIGHEST_PITCH,
+  PIANO_LOWEST_PITCH,
+  pitchToSpelling,
+  spellingToPitch,
+  validateNotes,
+  voiceOf,
+  type Finger,
+  type Hand,
+  type Note,
+  type NoteProblem,
+  type Overlap,
+} from './note'
 
 export {
   barAtTick,

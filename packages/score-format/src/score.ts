@@ -12,6 +12,7 @@
  * play rather than an error anybody can read.
  */
 
+import { validateNotes, type Note } from './note'
 import { resolveTiming, type ResolvedTiming, type Timing } from './time'
 
 /**
@@ -36,6 +37,29 @@ export type Score = {
    * left it out and one that wrote the defaults behave identically.
    */
   readonly timing?: Timing
+  /**
+   * The notes, in no required order: they carry their own positions, and a
+   * file that lists them by part rather than by time is as valid as one that
+   * does not. Optional, so a score can be a title and a plan.
+   */
+  readonly notes?: readonly Note[]
+}
+
+/** The notes a score carries, with the empty case made explicit. */
+export function notesOf(score: Score): readonly Note[] {
+  return score.notes ?? []
+}
+
+/**
+ * Everything wrong with a score's notes, as sentences.
+ *
+ * The full validator arrives with PI15 and covers the envelope too; this is
+ * the musical half, which is the half a schema cannot express: a schema can
+ * say a pitch is a number, not that two of them may not sound at once in one
+ * voice.
+ */
+export function validateScoreNotes(score: Score): string[] {
+  return validateNotes(notesOf(score))
 }
 
 /** The timing a score actually plays under, with every default filled in. */

@@ -22,22 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI8 One note object for playing, drawing and teaching
-
-A note carries pitch as a MIDI number, which is what the sampler and the on-screen
-keyboard both want; an optional spelling such as A sharp 3 or B flat 3, because
-enharmonics matter for reading and for any later notation view; start and duration in
-ticks; velocity from 1 to 127; a voice index; a hand, left or right or neither; and an
-optional finger from 1 to 5. Pitch stays numeric and spelling stays optional so a
-quickly generated score is still valid while a carefully written one can be richer. Hand
-is deliberately separate from part: a piece is often one part played by two hands, and
-hand-separate practice is a core feature that must not depend on how the author chose to
-split parts. Fingering is optional but first class, because it is the most useful thing
-a teacher adds and the thing a model can supply for free while writing the score.
-Overlap is resolved at validation, not at playback: two notes of the same pitch
-overlapping inside one voice is an error the validator names rather than something the
-engine guesses about.
-
 ### §PI9 Parts, and why they are not hands
 
 The reference interface carries a PARTS panel down the left edge, and that is the unit a
