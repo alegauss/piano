@@ -15,6 +15,7 @@
 import { validateExpression, type Expression } from './expression'
 import { validateNotes, type Note } from './note'
 import { partsOf, validateParts, type Part } from './part'
+import { validateSections, type Section } from './section'
 import { resolveTiming, type ResolvedTiming, type Timing } from './time'
 
 /**
@@ -55,6 +56,11 @@ export type Score = {
    * about one note. A score with none plays flat but plays.
    */
   readonly expression?: Expression
+  /**
+   * Named passages, so a loop, a practice target and a sentence in chat can
+   * all say "the chorus" and mean the same ticks.
+   */
+  readonly sections?: readonly Section[]
 }
 
 /** The parts a score plays with, with the implicit one supplied where needed. */
@@ -81,6 +87,7 @@ export function validateScoreNotes(score: Score): string[] {
     ...validateNotes(notes),
     ...validateParts(scoreParts(score), notes),
     ...validateExpression(score.expression),
+    ...validateSections(score.sections ?? []),
   ]
 }
 

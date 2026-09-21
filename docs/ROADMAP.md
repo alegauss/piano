@@ -6,7 +6,6 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI11** (deps: PI7 ✅) **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — Named ranges give the loop selector, the practice tools and Claude Code one vocabulary for talking about part of a piece. → §PI11
 - 📋 **PI12** (deps: PI8 ✅, PI9 ✅) **Nothing in the format says what beginner, intermediate and advanced mean for a given piece** — Difficulty arrangements as views over one note source, with overrides instead of copies, keep three levels from drifting into three different pieces. → §PI12
 - 📋 **PI13** (deps: PI2 ✅) **A score carries no title, composer, key or licence, so the library has nothing to list or filter** — Metadata and provenance on every score make the library searchable and keep a copyrighted piece from being shipped by accident. → §PI13
 - 📋 **PI14** (deps: PI12, PI13) **The format has no version, so a file written today stops opening the moment a field changes** — An explicit version with a migration chain and a reserved extensions namespace let the format grow without breaking every score already on disk. → §PI14
@@ -30,7 +29,7 @@
 - 📋 **PI26** (deps: PI23, PI25) **Notes do not fall: there is nothing between the score and the screen** — A piano roll driven by the audio clock, not by a frame counter, is what makes what is seen and what is heard the same event. → §PI26
 - 📋 **PI27** (deps: PI26) **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — Rendering hundreds of visible notes at 60fps needs culling, a stable draw loop and measurement, not hope. → §PI27
 - 📋 **PI28** (deps: PI26) **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A particle burst and a key flash at the strike, behind an effects toggle, are what make the roll read as impact rather than as scrolling. → §PI28
-- 📋 **PI29** (deps: PI11, PI26) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
+- 📋 **PI29** (deps: PI11 ✅, PI26) **The roll has no structure: nothing shows where a bar starts or which bar is playing** — Bar lines and measure numbers derived from the time signature map give the eye something to count and practice somewhere to point. → §PI29
 - 📋 **PI30** (deps: PI4 ✅, PI23) **There are no controls: playback cannot be started, scrubbed, slowed or transposed from the screen** — One transport bar carrying play, restart, loop, position, BPM, transpose and zoom is the surface the whole app is driven from. → §PI30
 - 📋 **PI31** (deps: PI9 ✅, PI26) **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A parts panel with mute, solo, colour and visibility per part turns a recording into something that can be taken apart. → §PI31
 - 📋 **PI32** (deps: PI4 ✅, PI26) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
@@ -45,8 +44,8 @@
 - 📋 **PI38** (deps: PI32, PI37) **The player gets no feedback: nothing on screen says which note was right, wrong or late** — Colouring the key and the note the instant it is judged puts feedback where the eye already is, rather than in a side panel. → §PI38
 - 📋 **PI39** (deps: PI12) **Beginner, intermediate and advanced are only words: nothing says what changes between them** — Level presets fixing tempo, hands, voices and ornaments make the three levels a promise the app can keep for any score. → §PI39
 - 📋 **PI40** (deps: PI12, PI16) **Only scores hand-authored with three arrangements are playable at beginner level** — Reducing a full score to a simpler arrangement automatically keeps every piece usable at every level without three times the authoring. → §PI40
-- 📋 **PI41** (deps: PI11, PI39) **A hard bar can only be practised by replaying the whole piece and waiting for it to arrive** — Looping a passage, raising the tempo gradually and splitting the hands are the three things practice actually consists of. → §PI41
-- 📋 **PI42** (deps: PI11, PI37) **Every session starts from nothing: no record of what was played, what improved or what still fails** — Progress stored per score and per section lets the app point at the bar that keeps failing instead of the user having to remember. → §PI42
+- 📋 **PI41** (deps: PI11 ✅, PI39) **A hard bar can only be practised by replaying the whole piece and waiting for it to arrive** — Looping a passage, raising the tempo gradually and splitting the hands are the three things practice actually consists of. → §PI41
+- 📋 **PI42** (deps: PI11 ✅, PI37) **Every session starts from nothing: no record of what was played, what improved or what still fails** — Progress stored per score and per section lets the app point at the bar that keeps failing instead of the user having to remember. → §PI42
 
 ## Block F — Claude Code First: MCP and plugin
 
@@ -66,15 +65,6 @@
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI11
-
-- **A section id resolves to a tick range and can be looped** Selecting a named section
-  sets the loop points exactly at its start and end ticks, and passing the same id to
-  the transport produces the same range.
-- **A bar range resolves through the time signature map** Asking for bars 12 to 20 in a
-  score with a mid-piece meter change returns the tick range a human counting bar lines
-  on the roll would point at.
 
 ## Done when — PI12
 

@@ -59,6 +59,18 @@ export {
 } from './expression'
 
 export {
+  flattenSections,
+  rangeContains,
+  resolveRange,
+  sectionAtTick,
+  sectionRange,
+  validateSections,
+  type RangeRequest,
+  type Section,
+  type TickRange,
+} from './section'
+
+export {
   barAtTick,
   barRangeToTicks,
   DEFAULT_MICROSECONDS_PER_QUARTER,

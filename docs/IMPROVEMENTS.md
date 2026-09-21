@@ -22,21 +22,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 
-### §PI11 Named ranges, so a passage has a name
-
-Ask Claude Code to play the chorus more slowly and something has to know what the chorus
-is. A score carries a list of sections, each with an id, a label, a start tick and an
-end tick, optionally nested so a verse can contain a phrase. Three features read that
-same list. The loop control offers them as presets instead of making the user drag two
-handles onto the right bars. The practice tools use them as the unit of progress, so the
-app can say that the bridge is the part still failing. And the MCP tools take a section
-id as an argument, which is how a sentence in chat becomes a transport command without
-the model inventing tick numbers. Bars stay addressable too, since asking for bars 12 to
-20 is as common as asking for the chorus, and a bar range resolves to ticks through the
-time signature map rather than being stored twice. Labels are free text because musical
-vocabulary is not a closed set, but ids are stable, so progress recorded against a
-section survives the score being relabelled.
-
 ### §PI12 Difficulty as views over one source, never three files
 
 The obvious implementation is three copies of the piece, and it is wrong: the first

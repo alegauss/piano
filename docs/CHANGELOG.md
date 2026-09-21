@@ -39,6 +39,9 @@
 - ✅ **PI10** **Sustain pedal, dynamics and articulation are unrepresented, so playback sounds mechanical** — Pedal is a timed event covering everything between down and up, and dynamics multiply written velocity so an accent stays above its neighbours through a crescendo.
   checked **A pedal held across a bar line is one event, not a per-note flag** The fixture carries two control events, down and up; playback sustains every note between them, and the note objects themselves carry no pedal field at all.
   checked **Dynamics multiply written velocity rather than replacing it** A fixture with an accent inside a crescendo keeps the accent measurable: the accented note stays above its neighbours at every point along the ramp.
+- ✅ **PI11** **There is no way to name a passage, so nobody can ask to play the chorus or bars 12 to 20** — A passage has a stable id that resolves to a tick range, and a bar range resolves through the time signature map to exactly the same ticks.
+  checked **A section id resolves to a tick range and can be looped** Selecting a named section sets the loop points exactly at its start and end ticks, and passing the same id to the transport produces the same range.
+  checked **A bar range resolves through the time signature map** Asking for bars 12 to 20 in a score with a mid-piece meter change returns the tick range a human counting bar lines on the roll would point at.
 
 ## Block C — Audio engine and transport
 
