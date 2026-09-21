@@ -83,6 +83,9 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
+- ✅ **PI25** **There is no keyboard on screen: nothing shows which key a note belongs to or which is sounding** — An 88-key keyboard lays black keys out as a real one does, sizes itself to the window, and shows a state per key from outside (design recorded in `apps/desktop/src/renderer/lib/keyboard-geometry.ts`).
+  checked **Black key offsets match a real keyboard** A rendered octave matches reference geometry: black keys narrower, shorter and correctly offset, with the C D E group spaced differently from F G A B.
+
 ## Block E — Practice mode and difficulty levels
 
 ## Block F — Claude Code First: MCP and plugin

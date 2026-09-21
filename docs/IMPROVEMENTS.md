@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI25 88 keys with the geometry a pianist expects
-
-The keyboard is not decoration, it is the coordinate system. Every falling note has to
-land exactly on its key, so the geometry must be the real one rather than an even grid:
-white keys of equal width, black keys at the correct offsets inside an octave, narrower
-and shorter, with C sharp and D sharp spaced differently from F sharp, G sharp and A
-sharp. Getting that wrong is immediately visible to anyone who plays. The component
-renders 88 keys from A0 to C8 and exposes, for any MIDI pitch, the horizontal position
-and width of its key, which is the function the roll calls for every note it draws. It
-also renders a state per key: idle, sounding, expected by the practice mode, pressed
-correctly, pressed wrongly. Those states are visual only and driven from outside, so one
-component serves listening and practice without knowing which mode it is in. It stays
-readable from a narrow window up to a full-screen display, which means key width is
-derived from available space rather than fixed.
-
 ### §PI26 Falling notes anchored to the audio clock
 
 This is the view in the reference image: notes descending a dark field and striking a
@@ -84,9 +69,11 @@ milliseconds ahead of the sound feels wrong long before anyone can say why. Each
 asks the transport for the current tick, converts the visible time window into a tick
 range, and draws every note inside it at a height derived from how far in the future it
 is. The lead time, meaning how many seconds of music are visible at once, is a setting:
-a beginner wants more warning, and the right value changes with tempo. Notes come from
-the resolved arrangement, so difficulty level and muted parts are already applied and
-the renderer never reasons about either.
+a beginner wants more warning, and the right value changes with tempo. Each note's
+column is keyRect(pitch, width) from lib/keyboard-geometry, the function the keyboard is
+laid out by, and a test puts a drawn note's edges on its key's. Notes come from the
+resolved arrangement, so difficulty level and muted parts are already applied and the
+renderer never reasons about either.
 
 ### §PI27 Sixty frames a second when the music is dense
 

@@ -4,6 +4,7 @@ import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { readBridge } from './bridge'
+import { PianoKeyboard } from './components/PianoKeyboard'
 import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { Button } from './components/ui/button'
@@ -97,6 +98,8 @@ export function App() {
         ) : null}
 
         <TokenGallery />
+
+        <PianoKeyboard />
 
         <footer className="mt-auto flex flex-wrap gap-x-6 gap-y-1 border-t border-border-subtle pt-4 text-xs text-text-muted">
           <SoundStatus state={soundState} />

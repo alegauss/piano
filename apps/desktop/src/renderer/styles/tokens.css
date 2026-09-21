@@ -132,5 +132,13 @@
   --color-accent-contrast: var(--accent-contrast);
   --color-danger: var(--danger);
   --color-success: var(--success);
+  --color-key-white: var(--key-white);
+  --color-key-white-pressed: var(--key-white-pressed);
+  --color-key-black: var(--key-black);
+  --color-key-black-pressed: var(--key-black-pressed);
+  --color-judge-expected: var(--judge-expected);
+  --color-judge-correct: var(--judge-correct);
+  --color-judge-wrong: var(--judge-wrong);
+  --color-judge-late: var(--judge-late);
   --radius-token: var(--radius);
 }
