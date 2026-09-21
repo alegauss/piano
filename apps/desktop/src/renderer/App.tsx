@@ -34,6 +34,7 @@ import {
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
 import { createDrill } from './lib/drill'
 import { createGrader } from './lib/grader'
+import { createProgress, fingerprintOf, scoreKey } from './lib/progress'
 import { appKeys } from './lib/keys-input'
 import {
   describeAuthored,
@@ -67,7 +68,7 @@ import { getTheme, setTheme, type ThemeName } from './lib/theme'
  */
 const placeholder: Score = {
   formatVersion: FORMAT_VERSION,
-  metadata: { title: 'Nothing loaded', composer: 'no composer yet' },
+  metadata: { id: 'placeholder', title: 'Nothing loaded', composer: 'no composer yet' },
   parts: [
     { id: 'right', name: 'Melody', colour: 'note-part-1', role: 'melody' },
     { id: 'left', name: 'Bass', colour: 'note-part-2', role: 'bass' },
@@ -140,6 +141,8 @@ export function App() {
   const notes = version?.notes ?? written
   const parts = useMemo(() => partsOf(placeholder), [])
   const sections = useMemo(() => placeholder.sections ?? [], [])
+  const scoreId = useMemo(() => scoreKey(placeholder), [])
+  const fingerprint = useMemo(() => fingerprintOf(placeholder), [])
   // Settled once from the whole piece, so hiding a part leaves the others
   // the colour they had.
   const colours = useMemo(() => partColours(notes), [notes])
@@ -187,6 +190,7 @@ export function App() {
   const grader = useMemo(() => createGrader(transport, () => piano.now()), [transport, piano])
   // The drill drives the transport itself and hands the keyboard back when it
   // stops, so the parts view follows it rather than the other way round.
+  const progress = useMemo(() => createProgress(grader, transport), [grader, transport])
   const drill = useMemo(
     () =>
       createDrill(transport, grader, {
@@ -221,6 +225,13 @@ export function App() {
     drill.use(timing, sections)
   }, [drill, timing, sections])
   useEffect(() => drill.close, [drill])
+  // What is practised is written down against the piece and the notes it was
+  // practised against, so correcting a wrong note keeps the history and says
+  // the notes have moved under it.
+  useEffect(() => {
+    progress.use({ score: scoreId, fingerprint, level, sections })
+  }, [progress, scoreId, fingerprint, level, sections])
+  useEffect(() => progress.close, [progress])
   // Told the lag rather than asked for it: the calibrator and the grader both
   // outlive this view.
   useEffect(() => {
@@ -430,6 +441,8 @@ export function App() {
           waiting={waiting}
           onWaiting={setWaiting}
           grader={grader}
+          progress={progress}
+          scoreKey={scoreId}
           level={level}
           levelSettings={levelSettings}
           onLevel={chooseLevel}

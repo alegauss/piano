@@ -21,6 +21,7 @@ import type { KeysInput } from '../lib/keys-input'
 import type { Calibrator, Latency } from '../lib/latency'
 import type { LevelSettings } from '../lib/levels'
 import type { MidiInput } from '../lib/midi-input'
+import type { Progress } from '../lib/progress'
 import { barsBetween } from '../lib/bars'
 import { cn } from '../lib/cn'
 import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
@@ -79,6 +80,9 @@ export type TransportBarProps = {
   readonly onWaiting?: (waiting: boolean) => void
   /** What the last attempt was worth, for the panel that reports it. */
   readonly grader?: Grader
+  /** What has been practised before today, and which piece it belongs to. */
+  readonly progress?: Progress
+  readonly scoreKey?: string
   /** The level chosen, where its knobs stand now, and the way to choose another. */
   readonly level?: Level | null
   readonly levelSettings?: () => LevelSettings
@@ -124,6 +128,8 @@ export function TransportBar({
   waiting = false,
   onWaiting,
   grader,
+  progress,
+  scoreKey,
   level = null,
   levelSettings,
   onLevel,
@@ -319,7 +325,9 @@ export function TransportBar({
               currentBars={() => barsBetween(timing, position, position)}
             />
           )}
-          {grader === undefined ? null : <ReportPanel grader={grader} />}
+          {grader === undefined ? null : (
+            <ReportPanel grader={grader} progress={progress} score={scoreKey} />
+          )}
           {latency === undefined || calibrator === undefined ? null : (
             <LatencyPanel
               latency={latency}

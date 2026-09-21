@@ -134,6 +134,9 @@
 - ✅ **PI41** **A hard bar can only be practised by replaying the whole piece and waiting for it to arrive** — A passage repeats a graded pass at a time, climbing after a clean one, dropping back after a failure, hands apart (design recorded in `apps/desktop/src/renderer/lib/drill.ts`).
   checked **Loop, progressive tempo and hands separate compose** Left hand only, bars 17 to 20, starting at half tempo and stepping up on each clean pass, works as one configured drill rather than three settings fought separately.
   checked **Tempo drops back on a failed repetition** A repetition graded below the threshold lowers the speed to the previous step instead of continuing to climb away from the player.
+- ✅ **PI42** **Every session starts from nothing: no record of what was played, what improved or what still fails** — Every graded attempt is kept against the piece and its notes, and the app names the bars that keep failing (design recorded in `apps/desktop/src/renderer/lib/progress.ts`).
+  checked **History survives a score being re-saved** Progress keyed on score and section ids stays attached after the file is rewritten or its title is changed, rather than being orphaned by a path.
+  checked **Practice data can be exported and deleted** One action exports the whole local store and one deletes it with nothing left behind, which is what the local-only non-goal requires in practice.
 
 ## Block F — Claude Code First: MCP and plugin
 

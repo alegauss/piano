@@ -13,7 +13,6 @@
 
 ## Block E — Practice mode and difficulty levels
 
-- 📋 **PI42** (deps: PI11 ✅, PI37 ✅) **Every session starts from nothing: no record of what was played, what improved or what still fails** — Progress stored per score and per section lets the app point at the bar that keeps failing instead of the user having to remember. → §PI42
 - 📋 **PI62** (deps: PI38 ✅) **The roll says a note was late but not by how much, so a player who is always a hair early cannot see it** — A consistent bias is a shape on the roll rather than a word, and seeing it is what makes somebody fix it instead of guessing. → §PI62
 
 ## Block F — Claude Code First: MCP and plugin
@@ -36,15 +35,6 @@
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 - 📋 **PI63** (deps: PI51) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
-
-## Done when — PI42
-
-- **History survives a score being re-saved** Progress keyed on score and section ids
-  stays attached after the file is rewritten or its title is changed, rather than being
-  orphaned by a path.
-- **Practice data can be exported and deleted** One action exports the whole local store
-  and one deletes it with nothing left behind, which is what the local-only non-goal
-  requires in practice.
 
 ## Done when — PI43
 

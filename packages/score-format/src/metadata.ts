@@ -24,6 +24,17 @@ export type Provenance = {
 }
 
 export type ScoreMetadata = {
+  /**
+   * Stable, and the one field that is not about the music.
+   *
+   * Practice history is recorded against it, the way progress on a passage is
+   * recorded against a section id: a piece that is re-saved, retitled or
+   * corrected is the same piece, and weeks of records should not turn on
+   * somebody fixing a wrong note or spelling the composer properly. A score
+   * without one is still playable; its history is then keyed on what it is
+   * called, and a rename starts it over.
+   */
+  readonly id?: string
   /** What the piece is called: the one field a score may not omit. */
   readonly title: string
   readonly composer?: string

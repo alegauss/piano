@@ -58,20 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI42 Remembering what still fails
-
-Without history every session starts from zero and the app cannot answer the only
-question a learner really has, which is what to work on today. Progress is stored per
-score and per section: attempts, accuracy per bar, the tempo reached, the level
-practised at and when. It stays local, as the non-goals require, in a store that can be
-exported and deleted, because practice history is personal data even when it never
-leaves the machine. The useful output is not a chart but a suggestion: these four bars
-failed more than the rest, start there. Progress is keyed on section id and score id
-rather than on a file path or a title, so a score that is re-saved or relabelled does
-not lose its history. A score corrected after somebody fixes a wrong note keeps its
-history too, flagged with the fact that the source changed, since silently discarding
-weeks of records is worse than showing a comparison that is slightly stale.
-
 ### §PI62 Timing error as a shape
 
 The colour says a note was not in time; it does not say by how much or which way, and
@@ -251,9 +237,12 @@ defaults with a message rather than crashing at startup. Settings are versioned 
 migrated for the same reason scores are, because a setting whose meaning changes
 silently is worse than one that is missing. Anything sensitive, which here is
 essentially the handshake token, stays out of this file and is regenerated per run
-instead. A reset to defaults is offered, because the fastest way out of a bad audio
-configuration is to start over, and the alternative is somebody deleting a file they
-first had to find.
+instead. The practice history is the other store, and it wants the same treatment for
+the same reasons: written on every attempt, validated on read, versioned, and personal
+data, so the door that hands it over and deletes it belongs beside the settings rather
+than behind a clipboard. A reset to defaults is offered, because the fastest way out of
+a bad audio configuration is to start over, and the alternative is somebody deleting a
+file they first had to find.
 
 ### §PI54 Getting the piano onto the machine
 

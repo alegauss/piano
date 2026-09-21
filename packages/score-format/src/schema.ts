@@ -25,6 +25,7 @@ export const provenanceSchema = z.object({
 })
 
 export const metadataSchema = z.object({
+  id: z.string().min(1).optional(),
   title: z.string().min(1, 'a score needs a title'),
   composer: z.string().optional(),
   arranger: z.string().optional(),

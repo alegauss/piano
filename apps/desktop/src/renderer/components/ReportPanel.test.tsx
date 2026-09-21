@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { Grader, GraderState } from '../lib/grader'
+import type { Progress, Suggestion } from '../lib/progress'
 import {
   grade,
   NO_FEEDBACK,
@@ -64,10 +65,29 @@ function stub(attempt: Attempt | null, running = false): Grader {
   }
 }
 
-async function open(grader: Grader) {
-  render(<ReportPanel grader={grader} />)
+async function open(grader: Grader, progress?: Progress) {
+  render(<ReportPanel grader={grader} progress={progress} score={progress && 'sonata'} />)
   fireEvent.click(screen.getByLabelText('How it went'))
   await screen.findByText('How it went', { selector: 'h2' })
+}
+
+/** A history that answers with one suggestion and remembers being forgotten. */
+function history(suggestion: Suggestion | null): Progress & { readonly forgotten: () => number } {
+  let forgotten = 0
+  return {
+    records: [],
+    subscribe: () => () => {},
+    use: () => {},
+    record: () => {},
+    forScore: () => [],
+    suggest: () => suggestion,
+    exported: () => '{}',
+    forget: () => {
+      forgotten += 1
+    },
+    close: () => {},
+    forgotten: () => forgotten,
+  }
 }
 
 describe('ReportPanel', () => {
@@ -121,6 +141,60 @@ describe('ReportPanel', () => {
     })
     await open(stub(attempt))
     expect(screen.getByTestId('dynamics').textContent).toContain('harder than written')
+  })
+
+  it('says what keeps failing across every attempt at the piece', async () => {
+    await open(
+      stub(null),
+      history({
+        bars: [17, 18, 19, 20],
+        section: 'Bridge',
+        attempts: 5,
+        tempoReached: 0.75,
+        lastAt: 1000,
+        stale: false,
+      }),
+    )
+
+    const said = screen.getByTestId('history').textContent ?? ''
+    expect(said).toContain('17–20')
+    expect(said).toContain('Bridge')
+    expect(screen.getByTestId('tempo-reached').textContent).toContain('75%')
+  })
+
+  it('says when the notes have changed under the history', async () => {
+    await open(
+      stub(null),
+      history({
+        bars: [4],
+        section: null,
+        attempts: 2,
+        tempoReached: null,
+        lastAt: 1,
+        stale: true,
+      }),
+    )
+    expect(screen.getByTestId('history-stale').textContent).toContain('since changed')
+  })
+
+  it('offers to hand the history over and to forget it', async () => {
+    const kept = history({
+      bars: [4],
+      section: null,
+      attempts: 2,
+      tempoReached: null,
+      lastAt: 1,
+      stale: false,
+    })
+    await open(stub(null), kept)
+
+    fireEvent.click(screen.getByText('Forget this piece'))
+    expect(kept.forgotten()).toBe(1)
+  })
+
+  it('says nothing has been practised before anything has', async () => {
+    await open(stub(null), history(null))
+    expect(screen.getByText(/Nothing practised yet/)).toBeTruthy()
   })
 
   it('offers the window as a setting, and shows the one in force', async () => {

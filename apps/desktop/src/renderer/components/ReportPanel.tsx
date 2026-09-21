@@ -1,7 +1,8 @@
 import { ListChecks } from 'lucide-react'
-import { useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 
 import type { Grader } from '../lib/grader'
+import { describeSuggestion, type Progress } from '../lib/progress'
 import {
   barNames,
   STRICTNESSES,
@@ -39,9 +40,15 @@ const STRICTNESS_LABELS: Readonly<Record<Strictness, string>> = {
 
 export function ReportPanel({
   grader,
+  progress,
+  score,
   className,
 }: {
   readonly grader: Grader
+  /** What has been practised before today, where a history is being kept. */
+  readonly progress?: Progress
+  /** Which piece the history is for. */
+  readonly score?: string
   readonly className?: string
 }) {
   const state = useSyncExternalStore(grader.subscribe, () => grader.state)
@@ -92,6 +99,10 @@ export function ReportPanel({
             </p>
           ) : (
             <Report attempt={attempt} />
+          )}
+
+          {progress === undefined || score === undefined ? null : (
+            <History progress={progress} score={score} />
           )}
         </div>
       </PopoverContent>
@@ -158,6 +169,69 @@ function Report({ attempt }: { readonly attempt: Attempt }) {
           ? 'Touch is not graded: this input says nothing about how hard a key was struck.'
           : `Touch: ${String(attempt.dynamics.within)} of ${String(attempt.dynamics.of)} notes at the weight written, typically ${describeTouch(attempt.dynamics.off)}.`}
       </p>
+    </div>
+  )
+}
+
+/**
+ * What is still failing, across every attempt at this piece.
+ *
+ * A sentence naming bars rather than a chart, for the same reason the report
+ * above names them: somebody about to practise needs somewhere to start, not
+ * a history to interpret. The two buttons are here because practice history
+ * is personal data even though it never leaves the machine.
+ */
+function History({ progress, score }: { readonly progress: Progress; readonly score: string }) {
+  useSyncExternalStore(progress.subscribe, () => progress.records)
+  const suggestion = progress.suggest(score)
+  const [copied, setCopied] = useState(false)
+
+  if (suggestion === null) {
+    return (
+      <p className="border-t border-border-subtle pt-3 text-xs text-text-muted">
+        Nothing practised yet. Every attempt from here is kept, on this machine and nowhere else.
+      </p>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+      <h3 className="text-xs font-semibold text-text-strong">What keeps failing</h3>
+      <p className="text-sm text-text-default" data-testid="history">
+        {describeSuggestion(suggestion)}
+      </p>
+      {suggestion.tempoReached === null ? null : (
+        <p className="text-xs text-text-muted" data-testid="tempo-reached">
+          Cleanest at {Math.round(suggestion.tempoReached * 100)}% of the written tempo.
+        </p>
+      )}
+      {suggestion.stale ? (
+        <p className="text-xs text-text-muted" data-testid="history-stale">
+          Some of this was practised against notes that have since changed.
+        </p>
+      ) : null}
+      <div className="flex gap-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            void navigator.clipboard?.writeText(progress.exported())
+            setCopied(true)
+          }}
+        >
+          {copied ? 'Copied' : 'Copy it out'}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            progress.forget(score)
+            setCopied(false)
+          }}
+        >
+          Forget this piece
+        </Button>
+      </div>
     </div>
   )
 }
