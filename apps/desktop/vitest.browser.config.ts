@@ -21,6 +21,10 @@ import { defineConfig } from 'vitest/config'
  */
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // The score format brings zod in. Discovered mid-run, it makes Vite reload
+  // the page under a test that is already running, which is a flaky failure
+  // on every clean checkout, CI included.
+  optimizeDeps: { include: ['zod'] },
   test: {
     name: 'renderer-browser',
     include: ['src/renderer/**/*.browser.test.{ts,tsx}'],

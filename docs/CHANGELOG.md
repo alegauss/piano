@@ -62,6 +62,10 @@
 
 ## Block C — Audio engine and transport
 
+- ✅ **PI18** **There is no way to produce sound, and no seam between the engine and everything that drives it** — PianoEngine fronts a synthesised and a sampled engine that swap mid-piece, and lint keeps Web Audio inside renderer/audio (design recorded in `apps/desktop/src/renderer/audio/engine.ts`).
+  checked **Two engines satisfy one interface and swap at runtime** A test drives the same fixture through the synthesised engine and the sampled engine using identical calls, and nothing above the interface changes between the two runs.
+  checked **No code above the audio layer touches a Web Audio node** A lint rule finds no AudioContext, oscillator or buffer source outside the engine package, so the seam is enforced rather than merely intended in a document.
+
 ## Block D — Piano roll and on-screen keyboard
 
 ## Block E — Practice mode and difficulty levels

@@ -8,10 +8,9 @@
 
 ## Block C — Audio engine and transport
 
-- 📋 **PI18** (deps: PI1 ✅) **There is no way to produce sound, and no seam between the engine and everything that drives it** — One narrow engine interface lets a synthesised fallback and a sampled piano swap without the transport, the roll or the practice code knowing. → §PI18
-- 📋 **PI19** (deps: PI7 ✅, PI18) **Notes scheduled from timers drift audibly: timing wanders and chords stop landing together** — A look-ahead scheduler reading the Web Audio clock is the only way to get timing that survives a busy main thread. → §PI19
+- 📋 **PI19** (deps: PI7 ✅, PI18 ✅) **Notes scheduled from timers drift audibly: timing wanders and chords stop landing together** — A look-ahead scheduler reading the Web Audio clock is the only way to get timing that survives a busy main thread. → §PI19
 - 📋 **PI20** (deps: PI1 ✅) **There is no piano sound: raw sample libraries are gigabytes of WAV, unusable as they ship** — A repeatable pipeline that converts, trims and indexes the samples into a compressed pack with its licence turns a download into a shippable asset. → §PI20
-- 📋 **PI21** (deps: PI18, PI20) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Lazy loading by register with a memory budget, and a synthesised fallback while samples arrive, let the first note sound immediately. → §PI21
+- 📋 **PI21** (deps: PI18 ✅, PI20) **Loading hundreds of megabytes of samples before the first note makes the app feel broken** — Lazy loading by register with a memory budget, and a synthesised fallback while samples arrive, let the first note sound immediately. → §PI21
 - 📋 **PI22** (deps: PI10 ✅, PI21) **One sample per note sounds like a toy: no dynamics, no pedal resonance, no key release** — Velocity layers, release samples and a real sustain model are what separate a piano from a sine wave, and they are cheap once the pack is indexed. → §PI22
 - 📋 **PI23** (deps: PI19) **There is no transport: nothing plays, pauses, seeks, loops or changes tempo** — One clock and one state machine driving play, pause, seek, loop, tempo and transpose keep the audio and the roll from disagreeing. → §PI23
 - 📋 **PI24** (deps: PI19) **Practising without a beat reference is guesswork, and playback starts with no warning** — A metronome driven by the same clock plus a count-in bar give the learner somewhere to put the first note. → §PI24
@@ -59,15 +58,6 @@
 - 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI18
-
-- **Two engines satisfy one interface and swap at runtime** A test drives the same
-  fixture through the synthesised engine and the sampled engine using identical calls,
-  and nothing above the interface changes between the two runs.
-- **No code above the audio layer touches a Web Audio node** A lint rule finds no
-  AudioContext, oscillator or buffer source outside the engine package, so the seam is
-  enforced rather than merely intended in a document.
 
 ## Done when — PI19
 

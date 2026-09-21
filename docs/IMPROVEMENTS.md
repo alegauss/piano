@@ -24,22 +24,6 @@ came from, and the README should say so rather than implying a public release.
 
 ## Block C — Audio engine and transport
 
-### §PI18 A seam between making sound and deciding what to sound
-
-Everything above the audio layer, the transport, the roll, the practice grader and the
-MCP tools, cares about notes and time rather than oscillators and buffers. So the engine
-is defined by a narrow interface: prepare a score, note on with pitch, velocity and a
-scheduled time, note off, pedal, set master gain, stop everything. Nothing above that
-seam may touch a Web Audio node directly. Two implementations sit behind it from the
-start. A synthesised engine built on simple oscillators is small, always available, and
-is what the tests run against and what plays while samples are still downloading. The
-sampled engine is the real product. Having both on day one is not over-engineering, it
-is what makes the audio layer testable at all, because a test needing real samples and a
-real output device is a test nobody runs. The interface takes absolute times in the
-audio clock units rather than delays, since that is the only thing the scheduler can
-hand it without reintroducing drift, and it is the decision that would be expensive to
-reverse later.
-
 ### §PI19 A look-ahead scheduler, not a timer per note
 
 Timers in a renderer process are not accurate enough for music. A setTimeout can be tens

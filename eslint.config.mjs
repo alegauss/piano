@@ -4,6 +4,30 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 /**
+ * What only the audio layer may name. A component that builds its own node
+ * is a second sound path, and it is the one that stops working the day the
+ * engine swaps underneath it.
+ */
+const WEB_AUDIO = [
+  'AudioContext',
+  'OfflineAudioContext',
+  'BaseAudioContext',
+  'AudioNode',
+  'AudioParam',
+  'AudioBuffer',
+  'AudioBufferSourceNode',
+  'AudioScheduledSourceNode',
+  'OscillatorNode',
+  'GainNode',
+  'BiquadFilterNode',
+  'ConvolverNode',
+  'DynamicsCompressorNode',
+  'webkitAudioContext',
+]
+const WEB_AUDIO_MESSAGE =
+  'Only src/renderer/audio touches Web Audio. Drive the PianoEngine it exports instead.'
+
+/**
  * The rules that catch what a typechecker does not.
  *
  * Most of this is the standard type-aware set. The part specific to this app
@@ -78,6 +102,26 @@ export default tseslint.config(
             },
           ],
         },
+      ],
+    },
+  },
+
+  {
+    /**
+     * The audio seam. Above it, code deals in notes and times; only the audio
+     * folder may build, hold or even name a Web Audio node, so the engine
+     * behind the seam can change without anything above it noticing.
+     */
+    files: ['apps/desktop/src/renderer/**/*.{ts,tsx}'],
+    ignores: ['apps/desktop/src/renderer/audio/**'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...WEB_AUDIO.map((name) => ({ name, message: WEB_AUDIO_MESSAGE })),
+      ],
+      '@typescript-eslint/no-restricted-types': [
+        'error',
+        { types: Object.fromEntries(WEB_AUDIO.map((name) => [name, WEB_AUDIO_MESSAGE])) },
       ],
     },
   },
