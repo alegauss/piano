@@ -2,6 +2,7 @@ import { render } from '@testing-library/react'
 import { resolveTiming, type Note } from '@piano/score-format'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { StrikeEvent, StrikeSource } from '../audio'
 import { FakeTime, Listener } from '../audio/test-doubles'
 import { Transport } from '../audio/transport'
 import { keyRect } from '../lib/keyboard-geometry'
@@ -70,7 +71,30 @@ function drawn(canvas: HTMLCanvasElement) {
   }
 }
 
-function mount(notes: readonly Note[], transport: Transport) {
+/**
+ * Particles and the key flash are drawn near white, where notes are coloured
+ * and the field is dark, so counting bright pixels counts the effect.
+ */
+function bright(canvas: HTMLCanvasElement): number {
+  const context = canvas.getContext('2d')
+  if (context === null) {
+    throw new Error('no 2d context')
+  }
+  const data = context.getImageData(0, 0, canvas.width, canvas.height).data
+  let count = 0
+  for (let at = 0; at < data.length; at += 4) {
+    if ((data[at] ?? 0) > 200 && (data[at + 1] ?? 0) > 200 && (data[at + 2] ?? 0) > 200) {
+      count += 1
+    }
+  }
+  return count
+}
+
+function mount(
+  notes: readonly Note[],
+  transport: Transport,
+  effects: { strikes?: StrikeSource; effects?: boolean } = {},
+) {
   const { container } = render(
     <div style={{ width: WIDTH, height: HEIGHT }}>
       <PianoRoll
@@ -79,6 +103,8 @@ function mount(notes: readonly Note[], transport: Transport) {
         position={() => transport.position()}
         tempoScale={() => transport.tempoScale}
         leadSeconds={LEAD}
+        strikes={effects.strikes}
+        effects={effects.effects}
         className="h-full"
       />
     </div>,
@@ -138,6 +164,47 @@ describe('PianoRoll, drawing', () => {
     await frames()
     const after = drawn(canvas).top() ?? 0
     expect(after - (before ?? 0)).toBeCloseTo(drawn(canvas).height / 6, 0)
+  })
+
+  it('throws a burst when a note reaches the keyboard, and lets it die', async () => {
+    const notes = [{ pitch: 60, start: QUARTER, duration: QUARTER, velocity: 110 }]
+    transport.load({ timing, notes })
+    const { canvas } = mount(notes, transport, { strikes: transport.strikes })
+    transport.play()
+
+    // Before the note sounds: notes on the field, nothing struck.
+    time.run(0.2)
+    await frames()
+    expect(bright(canvas)).toBe(0)
+
+    // The note sounds half a second in.
+    time.run(0.6)
+    await frames()
+    expect(bright(canvas)).toBeGreaterThan(0)
+
+    time.run(2)
+    await frames()
+    expect(bright(canvas)).toBe(0)
+  })
+
+  it('draws nothing and asks for nothing when effects are off', async () => {
+    const notes = [{ pitch: 60, start: QUARTER, duration: QUARTER, velocity: 110 }]
+    transport.load({ timing, notes })
+    let subscribed = 0
+    const counted = {
+      now: () => transport.strikes.now(),
+      subscribe: (listener: (strike: StrikeEvent) => void) => {
+        subscribed += 1
+        return transport.strikes.subscribe(listener)
+      },
+    }
+    const { canvas } = mount(notes, transport, { strikes: counted, effects: false })
+    transport.play()
+    time.run(0.8)
+    await frames()
+
+    expect(subscribed).toBe(0)
+    expect(bright(canvas)).toBe(0)
   })
 
   it('reports what a frame is costing, for anyone watching it', async () => {

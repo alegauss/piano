@@ -8,7 +8,14 @@ import {
 import { beatTicks, meterAt } from './beats'
 import type { Clicker } from './clicker'
 import type { AudioTime, EngineKind, PianoEngine } from './engine'
-import { Scheduler, type Clock, type LoopRange, type Performance, type Ticker } from './scheduler'
+import {
+  Scheduler,
+  type Clock,
+  type LoopRange,
+  type Performance,
+  type StrikeEvent,
+  type Ticker,
+} from './scheduler'
 
 /**
  * Play, pause, stop, seek, loop, tempo and transpose: the one state machine
@@ -23,6 +30,12 @@ import { Scheduler, type Clock, type LoopRange, type Performance, type Ticker } 
  */
 
 export type TransportStatus = 'stopped' | 'playing' | 'paused'
+
+/** Strikes, and the clock their times are on: what a view needs to draw the moment of contact. */
+export type StrikeSource = {
+  now(): AudioTime
+  subscribe(listener: (strike: StrikeEvent) => void): () => void
+}
 
 /** How far ahead of the clock playback starts, so the first notes are not late for their own start. */
 export const START_LEAD_SECONDS = 0.05
@@ -99,6 +112,7 @@ export class Transport {
   /** When the count-in before this pass ends and the piece begins; null with no count-in. */
   private countInUntil: AudioTime | null = null
   private readonly listeners = new Set<() => void>()
+  private readonly strikeListeners = new Set<(strike: StrikeEvent) => void>()
 
   constructor(
     engine: PianoEngine,
@@ -108,9 +122,19 @@ export class Transport {
     private readonly clicker: Clicker | null = null,
   ) {
     this.transposer = new Transposer(engine)
-    this.scheduler = new Scheduler(this.transposer, clock, ticker, () => {
-      this.finish()
-    })
+    this.scheduler = new Scheduler(
+      this.transposer,
+      clock,
+      ticker,
+      () => {
+        this.finish()
+      },
+      (strike) => {
+        for (const listener of this.strikeListeners) {
+          listener(strike)
+        }
+      },
+    )
   }
 
   get status(): TransportStatus {
@@ -260,6 +284,25 @@ export class Transport {
   setCountIn(on: boolean): void {
     this.countInOn = on && this.clicker !== null
     this.changed()
+  }
+
+  /**
+   * Strikes as they are scheduled, on the clock they sound against.
+   *
+   * A view given this can fire a flash at the instant the note sounds rather
+   * than on the frame it notices, and is told to drop what is pending when a
+   * pause, a stop or a seek means it will never sound.
+   */
+  get strikes(): StrikeSource {
+    return {
+      now: () => this.clock.now(),
+      subscribe: (listener) => {
+        this.strikeListeners.add(listener)
+        return () => {
+          this.strikeListeners.delete(listener)
+        }
+      },
+    }
   }
 
   /** For a view, told whenever the status, loop, tempo or transposition changes. */

@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI28 The moment of contact
-
-In the reference image a note reaching the keyboard throws a burst of bright particles
-and the key lights up. It looks like polish and it is really feedback: it marks the
-instant of the strike, which is the one thing the eye should catch, and it is what makes
-the roll read as impact rather than as a list scrolling past. The effect fires from the
-same scheduler-derived event as the sound, so light and sound coincide; deriving it from
-the drawing loop would put it a frame or two off, which is exactly the error the whole
-clock design exists to avoid. Intensity follows velocity, so a loud chord looks loud.
-Particles live in a fixed-size pool that is never allowed to grow, because an effect
-allocating during a dense passage is an effect that causes the stutter it was meant to
-celebrate. The Effects toggle in the reference bar turns it off for a slower machine or
-for someone who finds it distracting, and off has to cost nothing rather than drawing
-invisible particles.
-
 ### §PI29 Bar lines, numbers and somewhere to point
 
 Without bar lines the roll is a stream with no structure and nothing to count. Bar lines

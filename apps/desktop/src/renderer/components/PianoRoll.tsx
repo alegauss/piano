@@ -1,10 +1,12 @@
 import type { Note, ResolvedTiming } from '@piano/score-format'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import type { StrikeSource } from '../audio'
 import { cn } from '../lib/cn'
 import { FrameTimes } from '../lib/frame-timing'
 import { clampLead, DEFAULT_LEAD_SECONDS, prepareRoll, soundingPitches } from '../lib/roll'
 import { drawRoll } from '../lib/roll-draw'
+import { StrikeField } from '../lib/strikes'
 import { useCanvasPalette } from '../lib/useCanvasPalette'
 import { PianoKeyboard, type KeyState } from './PianoKeyboard'
 
@@ -39,6 +41,13 @@ export type PianoRollProps = {
   readonly tempoScale?: () => number
   /** Seconds of warning: more for a beginner, less for someone reading ahead. */
   readonly leadSeconds?: number
+  /**
+   * Strikes as the scheduler hands them over, so the burst fires with the
+   * sound. Without one the roll draws the music and nothing strikes.
+   */
+  readonly strikes?: StrikeSource
+  /** The burst and the flash at the moment of contact. Off draws and costs nothing. */
+  readonly effects?: boolean
   /** The frame-time overlay: on in development, and forced either way by a test. */
   readonly meter?: boolean
   readonly className?: string
@@ -59,6 +68,8 @@ export function PianoRoll({
   position = () => 0,
   tempoScale = () => 1,
   leadSeconds = DEFAULT_LEAD_SECONDS,
+  strikes,
+  effects = true,
   meter = import.meta.env.DEV,
   className,
 }: PianoRollProps) {
@@ -89,6 +100,15 @@ export function PianoRoll({
 
     let running = true
     let shown: readonly number[] = []
+    // Off is off: no field, no subscription, nothing asked of the clock.
+    // Drawing invisible particles is not the same as not drawing them.
+    const field = effects && strikes !== undefined ? new StrikeField() : null
+    const unsubscribe =
+      field === null
+        ? null
+        : strikes?.subscribe((strike) => {
+            field.take(strike)
+          })
     let size = element.getBoundingClientRect()
     const times = new FrameTimes()
     let reported = 0
@@ -130,6 +150,11 @@ export function PianoRoll({
         height: size.height,
       }
       drawRoll(context, view, current.score, current.palette)
+      if (field !== null && strikes !== undefined) {
+        const audioNow = strikes.now()
+        field.update(audioNow, view.width, view.height)
+        field.draw(context, audioNow, view, current.palette)
+      }
 
       const pitches = soundingPitches(current.score, view.position)
       // Only when the chord changes: 88 keys re-rendering every frame buys
@@ -152,8 +177,9 @@ export function PianoRoll({
     return () => {
       running = false
       observer.disconnect()
+      unsubscribe?.()
     }
-  }, [meter])
+  }, [meter, effects, strikes])
 
   return (
     <div className={cn('relative flex w-full flex-col', className)}>

@@ -90,6 +90,9 @@
 - ✅ **PI27** **A dense passage drops frames, so the roll stutters exactly when the music gets interesting** — The roll binary-searches its visible notes and fills them by colour in one path, holding 0.2ms for the 95th frame of a dense fixture (design recorded in `apps/desktop/src/renderer/lib/roll-draw.ts`).
   checked **A dense fixture holds the frame budget** A performance test plays the densest reference score with effects on and fails when the ninety-fifth percentile frame time exceeds budget on the target machine.
   checked **Only visible notes are drawn** Draw call count scales with the visible window rather than with score length, so a ten-minute piece costs the same per frame as a one-minute one.
+- ✅ **PI28** **Notes reach the keyboard and nothing happens: the moment of contact is invisible** — A note reaching the keyboard throws a burst from a fixed pool and flashes its key, fired by the scheduler's own strike event (design recorded in `apps/desktop/src/renderer/lib/strikes.ts`).
+  checked **The burst fires on the same event as the sound** The effect is triggered from the scheduled note event, so a test over a fake clock shows light and sound sharing one timestamp instead of differing by a frame.
+  checked **Effects off costs nothing** With the toggle off no particle is allocated and no pool is updated, measurable as a drop in frame time on the dense fixture rather than as invisible work still running.
 
 ## Block E — Practice mode and difficulty levels
 

@@ -132,6 +132,24 @@ type Anchor = {
   readonly scale: number
 }
 
+/**
+ * A note being struck, or word that what was scheduled will not sound.
+ *
+ * Anything that draws the strike takes it from here, which is the same event
+ * and the same time the engine is given. Deriving it from the draw loop
+ * instead would put the flash a frame or two from its sound, which is the
+ * error the whole clock design exists to avoid.
+ */
+export type StrikeEvent =
+  | {
+      readonly kind: 'strike'
+      /** As written: the transposition is applied at the engine's door, not here. */
+      readonly pitch: number
+      readonly velocity: number
+      readonly at: AudioTime
+    }
+  | { readonly kind: 'silence' }
+
 /** A stretch of the piece to repeat, in ticks, its end not included. */
 export type LoopRange = {
   readonly start: number
@@ -172,6 +190,8 @@ export class Scheduler {
     private readonly ticker: Ticker = intervalTicker,
     /** Called once when the clock passes the last note of a pass that does not loop. */
     private readonly onEnd: () => void = () => {},
+    /** Told of every strike as it is handed over, for anything that draws it. */
+    private readonly onStrike: (strike: StrikeEvent) => void = () => {},
   ) {}
 
   /** Replace what is to be played. Stops first, since a timeline cannot change under a cursor. */
@@ -265,6 +285,7 @@ export class Scheduler {
     }
     this.engine.stopAll()
     this.clicker?.stopAll()
+    this.onStrike({ kind: 'silence' })
     return tick
   }
 
@@ -412,6 +433,7 @@ export class Scheduler {
       case 'on':
         this.open.set(event.pitch, (this.open.get(event.pitch) ?? 0) + 1)
         this.engine.noteOn(event.pitch, event.velocity, at)
+        this.onStrike({ kind: 'strike', pitch: event.pitch, velocity: event.velocity, at })
         return
       case 'off': {
         const sounding = this.open.get(event.pitch) ?? 0

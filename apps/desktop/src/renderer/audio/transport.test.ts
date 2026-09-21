@@ -172,3 +172,76 @@ describe('Transport', () => {
     expect(transport.loop).toEqual({ start: 0, end: 960 })
   })
 })
+
+describe('the strikes a view draws', () => {
+  it('hands over each strike with the time the engine was given', () => {
+    const { time, engine, transport } = setup([note(60, 0), note(64, 480)])
+    const seen: string[] = []
+    transport.strikes.subscribe((strike) => {
+      if (strike.kind === 'strike') {
+        seen.push(`${String(strike.pitch)}@${String(Math.round(strike.at * 1e6) / 1e6)}`)
+      }
+    })
+    transport.play()
+    time.run(1)
+    const struck = engine
+      .times()
+      .filter(([call]) => call.startsWith('on '))
+      .map(([call, at]) => `${call.split(' ')[1] ?? ''}@${String(at)}`)
+    expect(seen).toEqual(struck)
+  })
+
+  it('gives the written pitch, whatever the transposition plays', () => {
+    const { time, engine, transport } = setup([note(60, 0)])
+    const seen: number[] = []
+    transport.strikes.subscribe((strike) => {
+      if (strike.kind === 'strike') {
+        seen.push(strike.pitch)
+      }
+    })
+    transport.setTranspose(5)
+    transport.play()
+    time.run(0.5)
+    expect(seen).toEqual([60])
+    expect(engine.times().some(([call]) => call.startsWith('on 65'))).toBe(true)
+  })
+
+  it('says when what is scheduled will not sound, so a burst is not thrown for it', () => {
+    const { time, transport } = setup()
+    let silences = 0
+    transport.strikes.subscribe((strike) => {
+      if (strike.kind === 'silence') {
+        silences += 1
+      }
+    })
+    transport.play()
+    time.run(0.2)
+    transport.pause()
+    expect(silences).toBe(1)
+    transport.play()
+    time.run(0.4)
+    transport.stop()
+    expect(silences).toBe(2)
+  })
+
+  it('lets a listener go, and says nothing more to it', () => {
+    const { time, transport } = setup()
+    let heard = 0
+    const stop = transport.strikes.subscribe(() => {
+      heard += 1
+    })
+    transport.play()
+    time.run(0.3)
+    const before = heard
+    expect(before).toBeGreaterThan(0)
+    stop()
+    time.run(1)
+    expect(heard).toBe(before)
+  })
+
+  it('offers the clock the strike times are on', () => {
+    const { time, transport } = setup()
+    time.now = 3.5
+    expect(transport.strikes.now()).toBe(3.5)
+  })
+})
