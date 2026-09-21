@@ -22,6 +22,12 @@ export type PartsView = {
   /** Hands not heard. A hand nobody silenced is heard, including a note with no hand at all. */
   readonly mutedHands: readonly Hand[]
   readonly hiddenHands: readonly Hand[]
+  /**
+   * Nothing sounds: the player has taken the whole piece. It is its own flag
+   * because muting every hand cannot say it — a filter naming no hand and one
+   * naming every hand are the same filter.
+   */
+  readonly silent?: boolean
 }
 
 export const NOTHING_TOUCHED: PartsView = {
@@ -30,6 +36,30 @@ export const NOTHING_TOUCHED: PartsView = {
   hidden: [],
   mutedHands: [],
   hiddenHands: [],
+}
+
+/** Which hands the player takes, and what becomes of the one they do not. */
+export type OtherHand = 'accompanies' | 'silent'
+
+/**
+ * The view for playing one hand: the app stops sounding what the player has
+ * taken, and either accompanies with the rest or says nothing at all.
+ *
+ * Taking every hand is the same as taking none, because a hand filter cannot
+ * express silence; that is what the silent flag is for, and it is the only
+ * way to ask for a piece nobody plays but the player.
+ */
+export function handsView(
+  view: PartsView,
+  plays: readonly Hand[],
+  other: OtherHand = 'accompanies',
+): PartsView {
+  const takes = plays.length === 0 ? HANDS : plays
+  return {
+    ...view,
+    mutedHands: takes.length === HANDS.length ? [] : [...takes],
+    silent: other === 'silent',
+  }
 }
 
 function toggle<T>(list: readonly T[], value: T): T[] {
@@ -71,8 +101,11 @@ export function playbackFilter(view: PartsView): PlaybackFilter {
     mutedParts: view.muted,
     soloParts: view.soloed,
     // Naming every hand is the same as naming none, and saying nothing keeps
-    // a note with no hand out of an argument it was never part of.
+    // a note with no hand out of an argument it was never part of. Silencing
+    // every hand is the one thing that cannot be said this way, so it is said
+    // with the flag instead.
     hands: heard.length === HANDS.length ? [] : heard,
+    silent: view.silent === true || heard.length === 0,
   }
 }
 

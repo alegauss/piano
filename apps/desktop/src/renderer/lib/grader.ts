@@ -158,13 +158,19 @@ export function createGrader(
   const end = () => {
     running = false
     if (strikes.length > 0 && timing !== null) {
-      // The stretch covered: where playback came to rest, and never less than
-      // the furthest anything was played, so a pass that looped back still
-      // owes the notes it went past.
-      const to = strikes.reduce((last, strike) => Math.max(last, strike.tick), transport.reached)
-      const covered = Math.max(from, to)
+      // The stretch covered: up to where playback came to rest, and never less
+      // than the furthest anything was played, so a pass that looped back
+      // still owes the notes it went past.
+      //
+      // The tick it came to rest on is where it will carry on from, so the
+      // notes written there have not been played yet: a passage held at the
+      // end of bar four does not owe the note that starts bar five.
+      const covered = strikes.reduce(
+        (last, strike) => Math.max(last, strike.tick + 1),
+        Math.max(from, transport.reached),
+      )
       attempt = grade(
-        owedNotes.filter((note) => note.tick >= from && note.tick <= covered),
+        owedNotes.filter((note) => note.tick >= from && note.tick < covered),
         strikes,
         { timing, sections, strictness },
       )

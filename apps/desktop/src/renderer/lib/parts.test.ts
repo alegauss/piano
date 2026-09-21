@@ -2,6 +2,7 @@ import type { Hand, Note } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import {
+  handsView,
   noteHeard,
   noteVisible,
   NOTHING_TOUCHED,
@@ -100,5 +101,35 @@ describe('what the transport is told', () => {
     const filter = playbackFilter(toggleHidden(NOTHING_TOUCHED, 'left'))
     expect(filter.mutedParts).toEqual([])
     expect(filter.soloParts).toEqual([])
+  })
+
+  it('says silence out loud, since an empty list of hands cannot', () => {
+    const bothMuted = toggleMutedHand(toggleMutedHand(NOTHING_TOUCHED, 'left'), 'right')
+    expect(playbackFilter(NOTHING_TOUCHED).silent).toBe(false)
+    expect(playbackFilter(bothMuted).silent).toBe(true)
+    expect(noteHeard({ pitch: 60, start: 0, duration: 1, velocity: 80 }, bothMuted)).toBe(false)
+  })
+})
+
+describe('taking a hand', () => {
+  it('has the app stop sounding what the player has taken', () => {
+    const view = handsView(NOTHING_TOUCHED, ['right'])
+    expect(view.mutedHands).toEqual(['right'])
+    expect(playbackFilter(view).hands).toEqual(['left'])
+    expect(playbackFilter(view).silent).toBe(false)
+  })
+
+  it('accompanies with the other hand, or says nothing at all', () => {
+    const silent = handsView(NOTHING_TOUCHED, ['right'], 'silent')
+    expect(playbackFilter(silent).silent).toBe(true)
+    expect(
+      noteHeard({ pitch: 60, start: 0, duration: 1, velocity: 80, hand: 'left' }, silent),
+    ).toBe(false)
+  })
+
+  it('takes both hands as taking none: the app plays along rather than going quiet', () => {
+    const view = handsView(NOTHING_TOUCHED, ['left', 'right'])
+    expect(view.mutedHands).toEqual([])
+    expect(playbackFilter(view).silent).toBe(false)
   })
 })

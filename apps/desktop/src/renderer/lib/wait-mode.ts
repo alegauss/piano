@@ -58,8 +58,25 @@ export function createWaitMode(transport: Transport): WaitMode {
   let filter: PlaybackFilter = {}
   let expectation: Expectation | null = null
   let struck = new Set<number>()
+  /** Whether the hold on the transport is this one's to let go of. */
+  let holding = false
   const listeners = new Set<() => void>()
   let state: WaitState = { on: false, expectation: null, outstanding: [], extras: [] }
+
+  /**
+   * Hold, or let go of a hold this put there.
+   *
+   * There is one place to stop playback and more than one practice tool that
+   * stops it: a drill holds at the end of the passage it repeats. Releasing a
+   * hold nobody here set would let that passage run on for ever.
+   */
+  const hold = (tick: number | null) => {
+    if (tick === null && !holding) {
+      return
+    }
+    holding = tick !== null
+    transport.hold(tick)
+  }
 
   const changed = () => {
     const owed = expectation
@@ -80,13 +97,13 @@ export function createWaitMode(transport: Transport): WaitMode {
   const aim = () => {
     if (!on) {
       expectation = null
-      transport.hold(null)
+      hold(null)
       changed()
       return
     }
     struck = new Set()
     expectation = nextExpectation(mine(), transport.position())
-    transport.hold(expectation?.tick ?? null)
+    hold(expectation?.tick ?? null)
     changed()
   }
 
@@ -102,15 +119,18 @@ export function createWaitMode(transport: Transport): WaitMode {
     // over a few ticks would otherwise have its own later notes waited for
     // a second time.
     expectation = nextExpectation(mine(), expectation.tick + CHORD_TICKS + 1)
-    transport.hold(expectation?.tick ?? null)
+    hold(expectation?.tick ?? null)
     transport.seek(from)
     transport.play()
     changed()
   }
 
   const stopHold = transport.onHold(() => {
-    // Arrived at the group: from here the player decides when it moves.
-    changed()
+    // Arrived at the group: from here the player decides when it moves. A
+    // hold somebody else set says nothing about what this is waiting for.
+    if (holding) {
+      changed()
+    }
   })
 
   return {
@@ -147,7 +167,7 @@ export function createWaitMode(transport: Transport): WaitMode {
     },
     close: () => {
       stopHold()
-      transport.hold(null)
+      hold(null)
     },
   }
 }

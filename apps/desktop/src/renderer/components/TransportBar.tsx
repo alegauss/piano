@@ -1,4 +1,4 @@
-import { ticksToSeconds, type Level, type ResolvedTiming } from '@piano/score-format'
+import { ticksToSeconds, type Level, type ResolvedTiming, type Section } from '@piano/score-format'
 import {
   Maximize2,
   Minimize2,
@@ -15,6 +15,7 @@ import {
 import { useEffect, useState } from 'react'
 
 import type { LoopRange, Transport } from '../audio'
+import type { Drill } from '../lib/drill'
 import type { Grader } from '../lib/grader'
 import type { KeysInput } from '../lib/keys-input'
 import type { Calibrator, Latency } from '../lib/latency'
@@ -25,6 +26,7 @@ import { cn } from '../lib/cn'
 import { clampLead, MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from '../lib/roll'
 import type { ThemeName } from '../lib/theme'
 import { useTransportState, usePosition } from '../lib/useTransport'
+import { DrillPanel } from './DrillPanel'
 import { KeysPanel } from './KeysPanel'
 import { LatencyPanel } from './LatencyPanel'
 import { LevelPanel } from './LevelPanel'
@@ -84,6 +86,9 @@ export type TransportBarProps = {
   readonly arrangementTempo?: (level: Level) => number | null
   /** Where the piece at the chosen level came from: the score's own version, or the rules. */
   readonly levelSource?: string
+  /** The drill: looping a passage at a climbing tempo, with the hands apart. */
+  readonly drill?: Drill
+  readonly sections?: readonly Section[]
   /** The machine's measured lag, shown rather than hidden. */
   readonly latency?: Latency
   readonly calibrator?: Calibrator
@@ -124,6 +129,8 @@ export function TransportBar({
   onLevel,
   arrangementTempo,
   levelSource,
+  drill,
+  sections,
   latency,
   calibrator,
   onMeasuredLatency,
@@ -302,6 +309,14 @@ export function TransportBar({
               onLevel={onLevel}
               arrangementTempo={arrangementTempo}
               source={levelSource}
+            />
+          )}
+          {drill === undefined ? null : (
+            <DrillPanel
+              drill={drill}
+              sections={sections}
+              loop={state.loop}
+              currentBars={() => barsBetween(timing, position, position)}
             />
           )}
           {grader === undefined ? null : <ReportPanel grader={grader} />}

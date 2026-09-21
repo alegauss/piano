@@ -90,6 +90,13 @@ export type PlaybackFilter = {
   readonly hands?: readonly Hand[]
   /** When present, only these voices sound. */
   readonly voices?: readonly number[]
+  /**
+   * Nothing sounds at all: the player takes the whole piece and the app keeps
+   * time without playing it. Stated rather than spelled as an empty list of
+   * hands, because naming no hand and naming every hand are the same filter,
+   * and the one thing neither can say is silence.
+   */
+  readonly silent?: boolean
 }
 
 /**
@@ -104,6 +111,9 @@ export function noteAudible(
   note: Pick<Note, 'part' | 'hand' | 'voice'>,
   filter: PlaybackFilter = {},
 ): boolean {
+  if (filter.silent === true) {
+    return false
+  }
   const part = partOf(note as Note)
   const solo = filter.soloParts ?? []
   if (solo.length > 0) {

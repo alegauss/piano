@@ -24,8 +24,15 @@ import { SoundStatus } from './components/SoundStatus'
 import { TokenGallery } from './components/TokenGallery'
 import { TransportBar } from './components/TransportBar'
 import { cn } from './lib/cn'
-import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from './lib/parts'
+import {
+  handsView,
+  NOTHING_TOUCHED,
+  playbackFilter,
+  visibleNotes,
+  type PartsView,
+} from './lib/parts'
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
+import { createDrill } from './lib/drill'
 import { createGrader } from './lib/grader'
 import { appKeys } from './lib/keys-input'
 import {
@@ -132,6 +139,7 @@ export function App() {
   }, [level, arrangements, written])
   const notes = version?.notes ?? written
   const parts = useMemo(() => partsOf(placeholder), [])
+  const sections = useMemo(() => placeholder.sections ?? [], [])
   // Settled once from the whole piece, so hiding a part leaves the others
   // the colour they had.
   const colours = useMemo(() => partColours(notes), [notes])
@@ -177,6 +185,24 @@ export function App() {
   const wait = useMemo(() => createWaitMode(transport), [transport])
   const waitState = useSyncExternalStore(wait.subscribe, () => wait.state)
   const grader = useMemo(() => createGrader(transport, () => piano.now()), [transport, piano])
+  // The drill drives the transport itself and hands the keyboard back when it
+  // stops, so the parts view follows it rather than the other way round.
+  const drill = useMemo(
+    () =>
+      createDrill(transport, grader, {
+        hands: (plays, other) => {
+          setPartsView((view) => handsView(view, plays, other))
+        },
+        // Wait mode lets go of the transport now rather than after the next
+        // render, because the drill is about to hold it at the end of its
+        // passage and the last word on a hold wins.
+        before: () => {
+          wait.setOn(false)
+          setWaiting(false)
+        },
+      }),
+    [transport, grader, wait],
+  )
 
   // Wait mode is told the score and who is playing which part of it: the
   // notes it waits for are the ones the app has been told not to play. The
@@ -191,6 +217,10 @@ export function App() {
   }, [wait, waiting])
   useEffect(() => wait.close, [wait])
   useEffect(() => grader.close, [grader])
+  useEffect(() => {
+    drill.use(timing, sections)
+  }, [drill, timing, sections])
+  useEffect(() => drill.close, [drill])
   // Told the lag rather than asked for it: the calibrator and the grader both
   // outlive this view.
   useEffect(() => {
@@ -405,6 +435,8 @@ export function App() {
           onLevel={chooseLevel}
           arrangementTempo={arrangementTempo}
           levelSource={version?.source}
+          drill={drill}
+          sections={sections}
           latency={latency}
           calibrator={calibrator}
           latencySetup={device ?? 'the typing keyboard'}

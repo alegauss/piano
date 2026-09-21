@@ -1,7 +1,7 @@
 import { LEVELS, type Hand, type Level, type Reduced, type Reduction } from '@piano/score-format'
 
 import type { Strictness } from './grading'
-import { HANDS, type PartsView } from './parts'
+import { handsView, HANDS, type PartsView } from './parts'
 
 /**
  * What beginner, intermediate and advanced actually promise.
@@ -106,15 +106,11 @@ export function handsPlayed(view: PartsView): readonly Hand[] {
 /**
  * The parts view a level asks for, over whatever the session already had.
  *
- * Naming every hand is the same as naming none: the app accompanies nothing
- * and the player owes the piece, rather than the app being asked to play
- * neither hand.
+ * A level always leaves the other hand accompanying: it is where somebody
+ * starts, and starting in silence is a drill rather than a level.
  */
 export function viewFor(preset: LevelPreset, view: PartsView): PartsView {
-  return {
-    ...view,
-    mutedHands: preset.plays.length === HANDS.length ? [] : [...preset.plays],
-  }
+  return handsView(view, preset.plays, 'accompanies')
 }
 
 /** What the session looks like under a level, before anybody moves anything. */

@@ -58,20 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI41 The three things practice actually is
-
-Practice is not playing a piece from beginning to end. It is looping four bars until
-they stop failing, playing them slowly and speeding up, and taking the hands apart. All
-three exist here. The loop is set from a bar drag or a named section and repeats with a
-short gap, optionally with a count-in on each pass. Progressive tempo raises the speed
-by a chosen step after every clean repetition and drops back on a failure, which is the
-standard drill and is worth automating because doing it by hand means stopping to change
-a number every thirty seconds. Hands separate reads the hand field on the note rather
-than the part table, so it works on any score, and the hand not being played can be
-silent or can play as accompaniment. The three compose: left hand only, bars 17 to 20,
-starting at half tempo and climbing. That sentence is exactly what somebody will ask
-Claude Code for, so the practice engine has to accept it as one request.
-
 ### §PI42 Remembering what still fails
 
 Without history every session starts from zero and the app cannot answer the only
@@ -112,13 +98,15 @@ tool surface has to be the shape of that sentence rather than the shape of the c
 beneath it. The set is small and deliberate. Score tools: validate a score and return
 errors a model can act on, save one into the library with its metadata, read one back.
 Transport tools: play, stop, seek to a bar or a named section, set tempo scale, set
-transpose, set difficulty level, report current state. Library tools: list what is there
-and search it. What is not exposed matters as much: nothing that writes an arbitrary
-file, nothing that runs a command. The server is a separate package depending on the
-shared format package, so validation inside a tool call and validation inside the app
-are the same code and cannot disagree. Every tool description is written for a model
-reading it cold, because a description that needs the source to understand is a tool
-that gets called wrongly.
+transpose, set difficulty level, report current state, and start a drill, which takes
+the passage, the hands and the tempo ladder as one request because "left hand only, bars
+17 to 20, starting at half tempo and climbing" is one sentence and not four calls.
+Library tools: list what is there and search it. What is not exposed matters as much:
+nothing that writes an arbitrary file, nothing that runs a command. The server is a
+separate package depending on the shared format package, so validation inside a tool
+call and validation inside the app are the same code and cannot disagree. Every tool
+description is written for a model reading it cold, because a description that needs the
+source to understand is a tool that gets called wrongly.
 
 ### §PI44 Finding the window the user is looking at
 
