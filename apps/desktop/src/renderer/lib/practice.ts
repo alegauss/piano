@@ -1,4 +1,4 @@
-import { noteAudible, type Note, type PlaybackFilter } from '@piano/score-format'
+import { CHORD_TICKS, noteAudible, type Note, type PlaybackFilter } from '@piano/score-format'
 
 /**
  * What the player owes next, and whether they have played it.
@@ -13,8 +13,12 @@ import { noteAudible, type Note, type PlaybackFilter } from '@piano/score-format
  * few milliseconds apart has played the chord.
  */
 
-/** How close in the score two notes must be to count as one chord, in ticks. */
-export const CHORD_TICKS = 30
+/**
+ * How close in the score two notes must be to count as one chord. The
+ * format's own figure: what counts as a chord is a question about the score,
+ * and the reduction rules ask it too.
+ */
+export { CHORD_TICKS }
 
 export type Expectation = {
   /** The tick the group starts at, which is where playback waits. */

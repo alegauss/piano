@@ -82,6 +82,8 @@ export type TransportBarProps = {
   readonly levelSettings?: () => LevelSettings
   readonly onLevel?: (level: Level) => void
   readonly arrangementTempo?: (level: Level) => number | null
+  /** Where the piece at the chosen level came from: the score's own version, or the rules. */
+  readonly levelSource?: string
   /** The machine's measured lag, shown rather than hidden. */
   readonly latency?: Latency
   readonly calibrator?: Calibrator
@@ -121,6 +123,7 @@ export function TransportBar({
   levelSettings,
   onLevel,
   arrangementTempo,
+  levelSource,
   latency,
   calibrator,
   onMeasuredLatency,
@@ -298,6 +301,7 @@ export function TransportBar({
               settings={levelSettings}
               onLevel={onLevel}
               arrangementTempo={arrangementTempo}
+              source={levelSource}
             />
           )}
           {grader === undefined ? null : <ReportPanel grader={grader} />}

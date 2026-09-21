@@ -1,9 +1,4 @@
-import {
-  barAtTick,
-  tickAtBar,
-  type ResolvedTiming,
-  type TimeSignatureEvent,
-} from '@piano/score-format'
+import { barAtTick, beatTicks, meterAt, tickAtBar, type ResolvedTiming } from '@piano/score-format'
 
 /**
  * Where the beats fall, from the time signature map.
@@ -12,32 +7,18 @@ import {
  * and 3/4 three quarters, and the first beat of every bar is accented. Bars
  * are the format's own, from barAtTick, so a pickup counts up into the first
  * downbeat and a meter change starts a bar exactly where the score says.
+ *
+ * Which meter governs a tick, and how long its beat is, are the format's
+ * questions and are asked of it: the reduction rules count beats too, and two
+ * answers to where a beat falls would be two pieces.
  */
+
+export { beatTicks, meterAt }
 
 export type Beat = {
   readonly tick: number
   /** The first beat of a bar. */
   readonly accent: boolean
-}
-
-/** The meter in force at a tick: the first one governs from the first full bar, as barAtTick reads it. */
-export function meterAt(timing: ResolvedTiming, tick: number): TimeSignatureEvent {
-  const [first] = timing.timeSignatures
-  let found = first ?? { tick: 0, numerator: 4, denominator: 4 }
-  for (const signature of timing.timeSignatures) {
-    if (signature.tick <= tick) {
-      found = signature
-    }
-  }
-  return found
-}
-
-/** Ticks in one beat of a meter: one unit of its denominator. */
-export function beatTicks(
-  signature: Pick<TimeSignatureEvent, 'denominator'>,
-  ticksPerQuarter: number,
-): number {
-  return (ticksPerQuarter * 4) / signature.denominator
 }
 
 /** The first beat at or after a tick. */

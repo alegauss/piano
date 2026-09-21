@@ -85,6 +85,28 @@ export {
 } from './arrangement'
 
 export {
+  accompanies,
+  arrangementOf,
+  CHORD_TICKS,
+  chordsOf,
+  dropOrnaments,
+  foldWideChords,
+  KEEP_EVERYTHING,
+  keepTopVoices,
+  reduceNotes,
+  reduceScore,
+  REACH_SEMITONES,
+  rolesOf,
+  thinChords,
+  thinFigures,
+  type Cut,
+  type Reduced,
+  type Reduction,
+  type Roles,
+  type Rule,
+} from './reduce'
+
+export {
   bundlingProblems,
   compareForLibrary,
   isPublicDomainLicence,
@@ -143,8 +165,10 @@ export {
 export {
   barAtTick,
   barRangeToTicks,
+  beatTicks,
   DEFAULT_MICROSECONDS_PER_QUARTER,
   DEFAULT_TICKS_PER_QUARTER,
+  meterAt,
   resolveTiming,
   secondsToTicks,
   tickAtBar,

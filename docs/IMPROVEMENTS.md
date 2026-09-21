@@ -58,24 +58,6 @@ attack should land at the same point.
 
 ## Block E — Practice mode and difficulty levels
 
-### §PI40 Generating the simple version
-
-The format allows three arrangements per score, but writing three by hand for every
-piece is a cost that will quietly stop being paid, and then beginner mode works only for
-the handful of scores somebody curated. So reduction is automatic, with a hand-authored
-arrangement overriding it wherever one exists. The transformation is a set of rules
-applied in order: keep the melodic top voice, reduce chords to a root and one interval,
-drop ornaments and grace notes, thin a repeated accompaniment figure to one note per
-beat, and fold anything beyond a reachable span into a single bass note. Each rule is
-separately testable against fixtures, which matters because the failure mode here is a
-reduction that is technically simpler and musically unrecognisable. The result is
-offered as a proposal the user or Claude Code can adjust rather than as a fact, and it
-is stored as an arrangement inside the score so it stays reviewable and correctable.
-Reduction never edits the source notes. What each level asks of these rules is already
-written down: the level preset carries how many voices it keeps, whether ornaments
-survive and whether chords come down towards a root and one interval, so a rule is
-parameterised by the level rather than by a table of its own.
-
 ### §PI41 The three things practice actually is
 
 Practice is not playing a piece from beginning to end. It is looping four bars until
@@ -331,3 +313,22 @@ confirm that the fingerings stay behind, but should be told that they did. One c
 left open: whether the export plays the score as written, which is what exportMidi does
 today, or the arrangement currently selected, which would run resolveArrangement first
 and name the level in the file name.
+
+### §PI63 Keeping the proposal
+
+The rules hand back an arrangement, which is the whole point of deriving one rather than
+filtering notes on the fly: it names the notes it left out, so a person or Claude Code
+can read it, argue with it and correct one line of it. None of that is reachable while
+it lives for the length of a session. The reduction is worked out again on every launch,
+and a correction has nowhere to go, so the proposal is offered and then quietly thrown
+away. Writing it into the score file under its own id is what closes that: a score that
+carries a generated arrangement is a score whose beginner version somebody can fix once
+and keep, and the rules stop being consulted for it at all, since a hand-authored
+arrangement already wins. The write is an ordinary save through whatever opens a file,
+with the arrangement marked as generated so a later run can tell one it produced from
+one somebody wrote, and so re-deriving it after the source changes replaces its own work
+and never a person's. The question this leaves open is what should happen when the notes
+it named have since been edited: naming a note that is no longer there is already a
+validation error, so the choice is between dropping the stale arrangement and
+re-deriving it, and that is a judgement about whose work is worth more rather than
+something the code can settle.

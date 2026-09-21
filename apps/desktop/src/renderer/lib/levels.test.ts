@@ -1,9 +1,11 @@
-import { LEVELS } from '@piano/score-format'
+import { LEVELS, type Reduced, type Rule } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { WINDOWS } from './grading'
 import {
+  describeAuthored,
   describeHands,
+  describeReduction,
   handsPlayed,
   LEVEL_PRESETS,
   moved,
@@ -103,6 +105,35 @@ describe('a level being a starting point rather than a cage', () => {
 
   it('does not call a rounding difference a change of tempo', () => {
     expect(moved(under, same({ tempoScale: under.tempoScale + 0.0001 }))).toEqual([])
+  })
+})
+
+describe('saying where the piece came from', () => {
+  const reduced = (cuts: { rule: Rule; dropped: number }[]): Reduced => ({
+    notes: [],
+    arrangement: null,
+    cuts,
+    anonymous: 0,
+  })
+
+  it('offers a worked-out version as a proposal, naming what each rule took', () => {
+    const said = describeReduction(
+      reduced([
+        { rule: 'chords', dropped: 2 },
+        { rule: 'ornaments', dropped: 1 },
+      ]),
+    )
+    expect(said).toContain('3 notes fewer')
+    expect(said).toContain('chords 2')
+    expect(said).toContain('ornaments 1')
+  })
+
+  it('says so when there was nothing to simplify', () => {
+    expect(describeReduction(reduced([]))).toContain('nothing here needed simplifying')
+  })
+
+  it('names the score’s own version, which wins over a worked-out one', () => {
+    expect(describeAuthored('Melody only')).toContain('Melody only')
   })
 })
 

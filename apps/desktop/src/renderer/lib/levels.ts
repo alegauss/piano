@@ -1,4 +1,4 @@
-import { LEVELS, type Hand, type Level } from '@piano/score-format'
+import { LEVELS, type Hand, type Level, type Reduced, type Reduction } from '@piano/score-format'
 
 import type { Strictness } from './grading'
 import { HANDS, type PartsView } from './parts'
@@ -18,19 +18,11 @@ import { HANDS, type PartsView } from './parts'
  * them is a sensible place to start and an honest account of what it moved.
  *
  * Three of the knobs describe a simpler version of a piece rather than a
- * setting on the app. They apply through the arrangement a score carries for
- * the level, which is the one place a reduction is written down; until a score
- * offers one, the level still plays the piece as written and says so.
+ * setting on the app. They are the format's own Reduction, so the rules that
+ * derive a simpler arrangement take what a level asks for directly, and a
+ * score that carries a hand-authored arrangement for the level uses that
+ * instead.
  */
-
-/** What a level asks of a simpler version of a score. */
-export type Reduction = {
-  /** How many voices are kept, the top one first. Null keeps what the score wrote. */
-  readonly voices: number | null
-  readonly ornaments: boolean
-  /** Whether chords come down towards a root and one interval. */
-  readonly chords: 'as written' | 'simplified'
-}
 
 export type LevelPreset = {
   readonly level: Level
@@ -167,6 +159,28 @@ export function moved(under: LevelSettings, settings: LevelSettings): (keyof Lev
     changed.push('strictness')
   }
   return changed
+}
+
+/**
+ * Where the piece at this level came from, said out loud.
+ *
+ * A reduction the app worked out is a proposal and not a fact, so it says so
+ * and says what it took: a player who finds the tune missing a note should be
+ * able to see which rule took it rather than wonder whether the score is
+ * wrong.
+ */
+export function describeReduction(reduced: Reduced): string {
+  const dropped = reduced.cuts.reduce((sum, cut) => sum + cut.dropped, 0)
+  if (dropped === 0) {
+    return 'Worked out from the rules: nothing here needed simplifying.'
+  }
+  const rules = reduced.cuts.map((cut) => `${cut.rule} ${String(cut.dropped)}`).join(', ')
+  return `Worked out from the rules: ${String(dropped)} ${dropped === 1 ? 'note' : 'notes'} fewer (${rules}).`
+}
+
+/** The score's own version of this level, which always wins over a worked-out one. */
+export function describeAuthored(label: string): string {
+  return `The score's own arrangement for this level: ${label}.`
 }
 
 /** The hands somebody plays, as a person says them. */

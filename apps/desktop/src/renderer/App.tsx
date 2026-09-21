@@ -7,6 +7,7 @@ import {
   noteEnd,
   notesOf,
   partsOf,
+  reduceScore,
   resolveArrangement,
   timingOf,
   type Level,
@@ -27,7 +28,14 @@ import { NOTHING_TOUCHED, playbackFilter, visibleNotes, type PartsView } from '.
 import { DEFAULT_LEAD_SECONDS, partColours } from './lib/roll'
 import { createGrader } from './lib/grader'
 import { appKeys } from './lib/keys-input'
-import { handsPlayed, LEVEL_PRESETS, viewFor, type LevelSettings } from './lib/levels'
+import {
+  describeAuthored,
+  describeReduction,
+  handsPlayed,
+  LEVEL_PRESETS,
+  viewFor,
+  type LevelSettings,
+} from './lib/levels'
 import {
   calibrationKey,
   createCalibrator,
@@ -107,14 +115,22 @@ export function App() {
   const arrangements = useMemo(() => arrangementsOf(placeholder), [])
   /**
    * The piece at the level chosen: the score's own arrangement for it where
-   * there is one, and what is written where there is not. A level is never a
-   * reason to have nothing to play.
+   * there is one, and one worked out from the rules where there is not. A
+   * level is never a reason to have nothing to play.
    */
-  const arrangement = useMemo(() => {
-    const chosen = level === null ? null : arrangementForLevel(arrangements, level)
-    return chosen === null ? null : resolveArrangement(chosen, written)
+  const version = useMemo(() => {
+    if (level === null) {
+      return null
+    }
+    const authored = arrangementForLevel(arrangements, level)
+    if (authored !== null) {
+      const resolved = resolveArrangement(authored, written)
+      return { notes: resolved.notes, source: describeAuthored(resolved.label) }
+    }
+    const reduced = reduceScore(placeholder, level, LEVEL_PRESETS[level].reduction)
+    return { notes: reduced.notes, source: describeReduction(reduced) }
   }, [level, arrangements, written])
-  const notes = arrangement?.notes ?? written
+  const notes = version?.notes ?? written
   const parts = useMemo(() => partsOf(placeholder), [])
   // Settled once from the whole piece, so hiding a part leaves the others
   // the colour they had.
@@ -388,6 +404,7 @@ export function App() {
           levelSettings={levelSettings}
           onLevel={chooseLevel}
           arrangementTempo={arrangementTempo}
+          levelSource={version?.source}
           latency={latency}
           calibrator={calibrator}
           latencySetup={device ?? 'the typing keyboard'}

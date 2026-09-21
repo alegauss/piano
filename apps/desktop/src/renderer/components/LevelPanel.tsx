@@ -28,6 +28,7 @@ export function LevelPanel({
   onLevel,
   /** The tempo the score's own arrangement for a level asks for, where it carries one. */
   arrangementTempo,
+  source,
   className,
 }: {
   readonly level: Level | null
@@ -39,6 +40,8 @@ export function LevelPanel({
   readonly settings: () => LevelSettings
   readonly onLevel: (level: Level) => void
   readonly arrangementTempo?: (level: Level) => number | null
+  /** Where the piece at this level came from: the score's own version, or the rules. */
+  readonly source?: string
   readonly className?: string
 }) {
   const preset = level === null ? null : LEVEL_PRESETS[level]
@@ -89,6 +92,12 @@ export function LevelPanel({
               <p className="text-sm text-text-default" data-testid="level-means">
                 {preset.means}
               </p>
+
+              {source === undefined ? null : (
+                <p className="text-xs text-text-muted" data-testid="level-source">
+                  {source}
+                </p>
+              )}
 
               <dl className="flex flex-col gap-1 text-xs">
                 <Knob
