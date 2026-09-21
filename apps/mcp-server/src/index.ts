@@ -2,7 +2,7 @@ import { describeScore, FORMAT_VERSION, isSupportedVersion, type Score } from '@
 
 export { createLibrary, libraryId, safeName, SCORE_SUFFIX } from './library'
 export type { Files, Library, LibraryEntry, Saved } from './library'
-export { candidates, findApp, whereLooked } from './launch'
+export { candidates, findApp, isPianoApp, whereLooked } from './launch'
 export type { Candidate, Found, Place } from './launch'
 export {
   APP_RELEASES,

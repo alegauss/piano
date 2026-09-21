@@ -1,8 +1,11 @@
+import { execFile } from 'node:child_process'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, rm, writeFile } from 'node:fs/promises'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { userInfo } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 
 import {
   commandSchema,
@@ -37,6 +40,9 @@ import {
 
 /** A request larger than this is not a command; commands are a few hundred bytes. */
 const MAX_BODY = 64 * 1024
+
+/** Run a program with its arguments as a list, never through a shell. */
+const run = promisify(execFile)
 
 export type LinkHost = {
   readonly endpoint: string
@@ -81,10 +87,22 @@ export async function startLinkHost(options: {
       focusedAt: now(),
       app: options.app,
     }
-    await mkdir(options.directory, { recursive: true })
-    await writeFile(file, `${JSON.stringify(presence)}\n`, { encoding: 'utf8', mode: 0o600 })
+    await writeFile(file, `${JSON.stringify(presence)}\n`, 'utf8')
   }
-  await announce()
+
+  // The file is made private while it is still empty, and only then given the
+  // token: a token written first and locked down after is readable for a
+  // moment by anybody who is watching the directory.
+  try {
+    await mkdir(options.directory, { recursive: true })
+    await writeFile(file, '', { encoding: 'utf8', mode: 0o600 })
+    await restrictToOwner(file)
+    await announce()
+  } catch (cause: unknown) {
+    server.close()
+    await rm(file, { force: true })
+    throw cause
+  }
 
   return {
     endpoint,
@@ -99,6 +117,28 @@ export async function startLinkHost(options: {
       await rm(file, { force: true })
     },
   }
+}
+
+/**
+ * Readable and writable by this person alone.
+ *
+ * The file holds the token that proves a request came from somebody who may
+ * drive this piano, so another account on the same machine must not be able
+ * to read it. A POSIX mode says so directly. Windows ignores the mode, so the
+ * access list is set instead: inheritance off, and full control to the
+ * current user and nobody else. Failing to lock it down fails the whole
+ * link, closed: a piano Claude Code cannot reach is better than one anybody
+ * on the machine can.
+ */
+export async function restrictToOwner(file: string): Promise<void> {
+  if (process.platform !== 'win32') {
+    await chmod(file, 0o600)
+    return
+  }
+  const { username } = userInfo()
+  const domain = process.env['USERDOMAIN']
+  const account = domain !== undefined && domain !== '' ? `${domain}\\${username}` : username
+  await run('icacls', [file, '/inheritance:r', '/grant:r', `${account}:F`])
 }
 
 function reply(response: ServerResponse, status: number, body: LinkResult | string): void {

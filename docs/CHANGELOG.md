@@ -158,6 +158,9 @@
 - ✅ **PI48** **Asking to play a piece fails whenever the app is closed, which is most of the time** — A request for music with no window open starts the installed app once, waits for it to listen and plays; a running one is brought forward (design recorded in `apps/mcp-server/src/launch.ts`).
   checked **A play request with the app closed starts it and plays** From a cold machine the tool launches the app, waits for the handshake and begins playback, with a timeout and a clear failure when it cannot.
   checked **No second instance is ever started** A tool call arriving while the app is running reuses it and raises the existing window, rather than opening a duplicate that plays out of sight.
+- ✅ **PI49** **A local port that accepts scores and plays them is an open door on the machine** — The link answers on loopback only and its token file is readable by its owner alone; ids from any caller land inside the library, never on a device name, and a record cannot start another program.
+  checked **The endpoint is unreachable from another machine or user** It binds loopback only, and a request without the current session token is refused, tested from a second account on the same machine.
+  checked **A score cannot be written outside the library directory** A save tool handed a path that escapes the library is refused by name, including through relative traversal and through a symlink.
 
 ## Block G — Score library and distribution
 

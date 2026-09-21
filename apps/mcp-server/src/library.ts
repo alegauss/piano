@@ -69,8 +69,16 @@ export function safeName(name: string): string {
     .slice(0, MAX_NAME)
     .replace(/^-+/, '')
     .replace(/-+$/, '')
-  return reduced === '' ? 'score' : reduced
+  if (reduced === '') {
+    return 'score'
+  }
+  // Windows keeps these names for devices whatever follows them: a score
+  // called "con" written as con.score.json is a write to the console.
+  return WINDOWS_DEVICES.test(reduced) ? `${reduced}-score` : reduced
 }
+
+/** The names Windows reserves for devices, which no file may take. */
+const WINDOWS_DEVICES = /^(con|prn|aux|nul|com\d|lpt\d)$/
 
 /** What a score is filed under: its own id where it has one, its title otherwise. */
 export function libraryId(score: Score): string {

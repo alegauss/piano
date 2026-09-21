@@ -1,7 +1,12 @@
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { VALID_FIXTURES } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { createLibrary, libraryId, safeName, SCORE_SUFFIX, type Files } from './library'
+import { nodeFiles } from './server'
 
 /**
  * The library with its filesystem handed to it, which is how a test can ask
@@ -52,6 +57,12 @@ describe('what an id is allowed to be', () => {
     expect(safeName('Prelude in C')).toBe('prelude-in-c')
   })
 
+  it('never takes a name Windows keeps for a device', () => {
+    expect(safeName('CON')).toBe('con-score')
+    expect(safeName('lpt1')).toBe('lpt1-score')
+    expect(safeName('console')).toBe('console')
+  })
+
   it('is the score’s own id where it has one, and its title otherwise', () => {
     expect(libraryId(named('bwv-846', 'Prelude') as never)).toBe('bwv-846')
     expect(libraryId({ formatVersion: 1, metadata: { title: 'Prelude in C' } })).toBe(
@@ -88,6 +99,44 @@ describe('keeping a score', () => {
   it('says so rather than throwing something unreadable for an id nobody saved', async () => {
     const library = createLibrary(root, memory())
     await expect(library.read('nothing')).rejects.toThrow()
+  })
+})
+
+describe('on a real disk, against names chosen to escape', () => {
+  it('writes every score inside the library and nothing anywhere else', async () => {
+    const parent = await mkdtemp(join(tmpdir(), 'piano-escape-'))
+    const root = join(parent, 'library')
+    try {
+      const library = createLibrary(root, nodeFiles)
+      const hostile = [
+        '../../outside',
+        '/etc/passwd',
+        'C:\\Windows\\win.ini',
+        '\\\\server\\share\\x',
+        '..',
+        'a/../../b',
+        'con',
+        'NUL',
+        'com1',
+        '\u2025\u2025/x',
+        'name\u0000.exe',
+        'x'.repeat(500),
+      ]
+      for (const id of hostile) {
+        await library.save(named(id, 'Hostile'))
+      }
+
+      // Only the library was created beside the files this test made.
+      expect(await readdir(parent)).toEqual(['library'])
+      const written = await readdir(root)
+      expect(written.length).toBeGreaterThan(0)
+      for (const name of written) {
+        expect(name).toMatch(/^[a-z0-9-]+\.score\.json$/)
+        expect(name).not.toMatch(/^(con|prn|aux|nul|com\d|lpt\d)\./)
+      }
+    } finally {
+      await rm(parent, { recursive: true, force: true })
+    }
   })
 })
 

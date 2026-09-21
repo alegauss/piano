@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { candidates, findApp, whereLooked, type Place } from './launch'
+import { candidates, findApp, isPianoApp, whereLooked, type Place } from './launch'
 
 /**
  * Where the app is looked for, on each platform, with the machine faked. The
@@ -73,6 +73,24 @@ describe('where the app is looked for', () => {
     const nowhere = place()
     expect(findApp(nowhere)).toBeNull()
     expect(whereLooked(nowhere)).toContain('Programs\\Piano\\Piano.exe')
+  })
+
+  it('believes the record only when it names the piano, so it cannot start anything else', () => {
+    expect(isPianoApp('E:/Tools/Piano/Piano.exe')).toBe(true)
+    expect(isPianoApp('/Applications/Piano.app')).toBe(true)
+    expect(isPianoApp('/home/ada/Apps/Piano-1.0.0.AppImage')).toBe(true)
+    expect(isPianoApp('C:/Windows/System32/cmd.exe')).toBe(false)
+    const paths = candidates(place({ env: {}, read: recorded('C:/Windows/System32/cmd.exe') })).map(
+      (one) => one.path,
+    )
+    expect(paths).toEqual([])
+  })
+
+  it('leaves somebody’s own setting theirs to point anywhere', () => {
+    const paths = candidates(place({ env: { PIANO_APP: 'D:/dev/electron.exe' } })).map(
+      (one) => one.path,
+    )
+    expect(paths).toEqual(['D:/dev/electron.exe'])
   })
 
   it('ignores a record it cannot read', () => {

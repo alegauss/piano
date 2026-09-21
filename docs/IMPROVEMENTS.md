@@ -93,24 +93,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI49 A convenience channel that is not a way in
-
-A local endpoint that accepts a score and plays it is, described plainly, a way to make
-a program on this machine do something. That is fine and it needs bounds. The listener
-binds to loopback only and never to an external interface. Every request carries the
-token from the handshake file, generated per app start and readable only by the current
-user, so another account on a shared machine cannot drive it. Payloads are validated by
-the same schema as everything else before reaching any code that acts on them. File
-paths crossing the boundary are confined to the library directory rather than accepting
-an arbitrary path, because a tool that saves a score anywhere is a tool that overwrites
-anything. Nothing on this channel runs a command or evaluates code. Much of this landed
-with the link itself: loopback only, a token per start compared in constant time, the
-presence file written owner-only, and the version and schema checked before anything
-acts. What is left is proving it: that the Windows file is as private as the POSIX mode
-says, and that nothing ever binds wider. None of this is exotic; it is the difference
-between a feature and an incident, and it costs far less now than as a retrofit after
-the plugin is published.
-
 ### §PI50 The one test that proves the premise
 
 Every other task on this roadmap can pass while the product still does not work, because

@@ -34,6 +34,19 @@ export type Found = {
   readonly from: string
 }
 
+/**
+ * Whether a recorded path names the piano and not some other program.
+ *
+ * The record is a file in somebody's home that says what to run, and the one
+ * thing it must not become is a way to have a tool call start anything else.
+ * So only a program named as the app is named is believed from it; a setting
+ * somebody wrote themselves, PIANO_APP, is theirs to point anywhere.
+ */
+export function isPianoApp(path: string): boolean {
+  const name = path.split(/[\\/]/).at(-1) ?? ''
+  return /^piano(\.exe|\.app)?$/i.test(name) || /^piano[-\w.]*\.appimage$/i.test(name)
+}
+
 /** Where the app might be, most believable first. */
 export function candidates(place: Place): Candidate[] {
   const found: Candidate[] = []
@@ -46,7 +59,7 @@ export function candidates(place: Place): Candidate[] {
   if (recordText !== null) {
     try {
       const record = appRecordSchema.safeParse(JSON.parse(recordText))
-      if (record.success) {
+      if (record.success && isPianoApp(record.data.executable)) {
         found.push({ path: record.data.executable, from: 'where the app last ran' })
       }
     } catch {

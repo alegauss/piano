@@ -18,7 +18,6 @@
 
 ## Block F — Claude Code First: MCP and plugin
 
-- 📋 **PI49** (deps: PI44 ✅) **A local port that accepts scores and plays them is an open door on the machine** — Binding to loopback, requiring a token and allowlisting paths keep a convenience channel from becoming a way in. → §PI49
 - 📋 **PI50** (deps: PI26 ✅, PI46 ✅, PI48 ✅) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 - 📋 **PI65** (deps: PI46 ✅) **validate_score passes a score with the left hand above the right, a chord no hand can reach, or a bar half full** — The arithmetic half of the skill's list, returned as warnings beside a valid result, is what a model acts on when it would skip rereading. → §PI65
 
@@ -31,15 +30,6 @@
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
 - 📋 **PI63** (deps: PI51) **A worked-out arrangement lives for one session: it is derived again at every launch and a correction has nowhere to go** — Writing the proposal into the score is what makes it reviewable rather than a fact the app reasserts every time it starts. → §PI63
-
-## Done when — PI49
-
-- **The endpoint is unreachable from another machine or user** It binds loopback only,
-  and a request without the current session token is refused, tested from a second
-  account on the same machine.
-- **A score cannot be written outside the library directory** A save tool handed a path
-  that escapes the library is refused by name, including through relative traversal and
-  through a symlink.
 
 ## Done when — PI50
 
