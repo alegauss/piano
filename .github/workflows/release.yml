@@ -91,7 +91,13 @@ jobs:
       # to appear under Open With. It installs and uninstalls, which is fine on
       # a runner that is thrown away and is why it is not part of packaging.
       - name: the installer registers what it claims
+        if: runner.os != 'Linux'
         run: npm run check:associations
+
+      # It ends by starting the installed app, which needs a display.
+      - name: the installer registers what it claims
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run check:associations
 
       - name: attach to the release
         shell: bash

@@ -31,27 +31,3 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 ## Block F — Claude Code First: MCP and plugin
 
 ## Block G — Score library and distribution
-
-### §PI70 Starting the installed app with a score
-
-PI68 reads back what an installer wrote: the registry says a score is claimed and starts
-the piano, Launch Services says the bundle owns `.piano`, the desktop entry says which
-types it opens. All of that is a promise about what happens next, and nothing tests that
-part. The app could refuse the path, or open on the placeholder, and every reading would
-still pass.
-
-What is missing is observability rather than a shell. A smoke run loads the renderer and
-quits before the window asks main what it was launched with, so a run started with a
-score's path says nothing about the score. Give the headless run a word for it: main
-knows the file it opened, so it can print that name once, the way it prints that the
-renderer loaded. Then the association check ends by starting the installed binary with a
-score it wrote to a temporary file, and looks for that name. The score is one the check
-writes: the point is the installed app on a machine with nothing else of ours on it.
-
-Keep it to the one claim. Whether the window shows the notes is the live suite's
-question and it has a display for it; this is about whether a launch argument survives
-installation, which is where a `%1` that was never written, or written unquoted, would
-show.
-
-Done when the check starts the installed app with a score and fails where the app opens
-something else.

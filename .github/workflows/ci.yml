@@ -117,7 +117,13 @@ jobs:
       # Here as well as in the release, so a macro renamed on a branch is
       # answered by that branch and not by a tag weeks later.
       - name: the installer registers what it claims
+        if: runner.os != 'Linux'
         run: npm run check:associations
+
+      # It ends by starting the installed app, which needs a display.
+      - name: the installer registers what it claims
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run check:associations
 
       - uses: actions/upload-artifact@v4
         with:

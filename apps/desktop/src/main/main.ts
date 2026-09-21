@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import {
@@ -138,6 +138,25 @@ const pack = createPackDownloader({ base: packSourceUrl(), directory: packDirect
  */
 let launchFile: string | null = launchPath(process.argv, process.cwd())
 
+/**
+ * What this run was started to open, kept after `launchFile` has been taken.
+ *
+ * A headless run started with a score says which one it opened, and that line
+ * is the only way anything outside the app can tell that a launch argument
+ * survived being installed: a registry entry can name the piano and hand it a
+ * path the piano then refuses.
+ */
+const startedWith = launchFile
+
+/** Resolves with the name of the first score this run opens. */
+let scoreOpened: (name: string) => void = () => {}
+const openedScore = new Promise<string>((resolve) => {
+  scoreOpened = resolve
+})
+
+/** Whether the renderer got as far as loading, which tells two timeouts apart. */
+let rendererLoaded = false
+
 /** Whether the window has asked, after which a score opened from outside is sent straight to it. */
 let windowAsked = false
 
@@ -160,6 +179,7 @@ const opener = createOpener({
   },
   opened: (path) => {
     openFile = path
+    scoreOpened(basename(path))
   },
 })
 
@@ -345,9 +365,16 @@ function rendererPage(): string {
 function armHeadlessRun(window: BrowserWindow): void {
   window.webContents.once('did-finish-load', () => {
     void (async () => {
+      rendererLoaded = true
       process.stdout.write('piano: renderer loaded\n')
 
       if (!isSelfCheckRun) {
+        // Started with a score, this run waits to say which one it opened.
+        // The window asks main for it after the page has loaded, so quitting
+        // here would report on a launch argument nobody had looked at yet.
+        if (startedWith !== null) {
+          process.stdout.write(`piano: opened ${await openedScore}\n`)
+        }
         app.quit()
         return
       }
@@ -381,7 +408,11 @@ function armHeadlessRun(window: BrowserWindow): void {
   })
 
   setTimeout(() => {
-    process.stderr.write('piano: the renderer did not load in time\n')
+    process.stderr.write(
+      rendererLoaded
+        ? `piano: ${startedWith ?? 'the score it was started with'} was never opened\n`
+        : 'piano: the renderer did not load in time\n',
+    )
     app.exit(1)
   }, HEADLESS_TIMEOUT_MS).unref()
 }

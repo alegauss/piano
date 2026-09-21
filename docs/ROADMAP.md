@@ -14,8 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI70** (deps: PI68 ✅) **Nothing starts the installed app with a score and watches it open that score** — The registry says the piano is offered a file; only launching it that way says the piano does anything with what it is handed. → §PI70
-
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,

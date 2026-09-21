@@ -1,7 +1,7 @@
 import { execFile, execFileSync, spawn } from 'node:child_process'
-import { access, chmod, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { access, chmod, copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
@@ -23,6 +23,11 @@ import {
  * directory and a read of the registry, then the uninstaller and the same read
  * again; on macOS the app out of the disk image and into Launch Services; on
  * Linux the desktop entry the AppImage carries.
+ *
+ * Each then ends the same way: the installed binary is started with a score
+ * written outside the checkout, and has to say it opened that one. Everything
+ * above it is a promise about what happens when somebody double-clicks a file,
+ * and an app that refuses the path it is handed keeps every one of them.
  *
  * It is not part of `npm run package`, and must not become part of it. It
  * installs software and writes to the registry, which is fine on a runner that
@@ -61,6 +66,63 @@ async function artifact(extension) {
     throw new Error(`no ${extension} in ${releaseDir}; run \`npm run package\` first`)
   }
   return join(releaseDir, chosen)
+}
+
+/**
+ * A score outside the checkout, for handing to an installed app.
+ *
+ * Its content is one the app ships, so nothing here has to know the format; a
+ * copy rather than the file itself, because what is being tested is an
+ * installed app on a machine that has nothing else of ours on it, and the
+ * name has to be one no other score could answer for.
+ *
+ * @param {string} directory
+ * @returns {Promise<string>}
+ */
+async function score(directory) {
+  const from = fileURLToPath(
+    new URL('../apps/desktop/src/main/bundled/ode-to-joy.score.json', import.meta.url),
+  )
+  const to = join(directory, 'association-check.piano')
+  await copyFile(from, to)
+  return to
+}
+
+/**
+ * Start the installed app with a score and let it say what it opened.
+ *
+ * Smoke mode loads the page once and quits, and with a file it also reports
+ * the name it opened. A profile of its own, so this never touches the one an
+ * installed app on the same machine is using.
+ *
+ * @param {string} binary
+ * @param {string} path the score to hand it
+ * @param {string} profile
+ * @returns {Promise<import('./associations.mjs').Finding>}
+ */
+function opens(binary, path, profile) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binary, [path], {
+      env: { ...process.env, PIANO_SMOKE: '1', PIANO_USER_DATA_DIR: profile },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let said = ''
+    child.stdout.setEncoding('utf8')
+    child.stderr.setEncoding('utf8')
+    child.stdout.on('data', (chunk) => (said += chunk))
+    child.stderr.on('data', (chunk) => (said += chunk))
+    child.on('error', reject)
+    child.on('exit', (code) => {
+      const wanted = `piano: opened ${basename(path)}`
+      resolve({
+        ok: code === 0 && said.includes(wanted),
+        what: 'the installed app opens the score it is started with',
+        detail: said.includes(wanted)
+          ? wanted
+          : `exit ${String(code)}; it said: ${said.trim() || 'nothing'}`,
+      })
+    })
+  })
 }
 
 /**
@@ -121,6 +183,9 @@ function registry() {
 async function onWindows() {
   const installer = await artifact('.exe')
   const target = await mkdtemp(join(tmpdir(), 'piano-associations-'))
+  // The score and the profile live outside the installation, so the
+  // uninstaller takes its own files and nothing of this check's.
+  const work = await mkdtemp(join(tmpdir(), 'piano-launched-'))
   const exe = join(target, 'Piano.exe')
 
   try {
@@ -134,6 +199,7 @@ async function onWindows() {
     await access(exe)
 
     let ok = report('windows', windowsInstalled(registry(), exe), say)
+    ok = report('windows', [await opens(exe, await score(work), join(work, 'profile'))], say) && ok
 
     const uninstaller = (await readdir(target)).find((name) => /^Uninstall .*\.exe$/.test(name))
     if (uninstaller === undefined) {
@@ -148,6 +214,7 @@ async function onWindows() {
     return ok
   } finally {
     await rm(target, { recursive: true, force: true })
+    await rm(work, { recursive: true, force: true })
   }
 }
 
@@ -172,8 +239,11 @@ async function onMac() {
 
     await run(lsregister, ['-f', copied])
     const { stdout } = await run(lsregister, ['-dump'], { maxBuffer: 64 * 1024 * 1024 })
-    const ok = report('macos', launchServices(stdout, BUNDLE_ID), say)
+    let ok = report('macos', launchServices(stdout, BUNDLE_ID), say)
     await run(lsregister, ['-u', copied])
+
+    const binary = join(copied, 'Contents', 'MacOS', 'Piano')
+    ok = report('macos', [await opens(binary, await score(work), join(work, 'profile'))], say) && ok
     return ok
   } finally {
     await rm(work, { recursive: true, force: true })
@@ -198,6 +268,15 @@ async function onLinux() {
     }
     const entry = join(root, found)
     let ok = report('linux', desktopEntry(await readFile(entry, 'utf8')), say)
+
+    // AppRun out of the extracted image: the AppImage itself needs FUSE, and
+    // what is being started is the same binary either way.
+    ok =
+      report(
+        'linux',
+        [await opens(join(root, 'AppRun'), await score(work), join(work, 'profile'))],
+        say,
+      ) && ok
 
     // The system's own reader, where the runner has it: it knows the rules of
     // the format, which this does not and should not learn.
