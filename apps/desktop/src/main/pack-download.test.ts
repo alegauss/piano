@@ -151,12 +151,16 @@ describe('before anything is fetched', () => {
     })
   })
 
-  it('offers nothing where no download location is set', async () => {
-    expect(PUBLISHED_PACK).toBeNull()
-    expect(packSourceUrl({})).toBeNull()
+  it('downloads from where releases publish it, unless told another folder', () => {
+    expect(PUBLISHED_PACK).toMatch(/^https:\/\/.+\/$/)
+    expect(packSourceUrl({})).toBe(PUBLISHED_PACK)
+    expect(packSourceUrl({ PIANO_PACK_URL: '  ' })).toBe(PUBLISHED_PACK)
     expect(packSourceUrl({ PIANO_PACK_URL: 'https://example.com/pack/' })).toBe(
       'https://example.com/pack/',
     )
+  })
+
+  it('offers nothing where no download location is set', async () => {
     const downloader = createPackDownloader({ base: null, directory: installedIn() })
     expect(await downloader.source()).toMatchObject({ available: false })
   })

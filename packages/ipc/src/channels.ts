@@ -30,6 +30,8 @@ export const appInfo = {
   channel: CHANNEL_NAMES.appInfo,
   request: z.null(),
   response: z.object({
+    /** The release, which is the number the link names when it asks for an update. */
+    app: z.string(),
     electron: z.string(),
     chrome: z.string(),
     node: z.string(),

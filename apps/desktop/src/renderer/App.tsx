@@ -914,6 +914,7 @@ export function App() {
               onDismiss={settings.dismiss}
               onReset={resetSettings}
             />
+            <span data-testid="app-version">Piano {info?.app ?? 'unavailable'}</span>
             <span>Score format v{info?.scoreFormatVersion ?? FORMAT_VERSION}</span>
             <span>Electron {info?.electron ?? 'unavailable'}</span>
             <span>Chromium {info?.chrome ?? 'unavailable'}</span>

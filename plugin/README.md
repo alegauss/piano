@@ -19,6 +19,12 @@ away. The ones that play start the Piano app if it is installed and not open,
 and bring its window to the front if it is; without the app they say where to
 get it.
 
+The app itself is on the
+[latest release](https://github.com/alegauss/piano/releases/latest): an
+installer for Windows, a disk image for each kind of Mac, and an AppImage for
+Linux. They are not signed yet, so the system warns the first time; the release
+notes say what it shows and how to get past it.
+
 ## Commands
 
 | Command                  | What it does                                        |
@@ -47,5 +53,7 @@ footer names, or point `PIANO_SAMPLE_PACK` at it.
 
 ## Versions
 
-The plugin and the app are updated separately. They check each other's link
-version on every request, and a mismatch says which of the two to update.
+The plugin and the app are released together under one version, which the app
+shows in its footer and Claude Code in its plugin list. They are still updated
+separately, so they check each other's link version on every request, and a
+mismatch names both versions and says which of the two to update.

@@ -99,4 +99,18 @@ describe('two versions meeting', () => {
     const app = protocolMismatch({ us: 'piano app', ours: 2, them: 'plugin', theirs: 1 })
     expect(app).toContain('Update the plugin')
   })
+
+  it('names each side by the release a person can find, where it is known', () => {
+    const said = protocolMismatch({
+      us: 'plugin',
+      ours: 1,
+      ourRelease: '0.1.0',
+      them: 'piano app',
+      theirs: 2,
+      theirRelease: '0.2.0',
+    })
+    expect(said).toContain('plugin (0.1.0) speaks version 1')
+    expect(said).toContain('piano app (0.2.0) speaks version 2')
+    expect(said).toContain('Update the plugin')
+  })
 })

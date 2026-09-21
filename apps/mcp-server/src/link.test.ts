@@ -9,6 +9,7 @@ import { LEVELS } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { createLink, NO_WINDOW, windowsIn, type LinkDeps } from './link'
+import { PLUGIN_VERSION } from './version'
 
 /**
  * Finding the window in front of the person, with the filesystem, the process
@@ -155,6 +156,9 @@ describe('speaking to it', () => {
 
     expect(answer.ok).toBe(false)
     expect(answer.text).toContain('Update the plugin')
+    // By the numbers a person can find: this plugin's release, and the app's.
+    expect(answer.text).toContain(`plugin (${PLUGIN_VERSION})`)
+    expect(answer.text).toContain(`piano app (${window().app})`)
     expect(posted).toHaveLength(0)
   })
 

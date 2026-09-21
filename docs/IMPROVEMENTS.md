@@ -22,25 +22,6 @@ came from, and the README should say so rather than implying a public release. I
 not cross "User accounts, cloud storage or sync across machines": these are the
 publisher's signing accounts, and nobody who plays the piano ever has one.
 
-### §PI64 Something to download
-
-The plugin installs in one step and then, for anybody without the app, says to get it
-from the repository's releases page, which is empty. The packaging exists:
-electron-builder already produces an installer on the machine that runs it. What is
-missing is the step that makes one on each platform and puts it somewhere a person can
-download it, so the guidance points at something real. The sample pack is published too,
-as the folder npm run pack:samples builds, from somewhere that serves it as a folder,
-since release assets are flat; and PUBLISHED_PACK in the app's pack-download module is
-set to where it lands, which is what turns the first-run download on. A tag carrying the
-app's version is the natural trigger, with a workflow that builds the Windows and macOS
-installers on their own runners and attaches them to a release for that tag; building on
-the machine it targets is what keeps native pieces such as the MIDI stack honest. The
-first releases will be unsigned, since signing is a purchase and its own line, so the
-release notes have to say what the operating system will show and how to get past it
-rather than leave somebody to meet it cold. The version in the tag, the app's own
-version and the link version the app reports should be one decision, made once, or the
-message telling somebody which side to update names a number they cannot find.
-
 ## Block B — Score JSON format
 
 ## Block C — Audio engine and transport

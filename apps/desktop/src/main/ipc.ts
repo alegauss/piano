@@ -32,7 +32,7 @@ import {
   type RecentEntry,
 } from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
-import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { z } from 'zod'
 
 import type { PackDownloader } from './pack-download'
@@ -106,6 +106,7 @@ export function registerIpcHandlers(options: {
   readonly keepArrangement: (request: KeepRequest) => Promise<KeepResult>
 }): void {
   handle(appInfo, () => ({
+    app: app.getVersion(),
     electron: process.versions.electron,
     chrome: process.versions.chrome,
     node: process.versions.node,

@@ -1,0 +1,188 @@
+name: Release
+
+# A version tag publishes a release: an installer built on each system it is
+# for, the sample pack served as a folder at the address the app downloads it
+# from, and notes that say what an unsigned app looks like the first time it
+# opens. The release stays a draft until every piece is in place and the pack
+# has been downloaded from where the app looks, so nobody meets half of one.
+#
+# To release: set the version in the root package.json and in every file
+# `npm run check:versions` names, commit, then tag and push the tag:
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# Once per repository, before the first release:
+#   - Settings → Pages → Source: GitHub Actions. The pack is served from there.
+#   - Settings → Environments → github-pages → Deployment branches and tags:
+#     add the tag pattern v*. The environment allows only the default branch
+#     until told otherwise, and this deploys from a tag.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+# Two pushes of one tag must not race each other to the same release.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # The tag, the app, the server and the plugin say one version, or nothing is
+  # built: the link names these numbers when it asks somebody to update.
+  draft:
+    name: version and draft
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: one version
+        run: node scripts/check-versions.mjs --tag "$GITHUB_REF_NAME"
+
+      # A rerun finds the draft already there and carries on with it.
+      - name: draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sed "s/VERSION/$version/g" .github/release-notes.md > "$RUNNER_TEMP/notes.md"
+          if ! gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+              --title "Piano $version" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+
+  # Each installer on the system it is for: that is what keeps native pieces
+  # such as the MIDI stack honest. `npm run package` ends by starting what it
+  # made, so an installer that does not open is never attached.
+  installers:
+    name: installer (${{ matrix.os }})
+    needs: draft
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: package
+        if: runner.os != 'Linux'
+        run: npm run package
+
+      # Starting the packaged app needs a display, which a Linux runner lacks.
+      - name: package
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run package
+
+      - name: attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(release/*.exe release/*.dmg release/*.AppImage)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "no installer was produced" >&2
+            exit 1
+          fi
+          gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+
+  # The pack from its pinned sources, checked against sources.lock.json as it
+  # is fetched. Release assets are a flat list and the manifest names files in
+  # folders, so it is served as a site instead.
+  pack:
+    name: sample pack
+    needs: draft
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: ffmpeg, with libopus
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      # The recordings are hundreds of megabytes of FLAC, pinned by commit and
+      # checksum, so a copy from an earlier release is as good as a fresh one.
+      - uses: actions/cache@v4
+        with:
+          path: packages/sample-pack/.cache
+          key: salamander-${{ hashFiles('packages/sample-pack/sources.lock.json') }}
+
+      - name: build the pack
+        run: npm run pack:samples
+
+      - name: lay out the site
+        run: |
+          mkdir -p site/pack
+          cp -R packages/sample-pack/out/*/. site/pack/
+          test -f site/pack/manifest.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  # Only once every installer is attached: the pack a release points at goes
+  # up with that release and not ahead of it.
+  deploy-pack:
+    name: serve the sample pack
+    needs: [installers, pack]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # The pack downloads, with the app's own downloader, from the address the
+  # app has compiled in; only then does anybody see the release.
+  publish:
+    name: publish
+    needs: deploy-pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # A fresh deployment can take a minute to be served everywhere.
+      - name: the pack downloads from where the app looks
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if npm run pack:verify-published; then exit 0; fi
+            sleep 30
+          done
+          exit 1
+
+      - name: publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest

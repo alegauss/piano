@@ -7,6 +7,11 @@ directories:
   buildResources: ../../build
   output: ../../release
 
+# One name per download, saying which system and which processor it is for.
+# A release lists them side by side, and the defaults put "Piano-0.1.0.dmg"
+# beside "Piano-0.1.0-arm64.dmg", which leaves a Mac owner guessing.
+artifactName: '${productName}-${version}-${os}-${arch}.${ext}'
+
 # Everything the app runs is already bundled: esbuild produces main and preload
 # with electron as the only external, and Vite produces a self-contained
 # renderer. So the package carries no node_modules at all, which is why this

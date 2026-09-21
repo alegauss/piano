@@ -147,19 +147,26 @@ export const envelopeSchema = z.object({
  * The sentence either side gives when the other speaks another version.
  *
  * It names which one is behind, because "protocol mismatch" leaves somebody
- * updating the wrong thing.
+ * updating the wrong thing. Each side is named by its release too, where it
+ * is known, since that is the number a person can find: the app shows it in
+ * its footer and Claude Code in its plugin list, and neither shows the link's.
  */
 export function protocolMismatch(sides: {
   /** What this side is called, and the version it speaks. */
   readonly us: string
   readonly ours: number
+  /** This side's release, such as 0.1.0. */
+  readonly ourRelease?: string
   readonly them: string
   readonly theirs: number
+  readonly theirRelease?: string
 }): string {
   const older = sides.theirs < sides.ours ? sides.them : sides.us
+  const named = (side: string, release: string | undefined) =>
+    release === undefined ? side : `${side} (${release})`
   return (
-    `The ${sides.us} speaks version ${String(sides.ours)} of the piano link and the ` +
-    `${sides.them} speaks version ${String(sides.theirs)}, so nothing was sent. ` +
-    `Update the ${older}: it is the older of the two.`
+    `The ${named(sides.us, sides.ourRelease)} speaks version ${String(sides.ours)} of the ` +
+    `piano link and the ${named(sides.them, sides.theirRelease)} speaks version ` +
+    `${String(sides.theirs)}, so nothing was sent. Update the ${older}: it is the older of the two.`
   )
 }

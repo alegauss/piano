@@ -86,7 +86,13 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   let held: Score | null = null
   const bridge: PianoBridge = {
     appInfo: () =>
-      Promise.resolve({ electron: '0', chrome: '0', node: '0', scoreFormatVersion: 1 }),
+      Promise.resolve({
+        app: '0.1.0',
+        electron: '0',
+        chrome: '0',
+        node: '0',
+        scoreFormatVersion: 1,
+      }),
     setWindowTitle: (request) => Promise.resolve(request),
     packManifest: () => Promise.resolve({ installed: false, location: 'nowhere' }),
     packFile: () => Promise.reject(new Error('no pack in this test')),
@@ -167,6 +173,8 @@ describe('opening a score in the window', () => {
     })
     expect(main.asked).toContainEqual({ from: 'launch' })
     expect(heading()).toContain('Aria')
+    // The release, where a person looks when the link says which side is older.
+    expect(screen.getByTestId('app-version').textContent).toBe('Piano 0.1.0')
   })
 
   it('replaces the piece with one opened from outside the page', async () => {

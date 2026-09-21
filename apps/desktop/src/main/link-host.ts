@@ -67,7 +67,7 @@ export async function startLinkHost(options: {
   const file = join(options.directory, presenceFileName(options.pid))
 
   const server = createServer((request, response) => {
-    void answer(request, response, token, options.send)
+    void answer(request, response, token, options.send, options.app)
   })
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
@@ -176,6 +176,7 @@ async function answer(
   response: ServerResponse,
   token: string,
   send: (command: Command) => Promise<LinkResult>,
+  release: string,
 ): Promise<void> {
   if (request.method !== 'POST' || request.url !== '/command') {
     reply(response, 404, 'There is one thing to ask here: POST /command.')
@@ -212,6 +213,7 @@ async function answer(
       protocolMismatch({
         us: 'piano app',
         ours: LINK_PROTOCOL,
+        ourRelease: release,
         them: 'plugin',
         theirs: envelope.data.protocol,
       }),

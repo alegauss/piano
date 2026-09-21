@@ -64,6 +64,10 @@ describe('app:info', () => {
     expect(appInfo.response.safeParse({ electron: '44', chrome: '152', node: '24' }).success).toBe(
       false,
     )
+    const versions = { electron: '44', chrome: '152', node: '24', scoreFormatVersion: 1 }
+    expect(appInfo.response.safeParse({ ...versions, app: '0.1.0' }).success).toBe(true)
+    // The release is the one a person is sent to look for, so it is never left out.
+    expect(appInfo.response.safeParse(versions).success).toBe(false)
   })
 })
 

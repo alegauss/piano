@@ -158,7 +158,10 @@ describe('taking a command', () => {
     })
 
     expect(response.status).toBe(409)
-    expect(await response.text()).toContain('Update the piano app')
+    const said = await response.text()
+    expect(said).toContain('Update the piano app')
+    // Named by the release its footer shows, which is a number a person can find.
+    expect(said).toContain('piano app (1.2.3)')
     expect(heard).toEqual([])
   })
 

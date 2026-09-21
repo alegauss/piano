@@ -29,14 +29,16 @@ import { replace } from './replace'
 
 /**
  * Where releases publish the pack, as a folder holding its manifest and the
- * files it lists. Nothing publishes one yet (PI64 does), so until then the
- * download is offered only where PIANO_PACK_URL names a folder, and the pack
- * can be put in place by hand.
+ * files it lists. The release workflow builds it from the pinned sources and
+ * serves it from the repository's GitHub Pages site, since release assets are
+ * a flat list and the manifest names files in folders; it checks the pack
+ * downloads from exactly this address before the release is published, so an
+ * installer never points at nothing. PIANO_PACK_URL names another folder.
  */
-export const PUBLISHED_PACK: string | null = null
+export const PUBLISHED_PACK = 'https://alegauss.github.io/piano/pack/'
 
 /** Where to download the pack from: PIANO_PACK_URL, or where releases publish it. */
-export function packSourceUrl(env: NodeJS.ProcessEnv = process.env): string | null {
+export function packSourceUrl(env: NodeJS.ProcessEnv = process.env): string {
   const named = env['PIANO_PACK_URL']
   return named !== undefined && named.trim() !== '' ? named.trim() : PUBLISHED_PACK
 }

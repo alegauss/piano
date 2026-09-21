@@ -11,6 +11,8 @@ import {
   type Presence,
 } from '@piano/ipc'
 
+import { PLUGIN_VERSION } from './version'
+
 export type { Command, DrillAsk, LinkResult, PassageAsk } from '@piano/ipc'
 
 /**
@@ -64,8 +66,11 @@ export const LAUNCH_TIMEOUT_MS = 30_000
 /** How often a starting app is looked for. */
 const POLL_MS = 250
 
-/** Where the app is had from, for somebody who has the plugin and not the piano. */
-export const APP_RELEASES = 'https://github.com/alegauss/piano/releases'
+/**
+ * Where the app is had from, for somebody who has the plugin and not the
+ * piano: the newest release, with an installer for each system attached.
+ */
+export const APP_RELEASES = 'https://github.com/alegauss/piano/releases/latest'
 
 /**
  * Said when nothing is listening, which is not a failure of the request.
@@ -76,7 +81,7 @@ export const APP_RELEASES = 'https://github.com/alegauss/piano/releases'
  */
 export const NO_WINDOW =
   'No piano window is listening. If the Piano app is not installed, get it from ' +
-  `${APP_RELEASES}, or build it from that repository with "npm install" and ` +
+  `${APP_RELEASES}, or build it from the repository with "npm install" and ` +
   '"npm run package". If it is installed, open it and ask again. The tools that read and ' +
   'write scores work without it.'
 
@@ -180,8 +185,10 @@ export function createLink(deps: LinkDeps): Link {
           text: protocolMismatch({
             us: 'plugin',
             ours: LINK_PROTOCOL,
+            ourRelease: PLUGIN_VERSION,
             them: 'piano app',
             theirs: window.protocol,
+            theirRelease: window.app,
           }),
         }
       }

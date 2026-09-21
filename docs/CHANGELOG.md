@@ -25,6 +25,7 @@
   checked **An installer is produced for Windows, macOS and Linux** One CI job builds NSIS, dmg and AppImage artifacts from the same electron-builder configuration, and each is downloadable from the run.
   checked **The packaged app runs with no development dependency present** Installed on a clean machine the window opens and a bundled score plays, with no Node runtime, no dev server and no source checkout available to it.
 - ✅ **PI60** **The format-ownership guard reads a split "type Score," import line as a declaration and fails the lint** — The ownership guard now matches a Score type only where a declaration follows the name, so a split import passes and a local declaration still fails.
+- ✅ **PI64** **Nothing is published to download: the plugin sends a person without the app to an empty releases page** — A v* tag builds installers on each OS into a draft release, serves the pack from Pages, checks it downloads, then publishes (design recorded in `.github/workflows/release.yml`).
 
 ## Block B — Score JSON format
 
