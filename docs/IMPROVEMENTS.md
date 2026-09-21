@@ -34,29 +34,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block H — Sheet music view
 
-### §PI72 Figures and rests, before any stave
-
-The format stores a note as a start tick and a duration in ticks, which is everything
-playback needs and nothing a stave can draw. Engraving asks a different question: which
-figure is this — a dotted quarter, a half — and what fills the silence between two
-notes.
-
-The answer belongs in packages/score-format, beside barAtTick and meterAt in
-src/time.ts. check-format-ownership.mjs refuses a score type declared anywhere else, and
-every later reader — the sheet view, a MusicXML export, the piano-score skill — wants
-the same reading of the same ticks.
-
-Two functions carry it. One turns a tick count into a figure and its dots against the
-prevailing ticksPerQuarter, and refuses nothing: a duration landing between figures
-comes back as the nearest figure plus the leftover, so the caller decides whether to tie
-or to round. The other walks one bar of one hand and returns the figures and rests that
-fill it, because rests are gaps in this format and warnings.ts already reasons about a
-bar with a beat missing.
-
-Unit tests in the node project: a dotted rhythm, a triplet, a note crossing the bar
-line, a pickup bar, and 6/8 where the beat is dotted. No envelope change, so
-score.schema.json should not move; if it does, regenerate it with npm run schema.
-
 ### §PI73 A stave on screen, drawn by VexFlow
 
 VexFlow is the dependency, because engraving is a large, solved, unglamorous problem:
@@ -163,7 +140,8 @@ view reads hand, which note.ts warns is not the same thing as part. There is no 
 signature over time, only metadata.key as a free-form string; MIDI import keeps the
 first one it finds and drops any change mid-piece. There are no ties, no beams and no
 rests: a tied note is one long duration, and a gap is either a rest somebody wrote or a
-beat somebody forgot.
+beat somebody forgot. barFigures reads one line per hand, so a held inner voice loses
+its figure, and a triplet's leftover is tied or rounded: name both.
 
 MIDI export already answers this shape of problem honestly. The score:export response
 carries a dropped list of what the file could not hold, and describeExport turns it into

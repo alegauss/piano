@@ -198,3 +198,4 @@
 
 ## Block H — Sheet music view
 
+- ✅ **PI72** **Durations are ticks, so nothing says whether a note is a dotted quarter or what fills the gap after it** — Ticks now read as a figure and its dots, and one bar of one hand as the figures and rests that tile it, each with its leftover (design recorded in `packages/score-format/src/time.ts`).
