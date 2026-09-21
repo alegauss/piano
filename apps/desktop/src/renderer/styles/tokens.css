@@ -51,11 +51,18 @@
   --roll-beat-line: oklch(0.24 0.01 260);
   --roll-strike-line: oklch(0.55 0.02 260);
 
-  /* Note colours per part. Hue plus lightness, so they survive colour blindness. */
-  --note-part-1: oklch(0.72 0.16 230);
+  /*
+   * Note colours per part, and the practice colours below them, are a ladder
+   * in lightness as well as a spread of hue: each is a step of at least 1.3
+   * in contrast from the next, so two of them stay tellable apart by someone
+   * for whom the hues have collapsed. The steps are measured rather than
+   * eyeballed, in both themes, by palette.browser.test.ts, which is also why
+   * these numbers look arbitrary: they are what the measurement settled on.
+   */
+  --note-part-1: oklch(0.67 0.16 230);
   --note-part-2: oklch(0.85 0.13 195);
   --note-part-3: oklch(0.62 0.17 285);
-  --note-part-4: oklch(0.8 0.14 105);
+  --note-part-4: oklch(0.76 0.14 105);
 
   /* The keyboard along the bottom. */
   --key-white: oklch(0.95 0.004 260);
@@ -63,11 +70,11 @@
   --key-black: oklch(0.24 0.012 260);
   --key-black-pressed: oklch(0.45 0.1 230);
 
-  /* Practice feedback. These carry meaning, so they are the contrast-checked ones. */
+  /* Practice feedback: the colours that carry the meaning, on the same ladder. */
   --judge-expected: oklch(0.7 0.13 230);
-  --judge-correct: oklch(0.72 0.15 155);
+  --judge-correct: oklch(0.78 0.15 155);
   --judge-wrong: oklch(0.65 0.19 25);
-  --judge-late: oklch(0.78 0.15 75);
+  --judge-late: oklch(0.93 0.15 75);
 
   --radius: 0.5rem;
 }
@@ -98,20 +105,20 @@
   --roll-beat-line: oklch(0.89 0.006 260);
   --roll-strike-line: oklch(0.6 0.02 260);
 
-  --note-part-1: oklch(0.58 0.16 230);
-  --note-part-2: oklch(0.66 0.14 195);
-  --note-part-3: oklch(0.5 0.18 285);
-  --note-part-4: oklch(0.62 0.15 105);
+  --note-part-1: oklch(0.465 0.16 230);
+  --note-part-2: oklch(0.6 0.14 195);
+  --note-part-3: oklch(0.42 0.18 285);
+  --note-part-4: oklch(0.55 0.15 105);
 
   --key-white: oklch(1 0 0);
   --key-white-pressed: oklch(0.8 0.1 230);
   --key-black: oklch(0.28 0.012 260);
   --key-black-pressed: oklch(0.5 0.12 230);
 
-  --judge-expected: oklch(0.55 0.14 230);
-  --judge-correct: oklch(0.52 0.15 155);
-  --judge-wrong: oklch(0.55 0.2 25);
-  --judge-late: oklch(0.6 0.15 75);
+  --judge-expected: oklch(0.53 0.14 230);
+  --judge-correct: oklch(0.45 0.15 155);
+  --judge-wrong: oklch(0.4 0.2 25);
+  --judge-late: oklch(0.62 0.15 75);
 }
 
 /*

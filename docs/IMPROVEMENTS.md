@@ -58,21 +58,6 @@ attack should land at the same point.
 
 ## Block D — Piano roll and on-screen keyboard
 
-### §PI32 One palette, two themes, readable by everyone
-
-The roll is drawn on a canvas and the rest of the interface is DOM, and the failure mode
-is that the two halves end up coloured by different people at different times. So there
-is one palette defined as tokens, and the canvas reads them from computed style rather
-than carrying its own constants. Both themes are real: the reference is dark and dark is
-the default, but light has to be genuinely readable rather than an inverted
-afterthought, which mostly means note fills and bar lines need different contrast rather
-than different hue. Parts are distinguished by hue plus a second channel, brightness or
-a marking on the note cap, so two parts stay tellable apart for a red-green colour-blind
-viewer, since hue alone fails roughly one man in twelve. Contrast between a note and the
-background, and between an expected note and a wrong one in practice mode, is checked
-against a measured ratio rather than eyeballed, because the practice colours are the
-ones carrying meaning.
-
 ## Block E — Practice mode and difficulty levels
 
 ### §PI33 A real piano as the input device

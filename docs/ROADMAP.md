@@ -13,8 +13,6 @@
 
 ## Block D — Piano roll and on-screen keyboard
 
-- 📋 **PI32** (deps: PI4 ✅, PI26 ✅) **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — One token palette shared by the DOM and the canvas keeps both themes legible and parts distinguishable without relying on hue alone. → §PI32
-
 ## Block E — Practice mode and difficulty levels
 
 - 📋 **PI33** (deps: PI3 ✅) **A MIDI keyboard plugged into the machine is invisible: nothing receives a single note** — Web MIDI with device discovery and hot-plug is what turns a real piano into the input device this whole block depends on. → §PI33
@@ -22,7 +20,7 @@
 - 📋 **PI35** (deps: PI33) **Input and output latency are unknown, so a player who is in time gets graded late** — Measuring output latency and MIDI input delay once, then subtracting them, is what makes any grading fair on a given machine. → §PI35
 - 📋 **PI36** (deps: PI23 ✅, PI33) **Playback runs away from a beginner, who cannot keep up and has nothing to practise against** — A wait mode that holds the score until the right keys are pressed lets a learner set the pace instead of chasing one. → §PI36
 - 📋 **PI37** (deps: PI35, PI36) **Nothing says how the attempt went: wrong notes, late notes and missed notes all pass unremarked** — Grading against a timing window, with a report naming the bars that failed, is what turns playing along into practising. → §PI37
-- 📋 **PI38** (deps: PI32, PI37) **The player gets no feedback: nothing on screen says which note was right, wrong or late** — Colouring the key and the note the instant it is judged puts feedback where the eye already is, rather than in a side panel. → §PI38
+- 📋 **PI38** (deps: PI32 ✅, PI37) **The player gets no feedback: nothing on screen says which note was right, wrong or late** — Colouring the key and the note the instant it is judged puts feedback where the eye already is, rather than in a side panel. → §PI38
 - 📋 **PI39** (deps: PI12 ✅) **Beginner, intermediate and advanced are only words: nothing says what changes between them** — Level presets fixing tempo, hands, voices and ornaments make the three levels a promise the app can keep for any score. → §PI39
 - 📋 **PI40** (deps: PI12 ✅, PI16 ✅) **Only scores hand-authored with three arrangements are playable at beginner level** — Reducing a full score to a simpler arrangement automatically keeps every piece usable at every level without three times the authoring. → §PI40
 - 📋 **PI41** (deps: PI11 ✅, PI39) **A hard bar can only be practised by replaying the whole piece and waiting for it to arrive** — Looping a passage, raising the tempo gradually and splitting the hands are the three things practice actually consists of. → §PI41
@@ -47,15 +45,6 @@
 - 📋 **PI54** (deps: PI6 ✅, PI20 ✅) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12 ✅, PI13 ✅) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
 - 📋 **PI58** (deps: PI17 ✅, PI51) **Nothing in the app saves a score as MIDI, so the way into a DAW that the recording non-goal promises is unreachable** — exportMidi already writes the file and lists what it dropped; a menu item and a save dialog are what put it in front of somebody. → §PI58
-
-## Done when — PI32
-
-- **The canvas reads its colours from the DOM tokens** Switching theme restyles the roll
-  and the chrome in one pass, and no colour constant survives anywhere in the rendering
-  code.
-- **Parts stay distinguishable without relying on hue** Under a simulated red-green
-  colour-blind filter two adjacent parts remain tellable apart, and the practice colours
-  meet a measured contrast ratio against the background.
 
 ## Done when — PI33
 

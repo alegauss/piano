@@ -102,6 +102,9 @@
 - ✅ **PI31** **Every part sounds and draws at once, so a learner cannot isolate one hand or one voice** — A panel mutes, solos and hides each part and each hand, and the scheduler applies it per note as it hands one over (design recorded in `apps/desktop/src/renderer/lib/parts.ts`).
   checked **Mute and hide are independent per part** Hiding a hand while still hearing it, and hearing it while watching both, are each reachable in one click and behave independently of each other.
   checked **A mute takes effect without a click in the audio** Toggling a part mid-chord suppresses the next scheduled note rather than cutting one that is already sounding, verified on rendered output.
+- ✅ **PI32** **Colours are chosen ad hoc, so the roll is unreadable in one theme and ambiguous under colour blindness** — Note and practice colours are a measured lightness ladder in both themes, so they stay apart when hue does not help (design recorded in `apps/desktop/src/renderer/lib/contrast.ts`).
+  checked **The canvas reads its colours from the DOM tokens** Switching theme restyles the roll and the chrome in one pass, and no colour constant survives anywhere in the rendering code.
+  checked **Parts stay distinguishable without relying on hue** Under a simulated red-green colour-blind filter two adjacent parts remain tellable apart, and the practice colours meet a measured contrast ratio against the background.
 
 ## Block E — Practice mode and difficulty levels
 

@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { FRAME_BUDGET_MS, FrameTimes } from './frame-timing'
 import { forEachVisible, prepareRoll, type RollView } from './roll'
 import { drawRoll } from './roll-draw'
-import { readCanvasPalette } from './theme'
+import { StrikeField } from './strikes'
+import { readCanvasPalette, setTheme } from './theme'
 
 /**
  * The roll at its worst moment, measured rather than assumed.
@@ -85,6 +86,45 @@ describe('drawing the densest bar', () => {
     expect(times.percentile(0.95)).toBeLessThan(DRAW_BUDGET_MS)
     // And no single frame eats a whole frame, which is what a stutter is.
     // The first one pays to shape the bar numbers; after that they are blits.
+    expect(times.worst).toBeLessThan(FRAME_BUDGET_MS)
+  })
+
+  /**
+   * Block D's own gate, asked exactly as it is written: the densest fixture,
+   * in both themes, with the strike effects firing the whole time.
+   */
+  it.each(['dark', 'light'] as const)('holds it in the %s theme with the effects on', (theme) => {
+    setTheme(theme)
+    const { context } = field(1600, 900)
+    const palette = readCanvasPalette()
+    const strikes = new StrikeField()
+    const times = new FrameTimes()
+    const step = QUARTER / 30
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      const position = BEATS * 0.5 * QUARTER + frame * step
+      const at = view(position)
+      // A chord's worth of strikes every other frame, which is denser than
+      // any piano is played.
+      const now = frame / 60
+      for (let voice = 0; voice < 6; voice += 1) {
+        strikes.take({
+          kind: 'strike',
+          pitch: 40 + ((frame * 7 + voice * 5) % 60),
+          velocity: 100,
+          at: now,
+        })
+      }
+
+      const started = performance.now()
+      drawRoll(context, at, score, palette)
+      strikes.update(now, 1600, 900)
+      strikes.draw(context, now, { width: 1600, height: 900 }, palette)
+      times.record(performance.now() - started)
+    }
+
+    expect(strikes.alive).toBeGreaterThan(0)
+    expect(times.percentile(0.95)).toBeLessThan(DRAW_BUDGET_MS)
     expect(times.worst).toBeLessThan(FRAME_BUDGET_MS)
   })
 

@@ -12,11 +12,11 @@ import type { CanvasPalette } from './theme'
  *
  * Two rules shape the implementation. Strikes arrive from the scheduler with
  * the audio time they sound at, and fire when the clock reaches that time,
- * not when a frame happens to notice them. And nothing here allocates while
- * it runs: the particles live in a pool fixed at construction, because an
- * effect that allocates during a dense passage causes the stutter it was
- * meant to celebrate. When the pool is full the oldest particle is taken,
- * which is the one nobody is looking at any more.
+ * not when a frame happens to notice them. And the cost per frame is fixed:
+ * the particles live in a pool set at construction and the oldest is taken
+ * when it is full, because an effect that grows during a dense passage
+ * causes the stutter it was meant to celebrate. Drawing allocates a handful
+ * of paths a frame and nothing per particle.
  */
 
 /** How many particles can be alive at once. A dense chord throws about eighty. */
@@ -34,6 +34,36 @@ const MAX_PARTICLES = 14
 
 /** How fast a particle leaves the key, in fractions of the field's height a second. */
 const SPEED = 0.55
+
+/**
+ * How many steps the fade is drawn in. Four is below what an eye follows on
+ * a particle crossing the field in half a second, and it is the difference
+ * between four fills a frame and five hundred.
+ */
+const FADE_STEPS = 4
+
+function bucketPaths(): Path2D[] {
+  return Array.from({ length: FADE_STEPS }, () => new Path2D())
+}
+
+function pathFor(paths: Path2D[], strength: number): Path2D {
+  const step = Math.min(FADE_STEPS - 1, Math.max(0, Math.ceil(strength * FADE_STEPS) - 1))
+  return paths[step] ?? (paths[0] as Path2D)
+}
+
+/** Fill each step's path once, at the alpha that step stands for. */
+function fillBuckets(
+  context: CanvasRenderingContext2D,
+  paths: readonly Path2D[],
+  colour: string,
+  scale: number,
+): void {
+  context.fillStyle = colour
+  paths.forEach((path, step) => {
+    context.globalAlpha = (scale * (step + 1)) / FADE_STEPS
+    context.fill(path)
+  })
+}
 
 type Particle = {
   /** Alive when life is above zero. */
@@ -142,26 +172,34 @@ export class StrikeField {
     return strengths
   }
 
-  /** The burst and the flash, over the field that has already been drawn. */
+  /**
+   * The burst and the flash, over the field that has already been drawn.
+   *
+   * Everything of one brightness goes into one path. Setting the alpha and
+   * filling once per particle is what a first draft does, and on a full pool
+   * it cost three and a half milliseconds a frame against a budget of eight:
+   * the fade is quantised into a few steps instead, which nobody can see and
+   * which turns five hundred fills into four.
+   */
   draw(
     context: CanvasRenderingContext2D,
     now: number,
     view: { readonly width: number; readonly height: number },
     palette: CanvasPalette,
   ): void {
-    context.fillStyle = palette['--key-white-pressed']
+    const flashes = bucketPaths()
     for (const [pitch, at] of this.struck) {
       const strength = 1 - (now - at) / FLASH_LIFE
       const key = strength > 0 ? keyRect(pitch, view.width) : null
       if (key === null) {
         continue
       }
-      context.globalAlpha = 0.5 * strength
       const height = view.height * 0.08 * strength
-      context.fillRect(key.x, view.height - height, key.width, height)
+      pathFor(flashes, strength).rect(key.x, view.height - height, key.width, height)
     }
+    fillBuckets(context, flashes, palette['--key-white-pressed'], 0.5)
 
-    context.fillStyle = palette['--key-white']
+    const particles = bucketPaths()
     for (const particle of this.pool) {
       if (particle.life <= 0) {
         continue
@@ -170,8 +208,7 @@ export class StrikeField {
       const age = PARTICLE_LIFE - particle.life
       // Bright for most of the flight and gone at the end, rather than
       // half-faded throughout, which reads as dirt on the screen.
-      context.globalAlpha = Math.min(1, left * 1.6)
-      context.fillRect(
+      pathFor(particles, Math.min(1, left * 1.6)).rect(
         particle.x + particle.vx * age,
         // Thrown up, and pulled back down as it fades.
         particle.y + particle.vy * age + view.height * 0.6 * age * age,
@@ -179,6 +216,7 @@ export class StrikeField {
         particle.size,
       )
     }
+    fillBuckets(context, particles, palette['--key-white'], 1)
     context.globalAlpha = 1
   }
 
