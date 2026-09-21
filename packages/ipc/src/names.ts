@@ -15,6 +15,7 @@ export const CHANNEL_NAMES = {
   packManifest: 'pack:manifest',
   packFile: 'pack:file',
   linkAnswer: 'link:answer',
+  linkListening: 'link:listening',
 } as const
 
 export type ChannelName = (typeof CHANNEL_NAMES)[keyof typeof CHANNEL_NAMES]

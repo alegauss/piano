@@ -2,12 +2,15 @@ import { PRESENCE_DIRECTORY } from '@piano/ipc'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { spawn } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { findApp, whereLooked, type Place } from './launch'
 import { createLibrary, type Files, type Library } from './library'
-import { createLink, noWindow, type Link } from './link'
+import { createLink, noWindow, type Launched, type Link } from './link'
 import { toolsFor, type Tool } from './tools'
 import { PLUGIN_VERSION } from './version'
 
@@ -93,10 +96,43 @@ export function processAlive(pid: number): boolean {
   }
 }
 
+/** This machine, as the launcher needs to see it. */
+export function nodePlace(): Place {
+  return {
+    platform: process.platform,
+    home: homedir(),
+    env: process.env,
+    exists: existsSync,
+    read: (path) => {
+      try {
+        return readFileSync(path, 'utf8')
+      } catch {
+        return null
+      }
+    },
+  }
+}
+
+/**
+ * Start the installed app, detached, so it outlives the tool call and the
+ * server that started it: closing Claude Code must not close the piano.
+ */
+export function nodeLaunch(place: Place = nodePlace()): () => Promise<Launched> {
+  return () => {
+    const found = findApp(place)
+    if (found === null) {
+      return Promise.resolve({ started: false, where: whereLooked(place) })
+    }
+    spawn(found.command, [...found.args], { detached: true, stdio: 'ignore' }).unref()
+    return Promise.resolve({ started: true, from: found.from })
+  }
+}
+
 /** The link to the running app, over loopback, as Node reaches it. */
 export function nodeLink(directory: string = defaultPresenceDirectory()): Link {
   return createLink({
     directory,
+    launch: nodeLaunch(),
     list: (dir) => readdir(dir),
     read: (path) => readFile(path, 'utf8'),
     alive: processAlive,

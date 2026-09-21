@@ -3,6 +3,7 @@ import {
   appInfo,
   formatIssues,
   linkAnswer,
+  linkListening,
   packFile,
   packManifest,
   windowSetTitle,
@@ -65,6 +66,8 @@ function handle<Request extends z.ZodType, Response extends z.ZodType>(
 export function registerIpcHandlers(options: {
   /** Where the window's answer to a Claude Code command goes. */
   readonly answerLink: (id: string, result: LinkResult) => void
+  /** The window is ready for commands, which is when the app may say it is there. */
+  readonly linkListening: () => void
 }): void {
   handle(appInfo, () => ({
     electron: process.versions.electron,
@@ -88,6 +91,11 @@ export function registerIpcHandlers(options: {
 
   handle(linkAnswer, ({ id, result }) => {
     options.answerLink(id, result)
+    return null
+  })
+
+  handle(linkListening, () => {
+    options.linkListening()
     return null
   })
 }

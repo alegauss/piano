@@ -1,7 +1,8 @@
+import { mkdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
-import { PRESENCE_DIRECTORY, PUSH_NAMES } from '@piano/ipc'
+import { APP_RECORD, needsWindow, PRESENCE_DIRECTORY, PUSH_NAMES, type AppRecord } from '@piano/ipc'
 import { app, BrowserWindow, session } from 'electron'
 
 import { registerIpcHandlers } from './ipc'
@@ -35,22 +36,49 @@ if (userDataDir !== undefined && userDataDir !== '') {
   app.setPath('userData', userDataDir)
 }
 
+/**
+ * One app at a time. A second launch — a double-click on a running app, or a
+ * tool call racing another — hands over to the first and quits, so there is
+ * never a second window for a tool call to reach instead of the one in front
+ * of the person. The lock is per profile, which keeps a dev run and a smoke
+ * run, each with its own, out of each other's way.
+ */
+const firstInstance = app.requestSingleInstanceLock()
+if (!firstInstance) {
+  app.quit()
+}
+
 let mainWindow: BrowserWindow | null = null
+
+/** Bring the window to the front, which is what somebody who just asked for music expects. */
+function raise(window: BrowserWindow): void {
+  if (window.isMinimized()) {
+    window.restore()
+  }
+  window.show()
+  window.focus()
+}
 
 /**
  * Where Claude Code's requests are relayed: to the window, which is where
- * playback lives, and back again with what it made of them.
+ * playback lives, and back again with what it made of them. A command that
+ * makes a sound or a change raises the window on the way; asking what is
+ * open does not.
  */
 const relay = createRelay((message) => {
   const window = mainWindow
   if (window === null || window.isDestroyed()) {
     return false
   }
+  if (needsWindow(message.command)) {
+    raise(window)
+  }
   window.webContents.send(PUSH_NAMES.linkCommand, message)
   return true
 })
 
 let linkHost: LinkHost | null = null
+let listening = false
 
 /** Where running apps leave word of themselves for the MCP server. */
 function presenceDirectory(): string {
@@ -59,13 +87,15 @@ function presenceDirectory(): string {
 }
 
 /**
- * Listen for Claude Code. Not in a headless run: a smoke run that advertised
- * itself would be a window a tool call could find and nobody could see.
+ * Listen for Claude Code, once the window says it can hear. Not in a headless
+ * run: a smoke run that advertised itself would be a window a tool call could
+ * find and nobody could see.
  */
 async function listenForClaude(): Promise<void> {
-  if (isSmokeRun || isSelfCheckRun) {
+  if (isSmokeRun || isSelfCheckRun || listening) {
     return
   }
+  listening = true
   try {
     linkHost = await startLinkHost({
       directory: presenceDirectory(),
@@ -77,6 +107,34 @@ async function listenForClaude(): Promise<void> {
     // The piano works without Claude Code; it should say so, not refuse to start.
     process.stderr.write(`piano: not listening for Claude Code: ${String(error)}\n`)
   }
+}
+
+/**
+ * Say where this installed app lives, so a tool call with no window open can
+ * start this one. Only a packaged app says so: a development checkout is
+ * somebody working on the piano, not somebody who installed it.
+ */
+async function recordInstallation(): Promise<void> {
+  if (!app.isPackaged || isSmokeRun || isSelfCheckRun) {
+    return
+  }
+  const record: AppRecord = { executable: appLocation(), version: app.getVersion() }
+  const file = join(homedir(), ...APP_RECORD)
+  try {
+    await mkdir(dirname(file), { recursive: true })
+    await writeFile(file, `${JSON.stringify(record)}\n`, 'utf8')
+  } catch (error: unknown) {
+    process.stderr.write(`piano: could not record where the app is: ${String(error)}\n`)
+  }
+}
+
+/** The thing to start: the executable, or on macOS the application bundle around it. */
+function appLocation(): string {
+  const executable = app.getPath('exe')
+  const bundle = executable.indexOf('.app/Contents/MacOS/')
+  return process.platform === 'darwin' && bundle >= 0
+    ? executable.slice(0, bundle + '.app'.length)
+    : executable
 }
 
 function createWindow(): void {
@@ -170,26 +228,40 @@ function armHeadlessRun(window: BrowserWindow): void {
   }, HEADLESS_TIMEOUT_MS).unref()
 }
 
-app
-  .whenReady()
-  .then(() => {
-    applyContentSecurityPolicy(session.defaultSession, devServerUrl)
-    applyPermissions(session.defaultSession)
-    registerIpcHandlers({ answerLink: relay.answer })
+// A second launch lands here instead of opening another window.
+app.on('second-instance', () => {
+  if (mainWindow !== null && !mainWindow.isDestroyed()) {
+    raise(mainWindow)
+  }
+})
 
-    createWindow()
-    void listenForClaude()
+if (firstInstance) {
+  app
+    .whenReady()
+    .then(() => {
+      applyContentSecurityPolicy(session.defaultSession, devServerUrl)
+      applyPermissions(session.defaultSession)
+      registerIpcHandlers({
+        answerLink: relay.answer,
+        linkListening: () => {
+          void listenForClaude()
+        },
+      })
 
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow()
-      }
+      createWindow()
+      void recordInstallation()
+
+      app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+          createWindow()
+        }
+      })
     })
-  })
-  .catch((error: unknown) => {
-    process.stderr.write(`piano: failed to start: ${String(error)}\n`)
-    app.exit(1)
-  })
+    .catch((error: unknown) => {
+      process.stderr.write(`piano: failed to start: ${String(error)}\n`)
+      app.exit(1)
+    })
+}
 
 // The presence file goes with the app, so the next tool call is told there is
 // no window rather than being sent to one that is gone.

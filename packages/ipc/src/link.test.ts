@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  appRecordSchema,
+  needsWindow,
   commandSchema,
   envelopeSchema,
   isPresenceFile,
@@ -70,6 +72,22 @@ describe('the commands', () => {
   it('leaves the command unread until the version has been checked', () => {
     const envelope = envelopeSchema.parse({ protocol: 99, command: { kind: 'from the future' } })
     expect(envelope.protocol).toBe(99)
+  })
+})
+
+describe('what is worth a window', () => {
+  it('is anything that makes a sound or a change, and not a question about what is open', () => {
+    expect(needsWindow({ kind: 'play' })).toBe(true)
+    expect(needsWindow({ kind: 'practise' })).toBe(true)
+    expect(needsWindow({ kind: 'level' })).toBe(true)
+    expect(needsWindow({ kind: 'state' })).toBe(false)
+  })
+
+  it('reads where an installed app lives', () => {
+    expect(
+      appRecordSchema.safeParse({ executable: 'C:/Piano/Piano.exe', version: '1.0.0' }).success,
+    ).toBe(true)
+    expect(appRecordSchema.safeParse({ executable: '', version: '1' }).success).toBe(false)
   })
 })
 

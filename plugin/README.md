@@ -15,7 +15,8 @@ In Claude Code:
 
 Nothing else to configure: the server ships inside the plugin and needs only
 Node 20 or later. The tools that write, check and keep scores work straight
-away. The ones that play need the Piano app open; without it they say where to
+away. The ones that play start the Piano app if it is installed and not open,
+and bring its window to the front if it is; without the app they say where to
 get it.
 
 ## Commands
@@ -31,7 +32,9 @@ get it.
 
 Scores go in `~/.piano/library`, or wherever `PIANO_LIBRARY` points. A running
 app leaves a small file in `~/.piano/windows` saying where it listens; the server
-reads it to find the window in front of you and removes nothing there.
+reads it to find the window in front of you and removes nothing there. An
+installed app also records where it lives in `~/.piano/app.json`, so it can be
+started from a request wherever it was installed; `PIANO_APP` overrides that.
 
 ## Versions
 

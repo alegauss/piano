@@ -102,8 +102,29 @@ export const linkAnswer = {
   response: z.null(),
 } as const satisfies Channel<'link:answer', z.ZodType, z.ZodType>
 
+/**
+ * The window saying it is ready for commands from Claude Code.
+ *
+ * The app only tells the MCP server it is there once this arrives: an app
+ * started by a tool call is announced when the window can act on what it is
+ * sent, not when the process began, or the first command after a cold start
+ * would be pushed to a window that is not listening yet and lost.
+ */
+export const linkListening = {
+  channel: CHANNEL_NAMES.linkListening,
+  request: z.null(),
+  response: z.null(),
+} as const satisfies Channel<'link:listening', z.ZodType, z.ZodType>
+
 /** Every channel, so main can assert it registered all of them and a check can walk them. */
-export const allChannels = [appInfo, windowSetTitle, packManifest, packFile, linkAnswer] as const
+export const allChannels = [
+  appInfo,
+  windowSetTitle,
+  packManifest,
+  packFile,
+  linkAnswer,
+  linkListening,
+] as const
 
 export type AppInfoRequest = z.infer<typeof appInfo.request>
 export type AppInfoResponse = z.infer<typeof appInfo.response>

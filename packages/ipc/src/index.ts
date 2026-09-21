@@ -3,6 +3,7 @@ export {
   appInfo,
   formatIssues,
   linkAnswer,
+  linkListening,
   packFile,
   packManifest,
   windowSetTitle,
@@ -18,6 +19,10 @@ export {
   type WindowSetTitleResponse,
 } from './channels'
 export {
+  APP_RECORD,
+  appRecordSchema,
+  needsWindow,
+  type AppRecord,
   commandSchema,
   drillAskSchema,
   envelopeSchema,

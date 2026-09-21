@@ -37,6 +37,11 @@ function setup(
     readonly dead?: readonly number[]
     readonly files?: Record<string, string>
     readonly answer?: { readonly status: number; readonly text: string } | 'unreachable'
+    /**
+     * What starting the app does: its window appears after so many looks, it
+     * never appears, or there is no app to start.
+     */
+    readonly launch?: { readonly appearsAfter: number } | 'never' | 'not installed'
   } = {},
 ) {
   const files = new Map<string, string>(Object.entries(options.files ?? {}))
@@ -44,8 +49,32 @@ function setup(
     files.set(`${directory}/${presenceFileName(one.pid)}`, JSON.stringify(one))
   }
   const posted: { url: string; headers: Readonly<Record<string, string>>; body: string }[] = []
+  let launches = 0
+  let looks = 0
+  const started = window({ pid: 900, endpoint: 'http://127.0.0.1:59000' })
+  const launch = options.launch
   const deps: LinkDeps = {
     directory,
+    ...(launch === undefined
+      ? {}
+      : {
+          launch: () => {
+            launches += 1
+            return Promise.resolve(
+              launch === 'not installed'
+                ? { started: false as const, where: 'C:\\Programs\\Piano\\Piano.exe' }
+                : { started: true as const, from: 'the default install location' },
+            )
+          },
+          sleep: () => {
+            looks += 1
+            if (typeof launch === 'object' && looks >= launch.appearsAfter) {
+              files.set(`${directory}/${presenceFileName(started.pid)}`, JSON.stringify(started))
+            }
+            return Promise.resolve()
+          },
+          launchTimeoutMs: 2_000,
+        }),
     list: () => Promise.resolve([...files.keys()].map((path) => path.slice(directory.length + 1))),
     read: (path) => {
       const text = files.get(path)
@@ -63,7 +92,7 @@ function setup(
         : Promise.resolve(answer)
     },
   }
-  return { link: createLink(deps), deps, posted }
+  return { link: createLink(deps), deps, posted, launches: () => launches }
 }
 
 describe('finding the window', () => {
@@ -146,6 +175,57 @@ describe('speaking to it', () => {
     const answer = await link.send({ kind: 'play' })
     expect(answer.ok).toBe(false)
     expect(answer.text).toContain('did not answer')
+  })
+})
+
+describe('a request with no window open', () => {
+  it('starts the app, waits for it to listen, and plays there', async () => {
+    const { link, posted, launches } = setup([], { launch: { appearsAfter: 3 } })
+    const answer = await link.send({ kind: 'play' })
+
+    expect(answer.ok).toBe(true)
+    expect(launches()).toBe(1)
+    expect(posted[0]?.url).toBe('http://127.0.0.1:59000/command')
+  })
+
+  it('does not start the app to answer what is open', async () => {
+    const { link, launches } = setup([], { launch: { appearsAfter: 1 } })
+    expect(await link.send({ kind: 'state' })).toEqual({ ok: false, text: NO_WINDOW })
+    expect(launches()).toBe(0)
+  })
+
+  it('starts it once for requests that arrive together, never twice', async () => {
+    const { link, launches, posted } = setup([], { launch: { appearsAfter: 4 } })
+    const answers = await Promise.all([
+      link.send({ kind: 'play' }),
+      link.send({ kind: 'tempo', scale: 0.5 }),
+      link.send({ kind: 'level', level: 'beginner' }),
+    ])
+
+    expect(answers.every((one) => one.ok)).toBe(true)
+    expect(launches()).toBe(1)
+    expect(posted).toHaveLength(3)
+  })
+
+  it('does not start it again when a window is already there', async () => {
+    const { link, launches } = setup([window()], { launch: { appearsAfter: 1 } })
+    await link.send({ kind: 'play' })
+    expect(launches()).toBe(0)
+  })
+
+  it('says where it looked and where to get the app when it is not installed', async () => {
+    const { link } = setup([], { launch: 'not installed' })
+    const answer = await link.send({ kind: 'play' })
+    expect(answer.ok).toBe(false)
+    expect(answer.text).toContain('Programs\\Piano\\Piano.exe')
+    expect(answer.text).toContain('releases')
+  })
+
+  it('gives up with a clear sentence when the app starts and never listens', async () => {
+    const { link } = setup([], { launch: 'never' })
+    const answer = await link.send({ kind: 'play' })
+    expect(answer.ok).toBe(false)
+    expect(answer.text).toContain('did not say it was listening within 2 seconds')
   })
 })
 

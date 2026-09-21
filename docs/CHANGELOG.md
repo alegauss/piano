@@ -155,6 +155,9 @@
 - ✅ **PI47** **A rejected score comes back as a validation dump the model cannot act on** — A refusal names the path, what arrived, what was wanted and the fix where one exists, grouped and bounded, so a model repairs its own score (design recorded in `packages/score-format/src/repair.ts`).
   checked **Errors carry path, value, expectation and where possible the fix** Every malformed fixture returns a structured error holding those fields, and a retry driven only by that structure converges without a human reading anything.
   checked **Output stays bounded on a badly broken score** A score with hundreds of problems returns a handful grouped by kind with a count of the rest, rather than one line per problem.
+- ✅ **PI48** **Asking to play a piece fails whenever the app is closed, which is most of the time** — A request for music with no window open starts the installed app once, waits for it to listen and plays; a running one is brought forward (design recorded in `apps/mcp-server/src/launch.ts`).
+  checked **A play request with the app closed starts it and plays** From a cold machine the tool launches the app, waits for the handshake and begins playback, with a timeout and a clear failure when it cannot.
+  checked **No second instance is ever started** A tool call arriving while the app is running reuses it and raises the existing window, rather than opening a duplicate that plays out of sight.
 
 ## Block G — Score library and distribution
 

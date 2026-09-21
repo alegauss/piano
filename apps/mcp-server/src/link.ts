@@ -2,6 +2,7 @@ import {
   isPresenceFile,
   LINK_PROTOCOL,
   linkResultSchema,
+  needsWindow,
   presenceSchema,
   protocolMismatch,
   TOKEN_HEADER,
@@ -43,7 +44,25 @@ export type LinkDeps = {
     url: string,
     request: { readonly headers: Readonly<Record<string, string>>; readonly body: string },
   ) => Promise<{ readonly status: number; readonly text: string }>
+  /**
+   * Start the installed app, or say why not. Without it a request with no
+   * window open is answered with where to get the app.
+   */
+  readonly launch?: () => Promise<Launched>
+  readonly sleep?: (ms: number) => Promise<void>
+  /** How long a started app has to say it is listening. */
+  readonly launchTimeoutMs?: number
 }
+
+export type Launched =
+  | { readonly started: true; readonly from: string }
+  | { readonly started: false; readonly where: string }
+
+/** Long enough for a cold start on a slow disk, short enough that a model is not left hanging. */
+export const LAUNCH_TIMEOUT_MS = 30_000
+
+/** How often a starting app is looked for. */
+const POLL_MS = 250
 
 /** Where the app is had from, for somebody who has the plugin and not the piano. */
 export const APP_RELEASES = 'https://github.com/alegauss/piano/releases'
@@ -93,13 +112,68 @@ export async function windowsIn(deps: LinkDeps): Promise<Presence[]> {
   return found.sort((one, other) => other.focusedAt - one.focusedAt)
 }
 
+/** Said when the app was looked for to start it, and is not there. */
+export function notInstalled(where: string): string {
+  return (
+    `No piano window is listening, and the Piano app is not installed where this plugin ` +
+    `looked (${where}). Get it from ${APP_RELEASES}, or set PIANO_APP to where it is.`
+  )
+}
+
 export function createLink(deps: LinkDeps): Link {
+  const sleep =
+    deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
+  const timeout = deps.launchTimeoutMs ?? LAUNCH_TIMEOUT_MS
+
+  /**
+   * Start the app and wait until its window says it is listening. Shared by
+   * every request that arrives meanwhile, so two tool calls racing a cold
+   * start launch it once; the app refuses a second instance besides.
+   */
+  let starting: Promise<Presence | LinkResult> | null = null
+  const bringUp = async (launch: () => Promise<Launched>): Promise<Presence | LinkResult> => {
+    const launched = await launch()
+    if (!launched.started) {
+      return { ok: false, text: notInstalled(launched.where) }
+    }
+    for (let waited = 0; waited < timeout; waited += POLL_MS) {
+      const [window] = await windowsIn(deps)
+      if (window !== undefined) {
+        return window
+      }
+      await sleep(POLL_MS)
+    }
+    return {
+      ok: false,
+      text:
+        `The Piano app was started (from ${launched.from}) but did not say it was listening ` +
+        `within ${String(Math.round(timeout / 1000))} seconds. If it is open now, ask again.`,
+    }
+  }
+
+  const windowFor = async (command: Command): Promise<Presence | LinkResult> => {
+    const [window] = await windowsIn(deps)
+    if (window !== undefined) {
+      return window
+    }
+    // Asking what is open is not a reason to open anything.
+    if (!needsWindow(command) || deps.launch === undefined) {
+      return { ok: false, text: NO_WINDOW }
+    }
+    const launch = deps.launch
+    starting ??= bringUp(launch).finally(() => {
+      starting = null
+    })
+    return starting
+  }
+
   return {
     send: async (command) => {
-      const [window] = await windowsIn(deps)
-      if (window === undefined) {
-        return { ok: false, text: NO_WINDOW }
+      const found = await windowFor(command)
+      if ('ok' in found) {
+        return found
       }
+      const window = found
       if (window.protocol !== LINK_PROTOCOL) {
         return {
           ok: false,

@@ -33,6 +33,34 @@ export const TOKEN_HEADER = 'x-piano-token'
 /** Where presence files live, under the person's home directory. */
 export const PRESENCE_DIRECTORY = ['.piano', 'windows'] as const
 
+/**
+ * Where an installed app records where it lives, under the person's home, so
+ * a tool call with no window open can start the app somebody actually
+ * installed — wherever they chose to install it — rather than guess.
+ */
+export const APP_RECORD = ['.piano', 'app.json'] as const
+
+export const appRecordSchema = z.object({
+  /** The executable, or the application bundle on macOS. */
+  executable: z.string().min(1),
+  version: z.string(),
+})
+
+export type AppRecord = z.infer<typeof appRecordSchema>
+
+/**
+ * Whether a command is worth a window: everything that makes a sound or a
+ * change somebody would want to see.
+ *
+ * The same answer decides two things. A command that needs a window is one
+ * worth starting the app for when none is open, and one that brings the
+ * window to the front when it is: asking for music is a reason to raise a
+ * window, and asking what is open is not.
+ */
+export function needsWindow(command: { readonly kind: string }): boolean {
+  return command.kind !== 'state'
+}
+
 /** One file per running app, named for its process so two never collide. */
 export function presenceFileName(pid: number): string {
   return `window-${String(pid)}.json`

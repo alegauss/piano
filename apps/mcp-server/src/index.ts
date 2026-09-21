@@ -2,7 +2,18 @@ import { describeScore, FORMAT_VERSION, isSupportedVersion, type Score } from '@
 
 export { createLibrary, libraryId, safeName, SCORE_SUFFIX } from './library'
 export type { Files, Library, LibraryEntry, Saved } from './library'
-export { APP_RELEASES, createLink, NO_WINDOW, noWindow, windowsIn } from './link'
+export { candidates, findApp, whereLooked } from './launch'
+export type { Candidate, Found, Place } from './launch'
+export {
+  APP_RELEASES,
+  createLink,
+  LAUNCH_TIMEOUT_MS,
+  NO_WINDOW,
+  noWindow,
+  notInstalled,
+  windowsIn,
+} from './link'
+export type { Launched } from './link'
 export { PLUGIN_VERSION } from './version'
 export type { Command, DrillAsk, Link, LinkDeps, LinkResult, PassageAsk } from './link'
 export {
@@ -10,7 +21,9 @@ export {
   defaultLibraryRoot,
   defaultPresenceDirectory,
   nodeFiles,
+  nodeLaunch,
   nodeLink,
+  nodePlace,
   processAlive,
   start,
 } from './server'

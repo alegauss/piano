@@ -93,20 +93,6 @@ on a note three pixels tall.
 
 ## Block F — Claude Code First: MCP and plugin
 
-### §PI48 Making it work from a cold start
-
-The ordinary case is somebody sitting in a chat window with the app not running, and if
-the answer is open the app first then this is a demo rather than a product. So a
-transport tool that finds no app can start one, wait for the handshake and carry on, and
-a tool call arriving while the app is running brings that window to the front so the
-person sees what they asked for. Both behaviours are explicit and bounded: launching has
-a timeout and a clear failure, and it never starts a second instance when one is already
-there. This is also where the app has to be findable as an installed application rather
-than a development checkout, which ties straight back to packaging. Focus stealing stays
-conservative on purpose: raising a window because the user just asked for music is
-right, doing it for a background library query is not, so only tools that produce sound
-or a visible change raise it.
-
 ### §PI49 A convenience channel that is not a way in
 
 A local endpoint that accepts a score and plays it is, described plainly, a way to make

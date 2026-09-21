@@ -31,12 +31,15 @@ const bridge: PianoBridge = {
   packManifest: async () => invoke(CHANNEL_NAMES.packManifest, null),
   packFile: async (request) => invoke(CHANNEL_NAMES.packFile, request),
   // The event itself stays on this side: it carries the sender, which is a
-  // handle on main the renderer has no business holding.
+  // handle on main the renderer has no business holding. Subscribing is what
+  // listening means, so it is also what tells main the window is ready: the
+  // app is announced to Claude Code only once a command would be heard.
   onLinkCommand: (listener) => {
     const forward = (_event: IpcRendererEvent, push: LinkCommandPush) => {
       listener(push)
     }
     ipcRenderer.on(PUSH_NAMES.linkCommand, forward)
+    void invoke(CHANNEL_NAMES.linkListening, null)
     return () => {
       ipcRenderer.removeListener(PUSH_NAMES.linkCommand, forward)
     }
