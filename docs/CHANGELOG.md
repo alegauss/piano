@@ -21,6 +21,9 @@
   checked **CI fails on a type error, a lint error or a failing test** A branch carrying one of each turns the job red, and the same three checks run locally through a single script so the gate is reproducible before pushing.
   checked **Layout claims are tested in a real browser, not jsdom** A test about a measured size, scroll or focus order runs in headless Chromium through Playwright, because jsdom lays nothing out and would let the test assert a number it invented.
   checked **The live suite refuses to run against a stale bundle** A global setup compares the built output against the source tree and fails rather than reporting green about code nobody is looking at.
+- ✅ **PI6** **There is no installer: the app only runs in development mode, on the machine that built it** — One command produces a 107 MB Windows installer whose packaged app starts and passes all twelve self-checks, with a CI matrix for macOS and Linux beside it.
+  checked **An installer is produced for Windows, macOS and Linux** One CI job builds NSIS, dmg and AppImage artifacts from the same electron-builder configuration, and each is downloadable from the run.
+  checked **The packaged app runs with no development dependency present** Installed on a clean machine the window opens and a bundled score plays, with no Node runtime, no dev server and no source checkout available to it.
 
 ## Block B — Score JSON format
 

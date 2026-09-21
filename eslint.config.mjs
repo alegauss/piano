@@ -103,8 +103,9 @@ export default tseslint.config(
     files: [
       'scripts/**/*.mjs',
       'apps/*/scripts/**/*.mjs',
+      'build/**/*.mjs',
       '**/*.config.{js,mjs,ts,mts}',
-      'eslint.config.js',
+      'eslint.config.mjs',
     ],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {

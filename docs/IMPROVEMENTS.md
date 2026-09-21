@@ -2,21 +2,23 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-### §PI6 Packaging, signing and what stays out of the bundle
+### §PI57 Signing, and what it costs
 
-Packaging is left until the foundation is settled but not until the end, because two of
-its constraints reach back into the design. The first is the sample bank: a decent piano
-runs to hundreds of megabytes, which cannot sit inside an installer people are expected
-to download, so the packaging story and the first-run download story are the same story
-and have to agree. The second is signing. An unsigned Electron app triggers SmartScreen
-on Windows and Gatekeeper on macOS, and a learner who has to click through a scary
-warning will not come back. electron-builder covers NSIS for Windows, dmg for macOS and
-AppImage for Linux from one configuration, and CI builds all three so a platform is
-never discovered broken months later. CI already carries a package job across the three
-platforms that only runs the build; filling in electron-builder and uploading the
-artifacts is this task's, and the matrix is there waiting. Auto-update is deliberately
-out of scope: it is its own set of failures and deserves its own task once there is
-something worth updating.
+electron-builder is already configured around this: the win and mac blocks name where an
+identity would go, and both are deliberately left empty rather than half-filled, because
+a half-configured signing step fails at the end of a long build instead of at the start.
+What is missing is not configuration. Windows wants a code signing certificate from a
+recognised authority, which costs money every year and, in the EV form that clears
+SmartScreen immediately, arrives on a hardware token no CI runner can hold without a
+signing service in front of it. macOS wants an Apple Developer account, an
+application-specific password and a notarisation step that uploads each build to Apple
+and waits for an answer. Both are purchases and both need someone to hold an account, so
+neither belongs inside a task that could otherwise be finished. The consequence of
+leaving it is concrete and worth writing down: on Windows a first-time user sees a blue
+panel naming an unknown publisher, and on macOS the app refuses to open until they
+right-click and confirm. Somebody who wanted to try a piano does neither. Until this is
+done the honest position is that the installers are for people who were told where they
+came from, and the README should say so rather than implying a public release.
 
 ## Block B — Score JSON format
 

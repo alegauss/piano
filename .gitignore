@@ -27,3 +27,7 @@ Thumbs.db
 # get their own so they never fight over one disk cache. A glob rather than a
 # list, because the list is what let .test-profile through.
 *-profile/
+
+# electron-builder output
+release/
+.verify-profile/

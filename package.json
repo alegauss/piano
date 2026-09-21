@@ -23,7 +23,9 @@
     "test:watch": "vitest --project score-format --project ipc --project renderer",
     "lint": "eslint . && prettier --check . && npm run check:format-ownership && npm run check:colour-tokens",
     "lint:fix": "eslint . --fix && prettier --write .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "package": "npm run build && npm run package --workspace apps/desktop",
+    "icon": "node build/make-icon.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -2,7 +2,7 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI6** (deps: PI1 ✅, PI5 ✅) **There is no installer: the app only runs in development mode, on the machine that built it** — electron-builder produces installers for Windows, macOS and Linux, and signing and bundle size want solving early rather than the night before. → §PI6
+- 📋 **PI57** (deps: PI6 ✅) **An unsigned build trips SmartScreen and Gatekeeper, so a new user meets a warning before the app** — Signing needs a purchased Windows certificate and an Apple developer account, which is a decision with a price rather than a line of configuration. → §PI57
 
 ## Block B — Score JSON format
 
@@ -59,7 +59,7 @@
 - 📋 **PI45** (deps: PI43) **There is no plugin: the tools only work for someone who wires an MCP server by hand** — A packaged Claude Code plugin with commands is what makes installation a single step and the whole premise reachable by anyone. → §PI45
 - 📋 **PI46** (deps: PI15, PI45) **A model writing a score guesses at the format and produces files that almost validate** — A skill stating the format, the musical conventions and the common mistakes is what makes a generated score right the first time. → §PI46
 - 📋 **PI47** (deps: PI15, PI43) **A rejected score comes back as a validation dump the model cannot act on** — Errors written for a repair loop, naming the field, the value and the fix, let the model correct its own output without a human. → §PI47
-- 📋 **PI48** (deps: PI6, PI44) **Asking to play a piece fails whenever the app is closed, which is most of the time** — Launching or focusing the app from a tool call is what makes the request work from a chat window with nothing already open. → §PI48
+- 📋 **PI48** (deps: PI6 ✅, PI44) **Asking to play a piece fails whenever the app is closed, which is most of the time** — Launching or focusing the app from a tool call is what makes the request work from a chat window with nothing already open. → §PI48
 - 📋 **PI49** (deps: PI44) **A local port that accepts scores and plays them is an open door on the machine** — Binding to loopback, requiring a token and allowlisting paths keep a convenience channel from becoming a way in. → §PI49
 - 📋 **PI50** (deps: PI26, PI46, PI48) **Nothing proves the premise: no single run goes from a request to a piece actually playing** — One end-to-end test that asks for a piece, writes the score, validates it and plays it is the only check that this product works. → §PI50
 
@@ -68,17 +68,8 @@
 - 📋 **PI51** (deps: PI3 ✅, PI15) **There is no way to open a file: a score sitting on disk cannot be loaded into the app at all** — Drag and drop, a file dialog and a recent list are the three ways anyone expects to open something, and the app has none of them. → §PI51
 - 📋 **PI52** (deps: PI13, PI51) **Scores pile up in a folder with no index: nothing lists, searches or filters them** — A local library reading metadata into an index is what keeps a growing collection usable and what the MCP search tool reads. → §PI52
 - 📋 **PI53** (deps: PI3 ✅) **Every setting resets on restart: device, theme, calibration and level are chosen again each time** — Persisted settings in one validated store keep the app from asking the same questions at every launch. → §PI53
-- 📋 **PI54** (deps: PI6, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
+- 📋 **PI54** (deps: PI6 ✅, PI20) **The sample pack cannot ship inside the installer, and there is no way to fetch it** — A first-run download with resume, verification and a usable app while it runs is what makes a large sample bank practical. → §PI54
 - 📋 **PI55** (deps: PI12, PI13) **A new install opens on an empty library, so there is nothing to hear and nothing to try** — A handful of bundled public-domain scores across the three levels give the app something to prove itself with on first launch. → §PI55
-
-## Done when — PI6
-
-- **An installer is produced for Windows, macOS and Linux** One CI job builds NSIS, dmg
-  and AppImage artifacts from the same electron-builder configuration, and each is
-  downloadable from the run.
-- **The packaged app runs with no development dependency present** Installed on a clean
-  machine the window opens and a bundled score plays, with no Node runtime, no dev
-  server and no source checkout available to it.
 
 ## Done when — PI7
 
@@ -563,6 +554,17 @@
 - **A fresh install has something to play within minutes** The installer opens on a
   library with bundled scores, fetches the sample pack in the background while remaining
   usable, and remembers every choice on the next launch.
+
+## Done when — PI57
+
+- **A fresh Windows install shows no unknown-publisher warning** Installing the signed
+  build on a machine that has never seen it opens the app without SmartScreen
+  interrupting, checked on a clean virtual machine rather than on the build host.
+- **The macOS build opens without a right-click** A notarised and stapled dmg opens by
+  double-clicking on a machine that downloaded it, with Gatekeeper satisfied offline.
+- **CI signs without a certificate in the repository** The signing material reaches the
+  runner through secrets or a signing service, and nothing secret is committed, which is
+  what makes this safe to automate at all.
 
 ## Non-goals
 

@@ -64,9 +64,9 @@ jobs:
       - name: live tests
         run: xvfb-run --auto-servernum npm run test:live
 
-  # Every platform the app claims to run on still packages. Not on every push:
-  # this is slow, and a broken installer is not a thing a branch introduces
-  # quietly.
+  # Every platform the app claims to run on still packages, and the thing that
+  # comes out still starts. Not on every push: it is slow, and a broken
+  # installer is not something a branch introduces quietly.
   package:
     name: installers
     if: github.event_name == 'push'
@@ -74,7 +74,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact: AppImage
+          - os: windows-latest
+            artifact: nsis
+          - os: macos-latest
+            artifact: dmg
     steps:
       - uses: actions/checkout@v5
 
@@ -85,5 +91,33 @@ jobs:
 
       - run: npm ci
 
-      - name: build
-        run: npm run build
+      - name: package
+        run: npm run package
+
+      # The installer existing is not the claim; the app starting is. This runs
+      # the unpacked binary in smoke mode, which loads the renderer once and
+      # exits, with no dev server, no toolchain and no node_modules present.
+      - name: the packaged app starts
+        if: runner.os == 'Windows'
+        run: |
+          $env:PIANO_SMOKE = '1'
+          & './release/win-unpacked/Piano.exe' | Tee-Object -Variable out
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($out -notmatch 'renderer loaded') { exit 1 }
+
+      - name: the packaged app starts
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x release/*.AppImage
+          xvfb-run --auto-servernum env PIANO_SMOKE=1 ./release/linux-unpacked/piano | tee /tmp/out
+          grep -q 'renderer loaded' /tmp/out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: piano-${{ matrix.artifact }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+          if-no-files-found: error
+          retention-days: 14

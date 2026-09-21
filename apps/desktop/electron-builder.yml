@@ -1,0 +1,63 @@
+appId: com.alegauss.piano
+productName: Piano
+copyright: Copyright © 2026 Alexandre Oliveira
+
+directories:
+  # build/ at the repository root holds the icon and the script that draws it.
+  buildResources: ../../build
+  output: ../../release
+
+# Everything the app runs is already bundled: esbuild produces main and preload
+# with electron as the only external, and Vite produces a self-contained
+# renderer. So the package carries no node_modules at all, which is why this
+# list is two lines rather than a page of exclusions.
+files:
+  - dist/**
+  - package.json
+  # Nothing here is required at runtime, and shipping 53 MB of it made the
+  # asar archive unreadable: Electron found a package.json that was not JSON
+  # and exited without a word. Excluded explicitly rather than by moving the
+  # dependencies, because they are real build inputs and belong where they are.
+  - '!node_modules/**/*'
+
+# The sample pack is hundreds of megabytes and deliberately not in here. It is
+# fetched on first run (PI54), which is the other half of the same decision:
+# an installer people are expected to download has to stay small enough to.
+asar: true
+compression: maximum
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: ../../build/icon.png
+  # Unsigned for now. An unsigned Electron app trips SmartScreen, and a learner
+  # who has to click through a scary warning does not come back, so a
+  # certificate is a real requirement before this reaches anyone.
+  signAndEditExecutable: true
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Piano
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  icon: ../../build/icon.png
+  category: public.app-category.music
+  # Gatekeeper needs notarisation, which needs an Apple account. Until then the
+  # build is honest about being unsigned rather than half-configured.
+  identity: null
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: ../../build/icon.png
+  category: Audio
+  synopsis: Play scores, watch them fall, learn to play them.

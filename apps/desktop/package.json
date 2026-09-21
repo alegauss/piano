@@ -2,13 +2,15 @@
   "name": "@piano/desktop",
   "version": "0.0.0",
   "private": true,
-  "description": "The Electron desktop app: main, preload and renderer.",
+  "description": "Play scores, watch them fall, learn to play them.",
   "main": "dist/main/main.cjs",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "selfcheck": "node scripts/selfcheck.mjs"
+    "selfcheck": "node scripts/selfcheck.mjs",
+    "package": "electron-builder --config electron-builder.yml --publish never && node scripts/verify-package.mjs",
+    "verify:package": "node scripts/verify-package.mjs"
   },
   "dependencies": {
     "@piano/ipc": "*",
@@ -34,8 +36,12 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "electron": "^44.4.3",
+    "electron": "44.4.3",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.25.10",
     "vite": "^7.1.9"
+  },
+  "author": {
+    "name": "Alexandre Oliveira"
   }
 }
