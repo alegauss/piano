@@ -32,32 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI97 What the folder will hold
-
-`libraryIdOfFile` accepts `.piano` and the older `.score.json` and answers null for
-everything else, so `entries` skips it. A `.mid` copied into `~/.piano/library` is not
-listed, not refused and not mentioned: the folder simply looks unchanged.
-
-Copying a file in is a real route. PI52 recorded that a score added outside the app
-appears in the library, the watcher exists to make that immediate, and it is what
-anybody does with a folder of downloads. That it works for one extension out of six is
-the part nobody can guess from the outside.
-
-Two answers are possible and the cheaper one may be right. Either the listing names what
-it is ignoring — a line under the list saying three files here are not scores — or the
-folder becomes an inbox: a `.mid`, `.musicxml` or `.mxl` found there is imported through
-the same `openScoreFile` path the dialog uses, written as a `.piano` beside it.
-
-A `.piano` the format refuses is ignored the same way: `library.held` answers nothing
-for one, so PI95's ask is skipped and filing overwrites it.
-
-The second is what people expect and the one that has to be careful. An import that
-fails must not be retried on every listing, and a file still being copied must not be
-read half written. The index already keeps size and modification time per file, which is
-where a failed import can be remembered until the file changes.
-
-Needs PI94 and PI95.
-
 ### §PI98 Saying the second way in
 
 The panel says two things about where scores come from. Its description: "Every score
@@ -81,5 +55,27 @@ saying where the feature is. A button added in PI94 and never mentioned here lea
 where they started.
 
 Needs PI94.
+
+### §PI99 What the folder would not take
+
+The inbox takes in what it can and writes a line to the log about the rest. A `.mid`
+that is not a MIDI file, a `.musicxml` that is some other XML, one too large to read,
+and one whose id the library already holds are each left where they are, recorded so the
+reading is not repeated, and mentioned nowhere a person will look. Nobody reads a
+desktop app's stderr.
+
+From the outside this is the old complaint again: a file copied into the folder and
+nothing happens. The difference is that the app now knows exactly why, in a sentence the
+reader already wrote — `openScoreFile` refuses by name — and throws it away.
+
+So the panel says it. The sweep's answer already carries what it left and why; what is
+missing is a way to reach the window, which today hears only that the folder changed. A
+push carrying the last sweep's refusals, or a read the panel asks for when it opens, and
+a line under the list: two files here were not taken in, each name and reason on demand.
+
+The one taken id is the interesting case, because the answer is a door rather than a
+sentence: the piece can be opened from the folder and filed through the form, where the
+clash is a question somebody answers. So its line is worth making openable, which the
+panel can already do for a score but not for a file it does not list.
 
 ## Block H — Sheet music view

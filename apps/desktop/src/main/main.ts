@@ -29,6 +29,7 @@ import { createHistoryStore } from './history-store'
 import { saveHistory } from './history-save'
 import { registerIpcHandlers } from './ipc'
 import { keepInFile } from './keep-arrangement'
+import { createInbox, SETTLE_MS } from './library-inbox'
 import { fileInLibrary } from './library-save'
 import { watchLibrary } from './library-watch'
 import { startLinkHost, type LinkHost } from './link-host'
@@ -123,6 +124,35 @@ const recent = createRecent(join(app.getPath('userData'), 'recent-scores.json'))
 
 /** The library Claude Code saves into, read through the same index its tools read. */
 const library = createLibrary(libraryRoot(), nodeFiles)
+
+/** The MIDI and MusicXML files somebody copies into the library folder. */
+const inbox = createInbox({
+  root: libraryRoot(),
+  files: nodeFiles,
+  library,
+  open: openScoreFile,
+})
+
+/**
+ * Take in what is in the folder, and come back for anything that was still
+ * being written. A file is copied in, not written by this app, so the moment
+ * the watcher hears about it is often before the copy has finished.
+ */
+function sweepInbox(): void {
+  void inbox.sweep().then(
+    (swept) => {
+      for (const { name, why } of swept.left) {
+        process.stderr.write(`piano: ${name} is still in the library folder: ${why}\n`)
+      }
+      if (swept.waiting > 0) {
+        setTimeout(sweepInbox, SETTLE_MS).unref()
+      }
+    },
+    (error: unknown) => {
+      process.stderr.write(`piano: the library folder was not taken in: ${String(error)}\n`)
+    },
+  )
+}
 
 /** What the app remembers between launches, in this profile. */
 const settings = createSettingsStore(join(app.getPath('userData'), 'settings.json'))
@@ -508,11 +538,18 @@ if (firstInstance) {
       const theme = async () => (await settings.read()).settings.theme
       createWindow(await theme())
       if (!isSmokeRun && !isSelfCheckRun) {
-        // A first launch finds something to play in the library, once.
-        void library.seed(BUNDLED_SCORES).catch((error: unknown) => {
-          process.stderr.write(`piano: the bundled scores were not added: ${String(error)}\n`)
-        })
+        // A first launch finds something to play in the library, once, and
+        // takes in whatever was copied into the folder since the last run.
+        void library
+          .seed(BUNDLED_SCORES)
+          .catch((error: unknown) => {
+            process.stderr.write(`piano: the bundled scores were not added: ${String(error)}\n`)
+          })
+          .then(sweepInbox)
         void watchLibrary(library.root, () => {
+          // A file dropped in the folder is imported before the list is told,
+          // and the import's own write tells it again.
+          sweepInbox()
           if (mainWindow !== null && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send(PUSH_NAMES.libraryChanged)
           }

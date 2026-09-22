@@ -204,6 +204,7 @@
 - ✅ **PI94** **Nothing in the window puts a score into the library: an imported MIDI or MusicXML piece is gone when it closes** — An Add to library button files the open score through the library package, so an imported MIDI or MusicXML piece is listed and playable next launch.
 - ✅ **PI95** **An import filed under a title the library already holds overwrites it, with nothing asked and nothing said** — Filing a piece whose id is taken says what is there and offers to number the new one or replace the old, so two pieces with one title both survive.
 - ✅ **PI96** **An imported piece is filed with a title and nothing else: no composer, no level, no tags, so no filter finds it** — Filing asks for the composer, level and tags in one form, prefilled from the file, so an imported piece is one the list's own filters reach.
+- ✅ **PI97** **A MIDI or MusicXML file copied into the library folder is ignored by the index, and nothing on screen says why** — A MIDI or MusicXML file copied into the library folder is imported once and filed as a score beside it, so a folder of downloads becomes a library.
 
 ## Block H — Sheet music view
 

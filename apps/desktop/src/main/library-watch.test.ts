@@ -43,13 +43,16 @@ describe('watching the library folder', () => {
     expect(told).toBe(1)
   })
 
-  it('keeps quiet about the index a listing rewrites', async () => {
+  it('keeps quiet about the app’s own bookkeeping', async () => {
     directory = await mkdtemp(join(tmpdir(), 'piano-watch-'))
     const root = join(directory, 'library')
     let told = 0
     stop = await watchLibrary(root, () => (told += 1), 100)
 
+    // The index a listing rewrites, and the record the inbox keeps of what it
+    // has already taken in: each would otherwise ask for the next listing.
     await writeFile(join(root, INDEX_FILE), '{}')
+    await writeFile(join(root, '.imported.json'), '{}')
     await settle(600)
     expect(told).toBe(0)
   })

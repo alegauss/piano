@@ -1,8 +1,6 @@
 import { watch } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 
-import { INDEX_FILE } from '@piano/library'
-
 /**
  * Being told when the library folder changes.
  *
@@ -10,8 +8,11 @@ import { INDEX_FILE } from '@piano/library'
  * into the folder by hand; either way a list on screen should show it without
  * being asked twice. The folder is made if it is not there, since there is
  * nothing to watch otherwise. A burst of changes — an editor saving through a
- * temporary file — is one piece of news, and the index being rewritten by a
- * listing is none, or every listing would ask for the next one.
+ * temporary file — is one piece of news.
+ *
+ * The app's own bookkeeping is none of it: the index a listing rewrites and
+ * the record the inbox keeps are dot files, and news of either would have
+ * every listing asking for the next one.
  */
 export async function watchLibrary(
   root: string,
@@ -21,7 +22,7 @@ export async function watchLibrary(
   await mkdir(root, { recursive: true })
   let pending: NodeJS.Timeout | null = null
   const watcher = watch(root, (_event, name) => {
-    if (typeof name === 'string' && name.startsWith(INDEX_FILE)) {
+    if (typeof name === 'string' && name.startsWith('.')) {
       return
     }
     if (pending !== null) {
