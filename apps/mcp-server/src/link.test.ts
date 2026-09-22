@@ -198,6 +198,22 @@ describe('a request with no window open', () => {
     expect(launches()).toBe(0)
   })
 
+  it('does not start the app to tidy the library, and says there is nobody there', async () => {
+    // Tidying goes to a window because it holds the bin and the practice
+    // records, not because anybody asked to be shown anything.
+    const { link, launches } = setup([], { launch: { appearsAfter: 1 } })
+
+    expect(await link.send({ kind: 'remove', score: 'aria' })).toEqual({
+      ok: false,
+      text: NO_WINDOW,
+    })
+    expect(
+      await link.send({ kind: 'correct', score: 'aria', metadata: { title: 'Aria' } }),
+    ).toEqual({ ok: false, text: NO_WINDOW })
+    expect(await link.listening()).toBe(false)
+    expect(launches()).toBe(0)
+  })
+
   it('starts it once for requests that arrive together, never twice', async () => {
     const { link, launches, posted } = setup([], { launch: { appearsAfter: 4 } })
     const answers = await Promise.all([

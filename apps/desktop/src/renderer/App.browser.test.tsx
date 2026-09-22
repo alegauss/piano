@@ -286,6 +286,7 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
         kind: 'corrected' as const,
         id: under,
         title: metadata.title,
+        wasCalled: there.title,
         score,
         open,
       })

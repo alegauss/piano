@@ -1,3 +1,4 @@
+import type { LibraryCorrectResult, LibraryRemoveResult } from '@piano/ipc'
 import type { Level, Note, Section } from '@piano/score-format'
 import { resolveTiming } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
@@ -40,7 +41,23 @@ const other: Note[] = [
 function setup(
   open: (id: string, transport: Transport) => Promise<Opening> = () =>
     Promise.resolve({ ok: false, text: 'Not in this test.' }),
+  /** What the window answers a tidy-up with, since the library is not here. */
+  tidying: {
+    readonly gone?: LibraryRemoveResult
+    readonly put?: LibraryCorrectResult
+  } = {},
 ) {
+  const gone: LibraryRemoveResult = tidying.gone ?? { kind: 'removed', id: 'aria' }
+  const put: LibraryCorrectResult = tidying.put ?? {
+    kind: 'corrected',
+    id: 'aria',
+    title: 'Aria',
+    wasCalled: 'Aria',
+    score: null,
+    open: false,
+  }
+  /** Every delete and correction the window was asked to make. */
+  const tidied: unknown[] = []
   const time = new FakeTime()
   const transport = new Transport(new Listener(time), time.clock, time.ticker, new ClickRecorder())
   transport.load({ timing, notes })
@@ -69,6 +86,14 @@ function setup(
       opened.push(id)
       return open(id, transport)
     },
+    remove: (id) => {
+      tidied.push({ removed: id })
+      return Promise.resolve(gone)
+    },
+    correct: (id, metadata, taken) => {
+      tidied.push({ corrected: id, metadata, ...(taken === undefined ? {} : { taken }) })
+      return Promise.resolve(put)
+    },
   }
   return {
     transport,
@@ -77,6 +102,7 @@ function setup(
     run: (command: Parameters<typeof runCommand>[0]) => runCommand(command, controls),
     woken: () => woken,
     opened,
+    tidied,
   }
 }
 
@@ -215,5 +241,91 @@ describe('practising from a sentence', () => {
     expect(answer.ok).toBe(false)
     expect(answer.text).toContain('"chorus"')
     expect(drill.state.running).toBe(false)
+  })
+})
+
+describe('tidying the library from a sentence', () => {
+  it('deletes through the window, so the file goes where a row’s delete puts it', async () => {
+    const { run, tidied } = setup()
+    const answer = await run({ kind: 'remove', score: 'aria' })
+
+    expect(answer.ok).toBe(true)
+    expect(answer.text).toContain('bin')
+    expect(tidied).toEqual([{ removed: 'aria' }])
+  })
+
+  it('passes a refusal on in the window’s own words', async () => {
+    const { run } = setup(undefined, {
+      gone: { kind: 'refused', message: 'nothing is filed as aria' },
+    })
+    const answer = await run({ kind: 'remove', score: 'aria' })
+
+    expect(answer.ok).toBe(false)
+    expect(answer.text).toBe('nothing is filed as aria')
+  })
+
+  it('corrects through the window, and says which id the piece is addressed by now', async () => {
+    const { run, tidied } = setup(undefined, {
+      put: {
+        kind: 'corrected',
+        id: 'prelude-in-c',
+        title: 'Prelude in C',
+        wasCalled: 'Untitled',
+        score: null,
+        open: false,
+      },
+    })
+
+    const answer = await run({
+      kind: 'correct',
+      score: 'untitled',
+      metadata: { title: 'Prelude in C' },
+    })
+
+    expect(answer.ok).toBe(true)
+    expect(answer.text).toContain('addressed as "prelude-in-c"')
+    expect(tidied).toEqual([{ corrected: 'untitled', metadata: { title: 'Prelude in C' } }])
+  })
+
+  it('says nothing about a name for a piece that did not move', async () => {
+    const { run } = setup()
+    const answer = await run({ kind: 'correct', score: 'aria', metadata: { title: 'Aria' } })
+
+    expect(answer.ok).toBe(true)
+    expect(answer.text).not.toContain('addressed as')
+  })
+
+  it('asks back rather than guessing when the name a title wants is taken', async () => {
+    const { run } = setup(undefined, {
+      put: {
+        kind: 'taken',
+        id: 'prelude-in-c',
+        held: { title: 'Prelude in C', composer: 'Bach', seconds: 95 },
+      },
+    })
+
+    const answer = await run({
+      kind: 'correct',
+      score: 'untitled',
+      metadata: { title: 'Prelude in C' },
+    })
+
+    expect(answer.ok).toBe(false)
+    expect(answer.text).toContain('Bach')
+    expect(answer.data).toEqual({ taken: 'prelude-in-c' })
+  })
+
+  it('carries the choice through when it is made', async () => {
+    const { run, tidied } = setup()
+    await run({
+      kind: 'correct',
+      score: 'untitled',
+      metadata: { title: 'Prelude in C' },
+      taken: 'beside',
+    })
+
+    expect(tidied).toEqual([
+      { corrected: 'untitled', metadata: { title: 'Prelude in C' }, taken: 'beside' },
+    ])
   })
 })

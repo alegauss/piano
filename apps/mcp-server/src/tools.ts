@@ -1,4 +1,5 @@
-import type { Correction, Library, LibraryEntry } from '@piano/library'
+import type { LibraryCorrection } from '@piano/ipc'
+import type { Library, LibraryEntry } from '@piano/library'
 import {
   describeScore,
   formatProblems,
@@ -166,7 +167,7 @@ function correctionOf(
     readonly difficulty?: number | null
     readonly tags?: readonly string[] | null
   },
-): Correction {
+): LibraryCorrection {
   const kept = <T>(named: T | null | undefined, was: T | undefined): T | undefined =>
     named === undefined ? was : (named ?? undefined)
   const composer = kept(fields.composer, held.composer)
@@ -178,7 +179,7 @@ function correctionOf(
     ...(composer === undefined ? {} : { composer }),
     ...(level === undefined ? {} : { level }),
     ...(difficulty === undefined ? {} : { difficulty }),
-    ...(tags === undefined ? {} : { tags }),
+    ...(tags === undefined ? {} : { tags: [...tags] }),
   }
 }
 
@@ -271,7 +272,8 @@ export function toolsFor(library: Library, link: Link): Tool[] {
         'of its own moves it to the id its new title gives, and the answer says which id ' +
         'it is addressed by from now on. If that id is already another score’s, nothing ' +
         'is written and the answer says what holds it: call again with taken to file this ' +
-        'one beside it or to replace what is there.',
+        'one beside it or to replace what is there. With the app open the practice records ' +
+        'kept against the old name follow the piece; with no window open they stay behind.',
       shape: {
         id: z.string().min(1).describe('The id the score is filed under now.'),
         title: z.string().min(1).optional().describe('What the piece is called.'),
@@ -299,7 +301,21 @@ export function toolsFor(library: Library, link: Link): Tool[] {
           if (held === null) {
             return { ok: false, text: `No score in the library is called "${id}".` }
           }
-          const result = await library.correct(id, correctionOf(held.metadata, fields), taken)
+          const metadata = correctionOf(held.metadata, fields)
+          // A window holds what this side does not: the practice records kept
+          // against what the piece used to be called, which a correction has
+          // to move with it. So where there is one, it does the write.
+          if (await link.listening()) {
+            return fromLink(
+              await link.send({
+                kind: 'correct',
+                score: id,
+                metadata,
+                ...(taken === undefined ? {} : { taken }),
+              }),
+            )
+          }
+          const result = await library.correct(id, metadata, taken)
           if (result.kind === 'missing') {
             return { ok: false, text: `No score in the library is called "${id}".` }
           }
@@ -329,15 +345,20 @@ export function toolsFor(library: Library, link: Link): Tool[] {
       name: 'delete_score',
       title: 'Delete a score from the library',
       description:
-        'Take a score out of the local library, by the id it is filed under. The file is ' +
-        'removed from disk — the app’s own delete puts it in the system’s bin, this one ' +
-        'does not — so ask before deleting anything you did not just write. Practice ' +
-        'records are left alone. An id nothing is filed under is refused rather than ' +
-        'silently accepted.',
+        'Take a score out of the local library, by the id it is filed under. With the app ' +
+        'open the file goes to the system’s bin and can be put back; with no window open ' +
+        'it is removed from disk and cannot be, so ask first before deleting anything you ' +
+        'did not just write. Practice records are left alone either way. An id nothing is ' +
+        'filed under is refused rather than silently accepted.',
       shape: { id: z.string().min(1).describe('The id the score is filed under.') },
       run: async ({ id }) => {
         try {
           const held = await library.held(id)
+          // The bin belongs to the system and only the app reaches it, so a
+          // window that is there does the deleting and the file can come back.
+          if (await link.listening()) {
+            return fromLink(await link.send({ kind: 'remove', score: id }))
+          }
           const gone = await library.remove(id)
           if (!gone) {
             return { ok: false, text: `No score in the library is called "${id}".` }

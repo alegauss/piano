@@ -214,6 +214,7 @@
 - ✅ **PI104** **Claude Code can write a score into the library but never remove one, nor correct what one says without rewriting it** — correct_score changes what a score says about itself and delete_score takes one out, both through the library module the window writes with.
 - ✅ **PI105** **Tidying a library that grew by the batch means opening, confirming and closing one row at a time** — Rows can be picked in the panel and then deleted or tagged together, with one question asked of the whole set and one sentence about how it went.
 - ✅ **PI106** **Open recent names a piece by the title it had when it was opened, so a corrected one is listed under its old name** — A corrected piece is offered from Open recent under what it is called now, at the path it moved to, without waiting to be opened again.
+- ✅ **PI107 (where a window is listening)** **Deleting or retitling from chat skips the bin and leaves the practice records behind, where the panel does neither** — Both verbs are done by the window when one is open, so a model's delete goes to the bin and a piece it retitles takes its records with it.
 
 ## Block H — Sheet music view
 

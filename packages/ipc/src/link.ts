@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { libraryCorrectionSchema } from './library'
+
 /**
  * How the MCP server finds the window somebody is looking at, and what it may
  * say to it once it has.
@@ -55,10 +57,13 @@ export type AppRecord = z.infer<typeof appRecordSchema>
  * The same answer decides two things. A command that needs a window is one
  * worth starting the app for when none is open, and one that brings the
  * window to the front when it is: asking for music is a reason to raise a
- * window, and asking what is open is not.
+ * window, and asking what is open is not. Neither is tidying a library —
+ * those go to a window that is already there, because it holds the bin and
+ * the practice records, and they start nothing and raise nothing, since
+ * nobody asked to be shown anything.
  */
 export function needsWindow(command: { readonly kind: string }): boolean {
-  return command.kind !== 'state'
+  return !['state', 'remove', 'correct'].includes(command.kind)
 }
 
 /** One file per running app, named for its process so two never collide. */
@@ -117,6 +122,26 @@ export const commandSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('level'), level: z.enum(['beginner', 'intermediate', 'advanced']) }),
   z.object({ kind: z.literal('state') }),
   z.object({ kind: z.literal('practise'), drill: drillAskSchema }),
+  /**
+   * Take a library piece out, or put right what one says about itself.
+   *
+   * These two are here for a reason the other six are not: they are writes a
+   * model can make on its own, through the same library package the window
+   * writes with — but two things the window has are not in that package. The
+   * bin belongs to the system and the app reaches it; practice records belong
+   * to the window. A verb sent here is done by the window, so both hold, and
+   * a model tidying a library does what a person clicking would have done.
+   *
+   * Neither is worth starting the app for, and neither raises a window that
+   * is there: nobody asked to be shown anything.
+   */
+  z.object({ kind: z.literal('remove'), score: z.string().min(1).max(200) }),
+  z.object({
+    kind: z.literal('correct'),
+    score: z.string().min(1).max(200),
+    metadata: libraryCorrectionSchema,
+    taken: z.enum(['beside', 'replace']).optional(),
+  }),
 ])
 
 export type PassageAsk = z.infer<typeof passageSchema>

@@ -7,7 +7,6 @@ export {
   historySave,
   historyWrite,
   libraryCorrect,
-  libraryCorrectionSchema,
   libraryItemSchema,
   libraryList,
   libraryLeft,
@@ -45,7 +44,6 @@ export {
   type HistoryWriteRequest,
   type KeepRequest,
   type KeepResult,
-  type LibraryCorrection,
   type LibraryCorrectRequest,
   type LibraryCorrectResult,
   type LibraryItem,
@@ -87,6 +85,8 @@ export {
 export {
   LEGACY_SCORE_SUFFIX,
   LIBRARY_DIRECTORY,
+  libraryCorrectionSchema,
+  LIBRARY_LEVEL,
   libraryFileName,
   libraryFileNames,
   libraryIdOfFile,
@@ -94,6 +94,7 @@ export {
   safeName,
   SCORE_SUFFIX,
   SCORE_SUFFIXES,
+  type LibraryCorrection,
 } from './library'
 export {
   DEFAULT_SETTINGS,

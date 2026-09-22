@@ -32,6 +32,14 @@ export type { Command, DrillAsk, LinkResult, PassageAsk } from '@piano/ipc'
 
 export type Link = {
   readonly send: (command: Command) => Promise<LinkResult>
+  /**
+   * Whether a window is there to be spoken to, asked before a verb that
+   * should not start one. A library tidied from chat is done by the window
+   * where there is one, because the window holds the bin and the practice
+   * records; where there is none, the caller does what it can itself rather
+   * than opening an app nobody asked to see.
+   */
+  readonly listening: () => Promise<boolean>
 }
 
 /** What the link needs of the machine. Node's in the server, fakes in a test. */
@@ -93,7 +101,10 @@ export const NO_WINDOW =
  * request, there is nothing at the other end of it.
  */
 export function noWindow(): Link {
-  return { send: () => Promise.resolve({ ok: false, text: NO_WINDOW }) }
+  return {
+    send: () => Promise.resolve({ ok: false, text: NO_WINDOW }),
+    listening: () => Promise.resolve(false),
+  }
 }
 
 /** The windows that are really there, most recently focused first. */
@@ -173,6 +184,7 @@ export function createLink(deps: LinkDeps): Link {
   }
 
   return {
+    listening: async () => (await windowsIn(deps)).length > 0,
     send: async (command) => {
       const found = await windowFor(command)
       if ('ok' in found) {

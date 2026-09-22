@@ -1,6 +1,7 @@
 import {
   libraryFileName,
   type AppInfoResponse,
+  type LibraryCorrection,
   type LibraryCorrectResult,
   type LibraryItem,
   type LibraryLeft,
@@ -477,6 +478,10 @@ export function App() {
         void piano.resume()
       },
       open: openForClaude,
+      // The same two writes a row offers, so tidying from a sentence and
+      // tidying by hand cannot leave the library in different states.
+      remove: removeFromLibrary,
+      correct: correctInLibrary,
     }
   })
   useEffect(() => {
@@ -738,8 +743,8 @@ export function App() {
    * knows a file by its name alone, which two folders can both hold.
    */
   async function correctInLibrary(
-    item: LibraryItem,
-    described: Filing,
+    id: string,
+    metadata: LibraryCorrection,
     taken?: 'beside' | 'replace',
   ): Promise<LibraryCorrectResult> {
     const bridge = readBridge()
@@ -747,8 +752,8 @@ export function App() {
       return { kind: 'refused', message: 'this window has no way to write the library' }
     }
     const result = await bridge.correctInLibrary({
-      id: item.id,
-      metadata: correctionOf(described),
+      id,
+      metadata,
       ...(taken === undefined ? {} : { taken }),
     })
     if (result.kind !== 'corrected') {
@@ -759,7 +764,7 @@ export function App() {
       // A correction gives the piece an id, so what it was known by until now
       // was its title. Records kept under that key follow it, or a week of
       // practice would end at the moment somebody fixed a spelling.
-      progress.rename(`title:${item.title}`, scoreKey(parsed.score))
+      progress.rename(`title:${result.wasCalled}`, scoreKey(parsed.score))
       if (result.open) {
         setScore(parsed.score)
       }
@@ -919,7 +924,9 @@ export function App() {
                 onOpenLeft={(name) => {
                   openFrom({ from: 'folder', name })
                 }}
-                onCorrect={correctInLibrary}
+                onCorrect={(id, described, taken) =>
+                  correctInLibrary(id, correctionOf(described), taken)
+                }
                 onRemove={removeFromLibrary}
                 practised={practisedIn}
               />

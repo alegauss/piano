@@ -77,13 +77,9 @@ export function LibraryPanel({
   readonly leftBehind: () => Promise<LibraryLeft[]>
   /** Open one of those by name, which only works for a file that reads. */
   readonly onOpenLeft: (name: string) => void
-  /**
-   * Write a row's corrected description back, answered with what became of
-   * it. The row goes rather than its id: what a piece was called is what its
-   * practice records are filed under until it has an id of its own.
-   */
+  /** Write a row's corrected description back, answered with what became of it. */
   readonly onCorrect: (
-    item: LibraryItem,
+    id: string,
     filing: Filing,
     taken?: 'beside' | 'replace',
   ) => Promise<LibraryCorrectResult>
@@ -200,7 +196,7 @@ export function LibraryPanel({
    * an open fail a week later is not a way to be told.
    */
   function correct(item: LibraryItem, filing: Filing, taken?: 'beside' | 'replace'): void {
-    void onCorrect(item, filing, taken).then(
+    void onCorrect(item.id, filing, taken).then(
       (result) => {
         if (result.kind === 'refused') {
           setProblem(`That could not be saved: ${result.message}.`)
@@ -316,7 +312,7 @@ export function LibraryPanel({
           return false
         }
         const filing = filingOf(item)
-        const result = await onCorrect(item, {
+        const result = await onCorrect(item.id, {
           ...filing,
           tags: [...new Set([...tagsOf(filing.tags), ...added])].join(', '),
         })

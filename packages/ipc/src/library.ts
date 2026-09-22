@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 /**
  * Where the library of scores lives, and what a score in it is called.
  *
@@ -10,6 +12,33 @@
 
 /** Where the library is kept, under the person's home directory. */
 export const LIBRARY_DIRECTORY = ['.piano', 'library'] as const
+
+/** The three words a library filters and sorts by. */
+export const LIBRARY_LEVEL = z.enum(['beginner', 'intermediate', 'advanced'])
+
+/**
+ * What a piece says about itself, as the one form that asks fills it in.
+ *
+ * The same five fields a row shows and the list filters by, and nothing that
+ * would change the music. A field left out is a field cleared: the form is
+ * where a composer a MIDI track name invented gets taken back, so silence has
+ * to mean removed rather than unchanged.
+ *
+ * Declared here rather than beside either of the two things that carry it —
+ * the channel the window writes through and the command Claude Code sends —
+ * because both of them must mean the same five fields, and a shape declared
+ * twice is a shape that is soon two shapes.
+ */
+export const libraryCorrectionSchema = z.object({
+  title: z.string().min(1).max(200),
+  composer: z.string().min(1).max(200).optional(),
+  level: LIBRARY_LEVEL.optional(),
+  /** One to ten, as the format's own metadata bounds it. */
+  difficulty: z.number().min(1).max(10).optional(),
+  tags: z.array(z.string().min(1).max(100)).max(20).optional(),
+})
+
+export type LibraryCorrection = z.infer<typeof libraryCorrectionSchema>
 
 /**
  * How the file for a score is named, so a listing can find it again.

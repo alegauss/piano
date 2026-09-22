@@ -39,6 +39,7 @@ function setup(
     kind: 'corrected',
     id: 'ode-to-joy',
     title: 'Ode to Joy',
+    wasCalled: 'Ode to Joy',
     score: null,
     open: false,
   },
@@ -79,8 +80,8 @@ function setup(
       onOpenLeft={(name) => {
         openedLeft.push(name)
       }}
-      onCorrect={(item, filing, taken) => {
-        corrected.push({ id: item.id, filing, ...(taken === undefined ? {} : { taken }) })
+      onCorrect={(id, filing, taken) => {
+        corrected.push({ id, filing, ...(taken === undefined ? {} : { taken }) })
         return Promise.resolve(typeof answer === 'function' ? answer(corrected.length) : answer)
       }}
       onRemove={(id) => {
@@ -271,6 +272,7 @@ describe('correcting a piece from its row', () => {
       kind: 'corrected',
       id: 'ode-an-die-freude',
       title: 'Ode an die Freude',
+      wasCalled: 'Ode to Joy',
       score: null,
       open: false,
     })
@@ -303,7 +305,14 @@ describe('correcting a piece from its row', () => {
             id: 'etude',
             held: { title: 'Étude', composer: 'Chopin', seconds: 125 },
           }
-        : { kind: 'corrected', id: 'etude-2', title: 'Étude', score: null, open: false },
+        : {
+            kind: 'corrected',
+            id: 'etude-2',
+            title: 'Étude',
+            wasCalled: 'Ode to Joy',
+            score: null,
+            open: false,
+          },
     )
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Étude' } })

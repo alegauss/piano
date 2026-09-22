@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { KEEP_RECORDS, practiceRecordSchema } from './history'
+import { libraryCorrectionSchema, LIBRARY_LEVEL } from './library'
 import { linkResultSchema, type Command } from './link'
 import { CHANNEL_NAMES } from './names'
 import { settingsPatchSchema, settingsSchema } from './settings'
@@ -209,7 +210,7 @@ export const scoreRecent = {
   response: z.array(recentEntrySchema),
 } as const satisfies Channel<'score:recent', z.ZodType, z.ZodType>
 
-const LEVEL = z.enum(['beginner', 'intermediate', 'advanced'])
+const LEVEL = LIBRARY_LEVEL
 
 /** What somebody is looking for in the library, and which way round to list it. */
 export const libraryQuerySchema = z.object({
@@ -311,23 +312,6 @@ export const librarySave = {
 } as const satisfies Channel<'library:save', z.ZodType, z.ZodType>
 
 /**
- * What a piece says about itself, as the form that asks fills it in.
- *
- * The same five fields a row shows and the list filters by, and nothing that
- * would change the music. A field left out is a field cleared: the form is
- * where a composer a MIDI track name invented gets taken back, so silence has
- * to mean removed rather than unchanged.
- */
-export const libraryCorrectionSchema = z.object({
-  title: z.string().min(1).max(200),
-  composer: z.string().min(1).max(200).optional(),
-  level: LEVEL.optional(),
-  /** One to ten, as the format's own metadata bounds it. */
-  difficulty: z.number().min(1).max(10).optional(),
-  tags: z.array(z.string().min(1).max(100)).max(20).optional(),
-})
-
-/**
  * Correct what a filed piece says about itself, without opening it.
  *
  * An id and five fields cross, never a score and never a path: the piece is
@@ -367,6 +351,12 @@ export const libraryCorrect = {
       /** What it is filed under now, which is what opens it from here on. */
       id: z.string(),
       title: z.string(),
+      /**
+       * What it was called until this write. A piece with no id of its own is
+       * known by its title — to the practice history among other things — so
+       * this is the handle anything keyed on the old one has to be moved from.
+       */
+      wasCalled: z.string(),
       score: z.unknown(),
       /**
        * Whether this is the piece the window has open. Main answers it
@@ -631,7 +621,6 @@ export type LibraryItem = z.infer<typeof libraryItemSchema>
 export type LibraryLeft = z.infer<typeof libraryLeftSchema>
 export type LibrarySaveRequest = z.infer<typeof librarySave.request>
 export type LibrarySaveResult = z.infer<typeof librarySave.response>
-export type LibraryCorrection = z.infer<typeof libraryCorrectionSchema>
 export type LibraryCorrectRequest = z.infer<typeof libraryCorrect.request>
 export type LibraryCorrectResult = z.infer<typeof libraryCorrect.response>
 export type LibraryRemoveRequest = z.infer<typeof libraryRemove.request>

@@ -101,6 +101,9 @@ export async function correctInLibrary(
       kind: 'corrected',
       id: corrected.id,
       title: corrected.score.metadata.title,
+      // What it was called until now, for whatever was keyed on that rather
+      // than on an id — which, for a piece that had none, is its history.
+      wasCalled: was === null ? corrected.score.metadata.title : was.metadata.title,
       score: corrected.score,
       open: mine,
     }

@@ -16,6 +16,7 @@ function listening(): Link & { readonly heard: Command[] } {
   const heard: Command[] = []
   return {
     heard,
+    listening: () => Promise.resolve(true),
     send: (command) => {
       heard.push(command)
       return Promise.resolve({ ok: true, text: 'done' })
@@ -143,7 +144,7 @@ describe('the score tools', () => {
   })
 
   it('corrects the fields it is given and leaves the rest as they were', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     await by('save_score').run({
       score: {
         formatVersion: 1,
@@ -165,7 +166,7 @@ describe('the score tools', () => {
   })
 
   it('clears a field named as null, which is how a guessed composer is taken back', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     await by('save_score').run({
       score: {
         formatVersion: 1,
@@ -181,7 +182,7 @@ describe('the score tools', () => {
   })
 
   it('leaves the notes alone, which is the whole point of not re-saving the score', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     const notes = [{ pitch: 72, start: 0, duration: 480, velocity: 80 }]
     await by('save_score').run({
       score: { formatVersion: 1, metadata: { id: 'aria', title: 'Aria' }, notes },
@@ -194,7 +195,7 @@ describe('the score tools', () => {
   })
 
   it('says which id a retitled piece is addressed by from now on', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     // No id of its own, so it is addressed by its title and a retitle moves it.
     await by('save_score').run({
       score: {
@@ -213,7 +214,7 @@ describe('the score tools', () => {
   })
 
   it('asks the same question the window asks when that id is taken, and writes nothing', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     await by('save_score').run({
       score: {
         formatVersion: 1,
@@ -246,7 +247,7 @@ describe('the score tools', () => {
   })
 
   it('refuses to correct a score that is not there, rather than writing a new one', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     const answer = await by('correct_score').run({ id: 'not-here', title: 'Whatever' })
     expect(answer.ok).toBe(false)
     expect(answer.text).toContain('not-here')
@@ -254,7 +255,7 @@ describe('the score tools', () => {
   })
 
   it('deletes a score by its id, and names what went', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     await by('save_score').run({ score: minimal })
     const id = ((await by('save_score').run({ score: minimal })).data as { id: string }).id
 
@@ -267,10 +268,54 @@ describe('the score tools', () => {
   })
 
   it('refuses to delete an id nothing is filed under rather than saying nothing', async () => {
-    const { by } = setup()
+    const { by } = setup(noWindow())
     const answer = await by('delete_score').run({ id: 'not-here' })
     expect(answer.ok).toBe(false)
     expect(answer.text).toContain('not-here')
+  })
+
+  it('has the window do the deleting where there is one, so the file can come back', async () => {
+    const link = listening()
+    const { by } = setup(link)
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { id: 'aria', title: 'Aria' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    const answer = await by('delete_score').run({ id: 'aria' })
+
+    // The bin is the window's, and so is what it does about practice records.
+    expect(answer.ok).toBe(true)
+    expect(link.heard).toEqual([{ kind: 'remove', score: 'aria' }])
+    expect((await by('read_score').run({ id: 'aria' })).ok).toBe(true)
+  })
+
+  it('has the window do the correcting where there is one, so the records follow', async () => {
+    const link = listening()
+    const { by } = setup(link)
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { id: 'aria', title: 'Aria', composer: 'Bach' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    const answer = await by('correct_score').run({ id: 'aria', level: 'beginner' })
+
+    expect(answer.ok).toBe(true)
+    // The fields it did not name are filled from what is there, here as much
+    // as on the direct path: one shape reaches the window.
+    expect(link.heard).toEqual([
+      {
+        kind: 'correct',
+        score: 'aria',
+        metadata: { title: 'Aria', composer: 'Bach', level: 'beginner' },
+      },
+    ])
   })
 
   it('says the library is empty rather than answering with nothing', async () => {

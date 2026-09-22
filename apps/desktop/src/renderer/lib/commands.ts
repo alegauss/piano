@@ -1,4 +1,10 @@
-import type { Command, LinkResult } from '@piano/ipc'
+import type {
+  Command,
+  LibraryCorrection,
+  LibraryCorrectResult,
+  LibraryRemoveResult,
+  LinkResult,
+} from '@piano/ipc'
 import {
   barAtTick,
   flattenSections,
@@ -43,6 +49,17 @@ export type Controls = {
    * once the transport holds it. A refusal leaves the open piece where it was.
    */
   readonly open: (id: string) => Promise<Opening>
+  /**
+   * Take a library piece out, and put right what one says about itself: the
+   * same two writes a row offers, so a library tidied from a sentence and one
+   * tidied by hand cannot end up in different states.
+   */
+  readonly remove: (id: string) => Promise<LibraryRemoveResult>
+  readonly correct: (
+    id: string,
+    metadata: LibraryCorrection,
+    taken?: 'beside' | 'replace',
+  ) => Promise<LibraryCorrectResult>
 }
 
 export type Opening =
@@ -111,6 +128,63 @@ export async function runCommand(command: Command, controls: Controls): Promise<
 
     case 'practise':
       return practise(command, controls)
+
+    case 'remove':
+      return remove(command, controls)
+
+    case 'correct':
+      return correct(command, controls)
+  }
+}
+
+/**
+ * Take a library piece out, the way a row's own delete does.
+ *
+ * Through the window rather than by the server writing the file itself, so it
+ * goes to the system's bin: the same click, from a sentence.
+ */
+async function remove(
+  command: Extract<Command, { kind: 'remove' }>,
+  controls: Controls,
+): Promise<LinkResult> {
+  const result = await controls.remove(command.score)
+  return result.kind === 'removed'
+    ? { ok: true, text: `Deleted "${result.id}". It is in the bin.`, data: { id: result.id } }
+    : { ok: false, text: result.message }
+}
+
+/**
+ * Correct what a library piece says about itself, the way the form does.
+ *
+ * Through the window for the practice records: a correction gives a piece a
+ * stable id and may move it, and the records kept against what it used to be
+ * called follow it here and nowhere else.
+ *
+ * A name something else holds is a question and not a failure, so it comes
+ * back as one the caller can answer and call again with.
+ */
+async function correct(
+  command: Extract<Command, { kind: 'correct' }>,
+  controls: Controls,
+): Promise<LinkResult> {
+  const result = await controls.correct(command.score, command.metadata, command.taken)
+  if (result.kind === 'refused') {
+    return { ok: false, text: result.message }
+  }
+  if (result.kind === 'taken') {
+    return {
+      ok: false,
+      text: `"${result.id}" is already ${[result.held.title, result.held.composer]
+        .filter((part) => part !== undefined)
+        .join(' — ')}. Ask again saying to file this one beside it or to replace it.`,
+      data: { taken: result.id },
+    }
+  }
+  const moved = result.id === command.score ? '' : ` It is addressed as "${result.id}" from now on.`
+  return {
+    ok: true,
+    text: `Corrected "${result.id}": ${result.title}.${moved}`,
+    data: { id: result.id },
   }
 }
 
