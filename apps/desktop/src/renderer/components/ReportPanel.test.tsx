@@ -91,6 +91,7 @@ function history(suggestion: Suggestion | null): Progress & {
       copied.push(score)
       return '{}'
     },
+    rename: () => {},
     forget: () => {
       forgotten += 1
     },

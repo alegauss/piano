@@ -32,27 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI103 History that survives a correction
-
-Every practice record is keyed on the score's own id, or on what it is called where it
-has none. The format says why in the metadata comment: a piece re-saved, retitled or
-corrected is the same piece, and weeks of records should not turn on somebody spelling
-the composer properly. The catch is that most pieces in a real library have no id. An
-import takes one from a track name only if it carries one, a score written for the app
-has whatever it was given, and the library never sets one itself — libraryId() falls
-back to the title. So the protection the format describes is not there for the files
-people actually have, and retitling is about to become one click.
-
-Two things follow. An edit is the moment to give a piece a stable id, taken from what it
-is filed under now, so its record goes on matching whatever the title becomes. Where
-records already exist under the old key, they move with it rather than starting over;
-the history file is main's and written whole, so this is a rewrite of a key and not a
-migration.
-
-Deleting is the other half. Records for a piece that has gone are dead weight, but they
-are also the only thing that says somebody practised it. Ask, or keep them, and say
-which when the piece is deleted.
-
 ### §PI104 The same two verbs from chat
 
 The project's first premise is that Claude Code is a first-class way to use the app:

@@ -174,7 +174,7 @@ describe('correcting what a piece says about itself', () => {
     expect(files.discarded).toEqual([])
   })
 
-  it('leaves a piece with no id of its own without one, where the title takes it there', async () => {
+  it('gives a piece with no id of its own the one it now lives under', async () => {
     const files = memoryFiles({
       [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify({
         ...(minimal as Record<string, unknown>),
@@ -185,8 +185,9 @@ describe('correcting what a piece says about itself', () => {
 
     const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c')
 
-    // Nothing is pinned, so the next retitle moves it again rather than not.
-    expect(corrected?.score.metadata.id).toBeUndefined()
+    // Most pieces arrive without one, and without one every practice record
+    // kept against the piece is filed under whatever it happens to be called.
+    expect(corrected?.score.metadata.id).toBe('prelude-in-c')
   })
 
   it('writes the id in where the piece is going somewhere its own name would not', async () => {

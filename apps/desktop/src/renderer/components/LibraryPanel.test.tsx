@@ -52,6 +52,8 @@ function setup(
   const openedLeft: string[] = []
   /** Every correction the panel asked main to write. */
   const corrected: { id: string; filing: Filing; taken?: 'beside' | 'replace' }[] = []
+  /** How many attempts each row is said to have, by id. */
+  const attempts = new Map<string, number>()
   /** Every id the panel asked main to take out of the library. */
   const removed: string[] = []
   let changed: (() => void) | null = null
@@ -77,14 +79,15 @@ function setup(
       onOpenLeft={(name) => {
         openedLeft.push(name)
       }}
-      onCorrect={(id, filing, taken) => {
-        corrected.push({ id, filing, ...(taken === undefined ? {} : { taken }) })
+      onCorrect={(item, filing, taken) => {
+        corrected.push({ id: item.id, filing, ...(taken === undefined ? {} : { taken }) })
         return Promise.resolve(typeof answer === 'function' ? answer(corrected.length) : answer)
       }}
       onRemove={(id) => {
         removed.push(id)
         return Promise.resolve(gone)
       }}
+      practised={(item) => attempts.get(item.id) ?? 0}
     />,
   )
   return {
@@ -94,6 +97,7 @@ function setup(
     openedLeft,
     corrected,
     removed,
+    attempts,
     change: () => {
       act(() => {
         changed?.()
@@ -352,6 +356,23 @@ describe('deleting a piece from its row', () => {
     // Somewhere to put a wrong click back from, said before it is made.
     expect(screen.getByText(/It goes to the bin/)).toBeInTheDocument()
     expect(removed).toEqual([])
+  })
+
+  it('says the practice records are kept, since the file can come back out of the bin', async () => {
+    const held = setup()
+    held.attempts.set('ode-to-joy', 12)
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Ode to Joy' }))
+
+    expect(
+      screen.getByText('The 12 attempts recorded against it are kept, in case you put it back.'),
+    ).toBeInTheDocument()
+  })
+
+  it('says nothing about records for a piece nobody has practised', async () => {
+    await deleting()
+    expect(screen.queryByText(/attempts recorded against it/)).toBeNull()
+    expect(screen.queryByText(/attempt recorded against it/)).toBeNull()
   })
 
   it('takes nothing away when the answer is to keep it', async () => {

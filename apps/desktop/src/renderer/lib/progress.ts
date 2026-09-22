@@ -67,6 +67,15 @@ export type Progress = {
    * piece's where a score is named, all of it where none is.
    */
   readonly exported: (score?: string) => string
+  /**
+   * Move one piece's records to the key it is known by now.
+   *
+   * A piece with no id of its own is known by its title, so correcting the
+   * title would otherwise start its record over — weeks of practice lost to
+   * somebody spelling a composer properly. Nothing is written where no record
+   * is under the old key, which is most corrections.
+   */
+  readonly rename: (was: string, now: string) => void
   /** Forget one piece's history. */
   readonly forget: (score: string) => void
   /** Erase all of it, file and all. */
@@ -411,6 +420,13 @@ export function createProgress(
         null,
         2,
       ),
+    rename: (was, now) => {
+      if (was === now || !records.some((record) => record.score === was)) {
+        return
+      }
+      records = records.map((record) => (record.score === was ? { ...record, score: now } : record))
+      changed()
+    },
     forget: (score) => {
       records = records.filter((record) => record.score !== score)
       changed()

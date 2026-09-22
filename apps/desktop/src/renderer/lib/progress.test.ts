@@ -320,6 +320,33 @@ describe('keeping it between sessions', () => {
     expect(JSON.parse(progress.exported()).records).toEqual([])
   })
 
+  it('moves a piece’s records to the key it is known by now, and writes that down', () => {
+    const { progress, main } = setup()
+    progress.use({ ...context, score: 'title:Untitled' })
+    progress.record(attemptAt(false))
+    progress.use({ ...context, score: 'other' })
+    progress.record(attemptAt(false))
+
+    progress.rename('title:Untitled', 'prelude-in-c')
+
+    expect(progress.forScore('prelude-in-c')).toHaveLength(1)
+    expect(progress.forScore('title:Untitled')).toEqual([])
+    // The one that was not renamed is untouched.
+    expect(progress.forScore('other')).toHaveLength(1)
+    expect(main.held()).toHaveLength(2)
+  })
+
+  it('rewrites nothing where there is nothing under the old key, which is most corrections', () => {
+    const { progress } = setup()
+    progress.record(attemptAt(false))
+    const before = progress.records
+
+    progress.rename('title:Never practised', 'never-practised')
+    progress.rename('sonata', 'sonata')
+
+    expect(progress.records).toBe(before)
+  })
+
   it('keeps what it has when erasing fails, and says why', async () => {
     const main = memory()
     const { progress } = setup({

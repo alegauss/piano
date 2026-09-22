@@ -59,6 +59,7 @@ export function LibraryPanel({
   onOpenLeft,
   onCorrect,
   onRemove,
+  practised,
 }: {
   readonly search: (query: LibraryQuery) => Promise<LibraryItem[]>
   /** Told when the folder changes; returns the way to stop being told. */
@@ -70,14 +71,20 @@ export function LibraryPanel({
   readonly leftBehind: () => Promise<LibraryLeft[]>
   /** Open one of those by name, which only works for a file that reads. */
   readonly onOpenLeft: (name: string) => void
-  /** Write a row's corrected description back, answered with what became of it. */
+  /**
+   * Write a row's corrected description back, answered with what became of
+   * it. The row goes rather than its id: what a piece was called is what its
+   * practice records are filed under until it has an id of its own.
+   */
   readonly onCorrect: (
-    id: string,
+    item: LibraryItem,
     filing: Filing,
     taken?: 'beside' | 'replace',
   ) => Promise<LibraryCorrectResult>
   /** Take a row's piece out of the library, answered with what became of it. */
   readonly onRemove: (id: string) => Promise<LibraryRemoveResult>
+  /** How many attempts are recorded against a row, which deleting has to account for. */
+  readonly practised: (item: LibraryItem) => number
 }) {
   const [showing, setShowing] = useState(false)
   const [text, setText] = useState('')
@@ -175,8 +182,8 @@ export function LibraryPanel({
    * shortcut or the recent list may still ask for, and finding out by having
    * an open fail a week later is not a way to be told.
    */
-  function correct(id: string, filing: Filing, taken?: 'beside' | 'replace'): void {
-    void onCorrect(id, filing, taken).then(
+  function correct(item: LibraryItem, filing: Filing, taken?: 'beside' | 'replace'): void {
+    void onCorrect(item, filing, taken).then(
       (result) => {
         if (result.kind === 'refused') {
           setProblem(`That could not be saved: ${result.message}.`)
@@ -190,9 +197,9 @@ export function LibraryPanel({
         setClash(null)
         setProblem(null)
         setSaid(
-          result.id === id
+          result.id === item.id
             ? null
-            : `${result.title} is filed as ${result.id} now, not ${id}. Anything still asking for the old name will not find it.`,
+            : `${result.title} is filed as ${result.id} now, not ${item.id}. Anything still asking for the old name will not find it.`,
         )
         setRevision((was) => was + 1)
       },
@@ -450,6 +457,7 @@ export function LibraryPanel({
         {deleting === null ? null : (
           <ConfirmDelete
             item={deleting}
+            practised={practised(deleting)}
             onDelete={() => {
               remove(deleting.id)
             }}
@@ -466,7 +474,7 @@ export function LibraryPanel({
             clash={clash}
             problem={problem}
             onFile={(filing, taken) => {
-              correct(correcting.id, filing, taken)
+              correct(correcting, filing, taken)
             }}
             onClose={() => {
               setCorrecting(null)
@@ -490,13 +498,22 @@ export function LibraryPanel({
  * people learn to click through — and answerable afterwards, because the file
  * goes to the system's bin rather than nowhere, which is what the sentence
  * says so nobody has to find out by trying it.
+ *
+ * Practice records are the other thing at stake, and they are kept: they are
+ * the only thing that says somebody played this, the file can come back out
+ * of the bin, and records that outlive a piece cost a few hundred bytes.
+ * Said rather than asked, because a question about history in the middle of
+ * deleting a file is a question nobody has come here to answer.
  */
 function ConfirmDelete({
   item,
+  practised,
   onDelete,
   onClose,
 }: {
   readonly item: LibraryItem
+  /** How many attempts are recorded against it; nothing is said where none is. */
+  readonly practised: number
   readonly onDelete: () => void
   readonly onClose: () => void
 }) {
@@ -521,6 +538,13 @@ function ConfirmDelete({
             .filter((part) => part !== undefined)
             .join(' · ')}
         </p>
+        {practised === 0 ? null : (
+          <p className="text-sm text-text-muted">
+            {practised === 1
+              ? 'The one attempt recorded against it is kept, in case you put it back.'
+              : `The ${String(practised)} attempts recorded against it are kept, in case you put it back.`}
+          </p>
+        )}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={onClose}>
             Keep it

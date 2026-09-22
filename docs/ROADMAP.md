@@ -14,7 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI103** (deps: PI101 ✅, PI102 ✅) **Practice history is keyed by a score's id or, where it has none, its title: renaming a piece starts its record over** — An edit gives a piece a stable id, its records follow the rename, and a deletion says what becomes of them. → §PI103
 - 📋 **PI104** (deps: PI100 ✅, PI101 ✅) **Claude Code can write a score into the library but never remove one, nor correct what one says without rewriting it** — delete_score and a metadata update go through the library package the window edits with, so chat and panel keep one set of rules. → §PI104
 - 📋 **PI105** (deps: PI100 ✅, PI101 ✅) **Tidying a library that grew by the batch means opening, confirming and closing one row at a time** — Rows can be picked in the panel and then deleted or tagged together, with one question asked of the whole selection. → §PI105
 - 📋 **PI106** (deps: PI102 ✅) **Open recent names a piece by the title it had when it was opened, so a corrected one is listed under its old name** — The list is written from what the file says now, so correcting a piece changes what every way into it calls it. → §PI106

@@ -109,9 +109,10 @@ export type Library = {
    * `under` is where it ends up, which is the id it is already filed as
    * unless the caller says otherwise; the file moves and the old name goes,
    * because a score in two places is a score somebody will edit the wrong
-   * copy of. An `under` the piece's own metadata would not have chosen is
-   * written into it as its id, so that the file and what it says about itself
-   * agree from then on and nothing moves it again by surprise.
+   * copy of. It is written into the score as its id, so the file and what it
+   * says about itself agree from then on — and so the piece has the stable
+   * handle practice records are kept against, which most pieces reach the
+   * library without.
    *
    * Null where nothing is filed under `id`, which is the answer for a row
    * somebody deleted while the form was open.
@@ -404,10 +405,13 @@ export function createLibrary(root: string, files: Files): Library {
       }
       const parsed = parseScore({
         ...held,
-        // Where the piece is going is not where its own metadata would send
-        // it, so it is told: a file at one name and metadata naming another
-        // is what moves a piece again the next time anybody touches it.
-        metadata: libraryIdOf(corrected) === under ? corrected : { ...corrected, id: under },
+        // Where it ends up is written into it. Most pieces in a real library
+        // have no id — an import takes one only if the file carried one — so
+        // they are addressed by their title, and every record kept against
+        // one is lost the next time somebody spells it differently. A
+        // correction is the moment there is an answer to write down, and from
+        // then on the piece is the same piece whatever it is called.
+        metadata: { ...corrected, id: under },
       })
       if (!parsed.ok) {
         throw new Error(parsed.message)

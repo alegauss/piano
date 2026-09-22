@@ -738,7 +738,7 @@ export function App() {
    * knows a file by its name alone, which two folders can both hold.
    */
   async function correctInLibrary(
-    id: string,
+    item: LibraryItem,
     described: Filing,
     taken?: 'beside' | 'replace',
   ): Promise<LibraryCorrectResult> {
@@ -747,18 +747,38 @@ export function App() {
       return { kind: 'refused', message: 'this window has no way to write the library' }
     }
     const result = await bridge.correctInLibrary({
-      id,
+      id: item.id,
       metadata: correctionOf(described),
       ...(taken === undefined ? {} : { taken }),
     })
-    if (result.kind === 'corrected' && result.open) {
-      const parsed = parseScore(result.score)
-      if (parsed.ok) {
+    if (result.kind !== 'corrected') {
+      return result
+    }
+    const parsed = parseScore(result.score)
+    if (parsed.ok) {
+      // A correction gives the piece an id, so what it was known by until now
+      // was its title. Records kept under that key follow it, or a week of
+      // practice would end at the moment somebody fixed a spelling.
+      progress.rename(`title:${item.title}`, scoreKey(parsed.score))
+      if (result.open) {
         setScore(parsed.score)
       }
+    }
+    if (result.open) {
       setFile(libraryFileName(result.id))
     }
     return result
+  }
+
+  /**
+   * How many attempts are recorded against a library row.
+   *
+   * Both keys are asked about, because a row does not say which it is known
+   * by: a piece corrected at some point carries an id, and one that never was
+   * is still known by what it is called.
+   */
+  function practisedIn(item: LibraryItem): number {
+    return progress.forScore(item.id).length + progress.forScore(`title:${item.title}`).length
   }
 
   /**
@@ -901,6 +921,7 @@ export function App() {
                 }}
                 onCorrect={correctInLibrary}
                 onRemove={removeFromLibrary}
+                practised={practisedIn}
               />
               {/*
                 Nothing to file until something is open: the placeholder is

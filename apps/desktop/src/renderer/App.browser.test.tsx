@@ -1,4 +1,10 @@
-import { DEFAULT_SETTINGS, type OpenRequest, type OpenResult, type PianoBridge } from '@piano/ipc'
+import {
+  DEFAULT_SETTINGS,
+  type OpenRequest,
+  type OpenResult,
+  type PianoBridge,
+  type PracticeRecord,
+} from '@piano/ipc'
 import { isRulesWork, keepArrangement, type Arrangement, type Score } from '@piano/score-format'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -160,6 +166,18 @@ describe('the app', () => {
   })
 })
 
+/** One graded attempt, as the history file holds it: counts and never notes. */
+const attempt: PracticeRecord = {
+  score: 'somewhere',
+  fingerprint: 'notes',
+  at: 1,
+  level: 'beginner',
+  tempoScale: 1,
+  sections: [],
+  tally: { correct: 4, early: 0, late: 0, wrong: 1, missed: 0, extra: 0, of: 5 },
+  bars: [{ bar: 1, faults: 1, of: 5 }],
+}
+
 /**
  * Main, as the window sees it: every answer to an open is decided by the
  * test, and a score opened from outside the page is pushed when it says so.
@@ -178,6 +196,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   let held: Score | null = null
   /** And what that file is called, which is what a move changes. */
   let openName: string | null = null
+  /** The practice history, as main's file holds it. */
+  let history: PracticeRecord[] = []
   const bridge: PianoBridge = {
     appInfo: () =>
       Promise.resolve({
@@ -251,7 +271,12 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
         title: metadata.title,
         ...(metadata.composer === undefined ? {} : { composer: metadata.composer }),
       })
-      const score: Score = { ...(held ?? { formatVersion: 1, notes: [] }), metadata }
+      // As main writes it: where a piece ends up is written into it, which is
+      // the stable id its practice records are then kept against.
+      const score: Score = {
+        ...(held ?? { formatVersion: 1, notes: [] }),
+        metadata: { ...metadata, id: under },
+      }
       const open = openName === `${id}.piano`
       if (open) {
         held = score
@@ -276,8 +301,12 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     readSettings: () => Promise.resolve({ settings: DEFAULT_SETTINGS, notice: null, fresh: false }),
     writeSettings: () => Promise.resolve(DEFAULT_SETTINGS),
     resetSettings: () => Promise.resolve(DEFAULT_SETTINGS),
-    readHistory: () => Promise.resolve({ records: [], dropped: 0, notice: null, fresh: false }),
-    writeHistory: () => Promise.resolve(null),
+    readHistory: () =>
+      Promise.resolve({ records: history, dropped: 0, notice: null, fresh: false }),
+    writeHistory: ({ records }) => {
+      history = [...records]
+      return Promise.resolve(null)
+    },
     saveHistory: () => Promise.resolve({ kind: 'cancelled' }),
     clearHistory: () => Promise.resolve(null),
     packSource: () => Promise.resolve({ available: false, reason: 'not in this test' }),
@@ -306,6 +335,10 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     filed,
     left,
     library,
+    history: () => history,
+    practised: (score: string) => {
+      history = [...history, { ...attempt, score }]
+    },
     push: async (result: OpenResult) => {
       if (result.kind === 'opened') {
         held = result.score as Score
@@ -535,6 +568,44 @@ describe('correcting a piece the window has open', () => {
     await press('Save it')
 
     expect(heading()).toContain('Prelude')
+  })
+})
+
+describe('the practice history of a piece that is corrected', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'piano')
+  })
+
+  it('follows the piece to the id a correction gives it', async () => {
+    const main = fakeMain()
+    main.library.set('aria', { title: 'Aria', composer: 'Somebody' })
+    // Practised before it had an id of its own, so filed under what it is called.
+    main.practised('title:Aria')
+    render(<App />)
+    await main.push({ kind: 'opened', name: 'aria.piano', score: aria, notices: [] })
+
+    await press('Library')
+    await press('Correct Aria')
+    type('Title', 'Aria in C')
+    await press('Save it')
+
+    // A week of practice does not end at the moment somebody fixes a title.
+    expect(main.history().map((one) => one.score)).toEqual(['aria-in-c'])
+  })
+
+  it('leaves another piece’s records where they are', async () => {
+    const main = fakeMain()
+    main.library.set('aria', { title: 'Aria', composer: 'Somebody' })
+    main.practised('title:Something else')
+    render(<App />)
+    await main.push({ kind: 'opened', name: 'aria.piano', score: aria, notices: [] })
+
+    await press('Library')
+    await press('Correct Aria')
+    type('Title', 'Aria in C')
+    await press('Save it')
+
+    expect(main.history().map((one) => one.score)).toEqual(['title:Something else'])
   })
 })
 
