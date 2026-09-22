@@ -5,6 +5,7 @@ import {
   desktopEntry,
   launchServices,
   MIDI_PROGID,
+  MUSICXML_PROGID,
   namesExecutable,
   parseRegQuery,
   report,
@@ -55,6 +56,12 @@ function installed() {
     'HKCU\\Software\\Classes\\.midi\\OpenWithProgids': { 'Piano.midi': '' },
     'HKCU\\Software\\Classes\\.mid': { '(Default)': 'WMP11.AssocFile.MIDI' },
     'HKCU\\Software\\Classes\\Piano.midi\\shell\\open\\command': { '(Default)': `"${EXE}" "%1"` },
+    'HKCU\\Software\\Classes\\.musicxml\\OpenWithProgids': { 'Piano.musicxml': '' },
+    'HKCU\\Software\\Classes\\.mxl\\OpenWithProgids': { 'Piano.musicxml': '' },
+    'HKCU\\Software\\Classes\\.musicxml': { '(Default)': 'MuseScore.musicxml' },
+    'HKCU\\Software\\Classes\\Piano.musicxml\\shell\\open\\command': {
+      '(Default)': `"${EXE}" "%1"`,
+    },
   }
 }
 
@@ -115,8 +122,33 @@ describe('what an open command names', () => {
 })
 
 describe('what Windows must say after an install', () => {
-  it('passes a registry with a score claimed and MIDI only offered', () => {
+  it('passes a registry with a score claimed and the rest only offered', () => {
     expect(failed(windowsInstalled(fakeRegistry(installed()), EXE))).toEqual([])
+  })
+
+  it('offers the piano for MusicXML without taking it from a notation editor', () => {
+    // A .mxl arrives from a score site and is the moment the app either exists
+    // for somebody or does not; a .musicxml is MuseScore's and stays MuseScore's.
+    const failures = failed(windowsInstalled(fakeRegistry(installed()), EXE))
+    expect(failures).toEqual([])
+
+    const taken = installed()
+    taken['HKCU\\Software\\Classes\\.mxl'] = { '(Default)': MUSICXML_PROGID }
+    expect(failed(windowsInstalled(fakeRegistry(taken), EXE))).toEqual([
+      '.mxl still opens with whatever it opened with',
+    ])
+  })
+
+  it('fails when the installer registered MIDI and forgot MusicXML', () => {
+    const half = installed()
+    delete half['HKCU\\Software\\Classes\\.musicxml\\OpenWithProgids']
+    delete half['HKCU\\Software\\Classes\\.mxl\\OpenWithProgids']
+    delete half['HKCU\\Software\\Classes\\Piano.musicxml\\shell\\open\\command']
+
+    const failures = failed(windowsInstalled(fakeRegistry(half), EXE))
+    expect(failures).toContain('.musicxml offers the piano under Open With')
+    expect(failures).toContain('.mxl offers the piano under Open With')
+    expect(failures).toContain(`${MUSICXML_PROGID} opens with the installed piano`)
   })
 
   it('fails when customInstall never ran, which a build cannot tell you', () => {
@@ -173,12 +205,13 @@ describe('the desktop entry an AppImage carries', () => {
     'Exec=AppRun --no-sandbox %U',
     'Terminal=false',
     'Type=Application',
-    'MimeType=application/x-piano-score;audio/midi;',
+    'MimeType=application/x-piano-score;audio/midi;' +
+      'application/vnd.recordare.musicxml+xml;application/vnd.recordare.musicxml;',
     'Categories=Audio;',
     '',
   ].join('\n')
 
-  it('passes an entry that offers both and takes the file', () => {
+  it('passes an entry that offers all of them and takes the file', () => {
     expect(failed(desktopEntry(entry))).toEqual([])
   })
 
@@ -186,7 +219,15 @@ describe('the desktop entry an AppImage carries', () => {
     expect(failed(desktopEntry(entry.replace(/^MimeType=.*$/m, 'MimeType=')))).toEqual([
       'a score opens with the piano',
       'a MIDI file offers the piano',
+      'a MusicXML file offers the piano',
     ])
+  })
+
+  it('fails where the zip a .mxl is was left out of the MIME types', () => {
+    // The markup and its container are separate types, and listing only the
+    // first registers the piano for half of what it reads.
+    const half = entry.replace(';application/vnd.recordare.musicxml;', ';')
+    expect(failed(desktopEntry(half))).toEqual(['a MusicXML file offers the piano'])
   })
 
   it('fails where the file being opened is never handed over', () => {
@@ -216,17 +257,48 @@ describe('what Launch Services knows', () => {
     '\t\trank:                  Alternate',
     '\t\troles:                 Viewer',
     '\t\tbindings:              .mid, .midi',
+    '\tclaim   id:            com.alegauss.piano.musicxml',
+    '\t\tname:                  MusicXML score',
+    '\t\trank:                  Alternate',
+    '\t\troles:                 Viewer',
+    '\t\tbindings:              .musicxml',
+    '\tclaim   id:            com.alegauss.piano.mxl',
+    '\t\tname:                  Compressed MusicXML score',
+    '\t\trank:                  Alternate',
+    '\t\troles:                 Viewer',
+    '\t\tbindings:              .mxl',
     '--------------------------------------------------------------------------------',
   ].join('\n')
 
   it('reads a claim as what it binds and how strongly', () => {
     const claims = claimsIn(dump)
-    expect(claims).toHaveLength(2)
+    expect(claims).toHaveLength(4)
     expect(claims[1]).toMatchObject({ rank: 'Alternate', bindings: ['.mid', '.midi'] })
   })
 
-  it('passes a bundle that owns a score and only offers MIDI', () => {
+  it('passes a bundle that owns a score and only offers the rest', () => {
     expect(failed(launchServices(dump, 'com.alegauss.piano'))).toEqual([])
+  })
+
+  it('fails when the markup was claimed and the zip it packs into was not', () => {
+    // Two entries in the packaging, so adding one and forgetting the other is
+    // the mistake this catches; a .mxl is what a score site hands somebody.
+    const without = dump.replace('\t\tbindings:              .mxl\n', '')
+    expect(failed(launchServices(without, 'com.alegauss.piano'))).toEqual([
+      'MusicXML is bound as an alternative and not taken over',
+    ])
+  })
+
+  it('fails when MusicXML is claimed as the owner rather than an alternative', () => {
+    // Taking .musicxml from whichever notation editor the person installed
+    // would be rude, and is the thing rank Alternate exists to prevent.
+    const owned = dump.replace(
+      'name:                  MusicXML score\n\t\trank:                  Alternate',
+      'name:                  MusicXML score\n\t\trank:                  Owner',
+    )
+    expect(failed(launchServices(owned, 'com.alegauss.piano'))).toEqual([
+      'MusicXML is bound as an alternative and not taken over',
+    ])
   })
 
   it('fails when the app was never registered', () => {

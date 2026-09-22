@@ -34,12 +34,16 @@ compression: maximum
 # What the system hands to the piano when somebody double-clicks a file.
 #
 # A score is `.piano`, an extension of the app's own, so the app claims it
-# outright on every system. MIDI is not: `.mid` belongs to whatever the person
-# already plays it with, so the piano is offered and never made the default.
-# electron-builder's associations always take the default on Windows, which is
-# why MIDI is listed here only for macOS (rank Alternate) and Linux (a MIME
-# type in the desktop entry, which offers without choosing), and why Windows
-# gets it from build/installer.nsh as an Open With entry instead.
+# outright on every system. MIDI and MusicXML are not: a `.mid` belongs to
+# whatever the person already plays it with and a `.musicxml` to whichever
+# notation editor they installed, so the piano is offered and never made the
+# default. electron-builder's associations always take the default on Windows,
+# which is why both are listed here only for macOS (rank Alternate) and Linux
+# (a MIME type in the desktop entry, which offers without choosing), and why
+# Windows gets them from build/installer.nsh as Open With entries instead.
+#
+# `.xml` is claimed by none of it. The app opens one handed to it by name, and
+# half the files on a disk are some other XML.
 fileAssociations:
   - &score
     ext: piano
@@ -85,6 +89,20 @@ mac:
       mimeType: audio/midi
       role: Viewer
       rank: Alternate
+    # Two entries and not one: the markup and the zip it is packed into are
+    # different media types, and an entry carries a single one.
+    - &musicxml
+      ext: musicxml
+      name: MusicXML score
+      mimeType: application/vnd.recordare.musicxml+xml
+      role: Viewer
+      rank: Alternate
+    - &mxl
+      ext: mxl
+      name: Compressed MusicXML score
+      mimeType: application/vnd.recordare.musicxml
+      role: Viewer
+      rank: Alternate
   # The score type declared as the app's own, so macOS knows .piano by name
   # rather than only by its extension.
   extendInfo:
@@ -106,3 +124,5 @@ linux:
   fileAssociations:
     - *score
     - *midi
+    - *musicxml
+    - *mxl

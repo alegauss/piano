@@ -25,14 +25,42 @@
  * @typedef {(key: string, value: string) => string | null} ReadRegistry
  */
 
-/** The program id build/installer.nsh writes for MIDI, which is ours to spell. */
+/** The program ids build/installer.nsh writes, which are ours to spell. */
 export const MIDI_PROGID = 'Piano.midi'
+export const MUSICXML_PROGID = 'Piano.musicxml'
 
 const CLASSES = 'HKCU\\Software\\Classes'
 
-/** The extensions a score and a MIDI file are known by. */
+/** The extensions a score, a MIDI file and MusicXML are known by. */
 export const SCORE_EXT = '.piano'
 export const MIDI_EXTS = ['.mid', '.midi']
+// `.xml` is deliberately absent: the app opens one by name, and half the files
+// on a disk are some other XML, so claiming it would be a lie about the rest.
+export const MUSICXML_EXTS = ['.musicxml', '.mxl']
+
+/**
+ * The types the piano is offered for rather than given.
+ *
+ * Each of these belongs to something the person already has — a media player,
+ * a notation editor — so the piano goes on the list of things that can open
+ * one and never becomes what a double-click reaches. That is one shape on
+ * three systems: an OpenWithProgids value on Windows, rank Alternate on macOS,
+ * a MimeType line on Linux. Kept in one list so a type added to the packaging
+ * and forgotten in the check is impossible rather than merely unlikely.
+ *
+ * @type {readonly { what: string, progId: string, exts: readonly string[], mime: readonly string[] }[]}
+ */
+export const OFFERED = [
+  { what: 'MIDI', progId: MIDI_PROGID, exts: MIDI_EXTS, mime: ['audio/midi'] },
+  {
+    what: 'MusicXML',
+    progId: MUSICXML_PROGID,
+    exts: MUSICXML_EXTS,
+    // The two IANA types Recordare registered: the second is the zip a `.mxl`
+    // is, which is a container and not markup, so it carries no `+xml`.
+    mime: ['application/vnd.recordare.musicxml+xml', 'application/vnd.recordare.musicxml'],
+  },
+]
 
 /**
  * One row of `reg query` output, or null where the value is absent.
@@ -92,9 +120,9 @@ export function namesExecutable(command, exe) {
  * A score is claimed outright, so the check follows the program id the
  * registry itself names rather than one spelled here: the claim is that
  * something owns `.piano` and starts the piano, not that it is called
- * anything in particular. MIDI is the opposite — the program id is ours, from
- * build/installer.nsh, and the whole point is that it is offered under Open
- * With without becoming what a `.mid` opens with.
+ * anything in particular. The offered types are the opposite — the program id
+ * is ours, from build/installer.nsh, and the whole point is that it is offered
+ * under Open With without becoming what a `.mid` or a `.mxl` opens with.
  *
  * @param {ReadRegistry} read
  * @param {string} exe where the installer put the executable
@@ -120,31 +148,33 @@ export function windowsInstalled(read, exe) {
     })
   }
 
-  for (const ext of MIDI_EXTS) {
-    const offered = read(`${CLASSES}\\${ext}\\OpenWithProgids`, MIDI_PROGID)
-    findings.push({
-      ok: offered !== null,
-      what: `${ext} offers the piano under Open With`,
-      detail:
-        offered === null
-          ? `no ${MIDI_PROGID} value at ${CLASSES}\\${ext}\\OpenWithProgids — customInstall did not run`
-          : `${MIDI_PROGID} is listed`,
-    })
+  for (const { progId: offeredBy, exts } of OFFERED) {
+    for (const ext of exts) {
+      const offered = read(`${CLASSES}\\${ext}\\OpenWithProgids`, offeredBy)
+      findings.push({
+        ok: offered !== null,
+        what: `${ext} offers the piano under Open With`,
+        detail:
+          offered === null
+            ? `no ${offeredBy} value at ${CLASSES}\\${ext}\\OpenWithProgids — customInstall did not run`
+            : `${offeredBy} is listed`,
+      })
 
-    const taken = read(`${CLASSES}\\${ext}`, '')
+      const taken = read(`${CLASSES}\\${ext}`, '')
+      findings.push({
+        ok: taken !== offeredBy,
+        what: `${ext} still opens with whatever it opened with`,
+        detail: taken === null || taken === '' ? 'no default handler is named here' : taken,
+      })
+    }
+
+    const command = read(`${CLASSES}\\${offeredBy}\\shell\\open\\command`, '')
     findings.push({
-      ok: taken !== MIDI_PROGID,
-      what: `${ext} still opens with whatever it opened with`,
-      detail: taken === null || taken === '' ? 'no default handler is named here' : taken,
+      ok: namesExecutable(command, exe),
+      what: `${offeredBy} opens with the installed piano`,
+      detail: command ?? `nothing at ${CLASSES}\\${offeredBy}\\shell\\open\\command`,
     })
   }
-
-  const midiCommand = read(`${CLASSES}\\${MIDI_PROGID}\\shell\\open\\command`, '')
-  findings.push({
-    ok: namesExecutable(midiCommand, exe),
-    what: `${MIDI_PROGID} opens with the installed piano`,
-    detail: midiCommand ?? `nothing at ${CLASSES}\\${MIDI_PROGID}\\shell\\open\\command`,
-  })
 
   return findings
 }
@@ -162,21 +192,23 @@ export function windowsRemoved(read) {
   /** @type {Finding[]} */
   const findings = []
 
-  for (const ext of MIDI_EXTS) {
-    const offered = read(`${CLASSES}\\${ext}\\OpenWithProgids`, MIDI_PROGID)
+  for (const { progId: offeredBy, exts } of OFFERED) {
+    for (const ext of exts) {
+      const offered = read(`${CLASSES}\\${ext}\\OpenWithProgids`, offeredBy)
+      findings.push({
+        ok: offered === null,
+        what: `${ext} no longer offers the piano`,
+        detail: offered === null ? 'gone' : `${offeredBy} is still listed`,
+      })
+    }
+
+    const left = read(`${CLASSES}\\${offeredBy}`, '')
     findings.push({
-      ok: offered === null,
-      what: `${ext} no longer offers the piano`,
-      detail: offered === null ? 'gone' : `${MIDI_PROGID} is still listed`,
+      ok: left === null,
+      what: `${offeredBy} is gone`,
+      detail: left === null ? 'gone' : `still at ${CLASSES}\\${offeredBy}`,
     })
   }
-
-  const midi = read(`${CLASSES}\\${MIDI_PROGID}`, '')
-  findings.push({
-    ok: midi === null,
-    what: `${MIDI_PROGID} is gone`,
-    detail: midi === null ? 'gone' : `still at ${CLASSES}\\${MIDI_PROGID}`,
-  })
 
   const score = read(`${CLASSES}\\${SCORE_EXT}`, '')
   findings.push({
@@ -223,11 +255,11 @@ export function desktopEntry(text) {
       what: 'a score opens with the piano',
       detail: mime === '' ? 'no MimeType line' : mime,
     },
-    {
-      ok: types.includes('audio/midi'),
-      what: 'a MIDI file offers the piano',
+    ...OFFERED.map((offered) => ({
+      ok: offered.mime.every((one) => types.includes(one)),
+      what: `a ${offered.what} file offers the piano`,
       detail: mime === '' ? 'no MimeType line' : mime,
-    },
+    })),
     {
       ok: /%[uUfF]/.test(exec),
       what: 'the file being opened is handed over',
@@ -309,7 +341,6 @@ export function launchServices(dump, bundleId) {
       : found.map((claim) => `${claim.bindings.join(' ')} ${claim.rank}`).join(', ')
 
   const score = bound([SCORE_EXT])
-  const midi = bound(MIDI_EXTS)
 
   return [
     { ok: true, what: `Launch Services knows ${bundleId}`, detail: `${claims.length} claims` },
@@ -318,11 +349,19 @@ export function launchServices(dump, bundleId) {
       what: `${SCORE_EXT} is bound to the piano as its owner`,
       detail: said(score),
     },
-    {
-      ok: midi.length > 0 && midi.every((claim) => claim.rank.toLowerCase() === 'alternate'),
-      what: 'MIDI is bound as an alternative and not taken over',
-      detail: said(midi),
-    },
+    ...OFFERED.map((offered) => {
+      const found = bound([...offered.exts])
+      return {
+        ok:
+          // Every extension of the group, not merely one of them: the two
+          // MusicXML types are two entries in the packaging, and adding one
+          // and forgetting the other is the mistake worth catching here.
+          offered.exts.every((ext) => bound([ext]).length > 0) &&
+          found.every((claim) => claim.rank.toLowerCase() === 'alternate'),
+        what: `${offered.what} is bound as an alternative and not taken over`,
+        detail: said(found),
+      }
+    }),
   ]
 }
 

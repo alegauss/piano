@@ -16,7 +16,7 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI89** (deps: —) **A .musicxml or .mxl double-clicked in the file manager opens something else, the installer claiming neither** — The app reads both now, and the association table still names only .piano and MIDI, so the system hands them to whatever else is registered. → §PI89
+- 📋 **PI92** (deps: —) **The installed-app check hands over a .piano only, so the MIDI and MusicXML it registers are never opened end to end** — Every claim the installer writes promises a double-click ends in the piano, and the one file the check opens is the type the app owns outright. → §PI92
 
 ## Block H — Sheet music view
 
