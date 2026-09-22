@@ -1,8 +1,12 @@
+import { resolve } from 'node:path'
+
+import type { RecentEntry } from '@piano/ipc'
 import { createLibrary, memoryFiles } from '@piano/library'
 import { parseScore, type Score } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { correctInLibrary, type Correcting, type OpenScore } from './library-correct'
+import { samePath } from './recent'
 
 /**
  * Correcting a filed piece, with the disk in a map. Where the piece ends up is
@@ -35,6 +39,18 @@ function showing(path: string): OpenScore & { readonly at: () => string | null }
   return open
 }
 
+/** The recent list, as a correction touches it: what it held, and what it was told. */
+function recently(held: readonly RecentEntry[] = []) {
+  let entries = [...held]
+  return {
+    entries: () => entries,
+    corrected: (was: string, now: RecentEntry) => {
+      entries = entries.map((one) => (samePath(one.path, was) ? now : one))
+      return Promise.resolve(entries)
+    },
+  }
+}
+
 async function withAria(score: Score = aria) {
   const files = memoryFiles()
   const library = createLibrary('/library', files)
@@ -59,6 +75,7 @@ describe('correcting what a filed piece says about itself', () => {
       { id: 'track-1', metadata: { title: 'Track 1', composer: 'Bach', difficulty: 3 } },
       library,
       closed(),
+      recently(),
     )
 
     expect(result).toMatchObject({ kind: 'corrected', id: 'track-1', title: 'Track 1' })
@@ -76,6 +93,7 @@ describe('correcting what a filed piece says about itself', () => {
       { id: 'track-1', metadata: { title: 'Track 1' } },
       library,
       closed(),
+      recently(),
     )
     expect(result.kind === 'corrected' && (result.score as Score).notes).toEqual(aria.notes)
   })
@@ -86,6 +104,7 @@ describe('correcting what a filed piece says about itself', () => {
       { id: 'gone', metadata: { title: 'Gone' } },
       library,
       closed(),
+      recently(),
     )
     expect(result).toEqual({ kind: 'refused', message: 'nothing is filed as gone any more' })
   })
@@ -102,6 +121,7 @@ describe('correcting what a filed piece says about itself', () => {
       { id: 'track-1', metadata: { title: 'Prelude in C' } },
       library,
       closed(),
+      recently(),
     )
 
     expect(result).toEqual({
@@ -121,6 +141,7 @@ describe('correcting what a filed piece says about itself', () => {
       { id: 'aria', metadata: { title: 'Aria' } },
       broken,
       closed(),
+      recently(),
     )
 
     expect(result).toEqual({
@@ -139,6 +160,7 @@ describe('the file the window has open', () => {
       { id: 'track-1', metadata: { title: 'Prelude in C' } },
       library,
       open,
+      recently(),
     )
 
     expect(result).toMatchObject({ kind: 'corrected', id: 'prelude-in-c', open: true })
@@ -153,6 +175,7 @@ describe('the file the window has open', () => {
       { id: 'track-1', metadata: { title: 'Prelude in C' } },
       library,
       open,
+      recently(),
     )
 
     expect(result).toMatchObject({ kind: 'corrected', open: false })
@@ -169,8 +192,53 @@ describe('the file the window has open', () => {
       { id: 'track-1', metadata: { title: 'Track 1', composer: 'Bach' } },
       library,
       open,
+      recently(),
     )
 
     expect(result).toMatchObject({ kind: 'corrected', open: true })
+  })
+})
+
+describe('the recent list’s copy of what a piece is called', () => {
+  /** The list as it would be after the piece was opened once. */
+  const opened = (path: string, title: string): RecentEntry => ({
+    path,
+    name: path.split('/').at(-1) ?? path,
+    title,
+  })
+
+  it('is put right after a correction, and follows the file when it moves', async () => {
+    const { library } = await withAria({ ...aria, metadata: { title: 'Track 1' } })
+    const list = recently([opened(resolve('/library/track-1.piano'), 'Track 1')])
+
+    await correctInLibrary(
+      { id: 'track-1', metadata: { title: 'Prelude in C' } },
+      library,
+      closed(),
+      list,
+    )
+
+    expect(list.entries()).toEqual([
+      {
+        path: resolve('/library/prelude-in-c.piano'),
+        name: `prelude-in-c.piano`,
+        title: 'Prelude in C',
+      },
+    ])
+  })
+
+  it('leaves an entry naming some other piece exactly as it was', async () => {
+    const { library } = await withAria()
+    const other = opened(resolve('/library/something-else.piano'), 'Something else')
+    const list = recently([other])
+
+    await correctInLibrary(
+      { id: 'track-1', metadata: { title: 'Prelude in C' } },
+      library,
+      closed(),
+      list,
+    )
+
+    expect(list.entries()).toEqual([other])
   })
 })

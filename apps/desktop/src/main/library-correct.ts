@@ -1,9 +1,9 @@
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 
 import type { LibraryCorrectRequest, LibraryCorrectResult } from '@piano/ipc'
 import type { Library } from '@piano/library'
 
-import { samePath } from './recent'
+import { samePath, type Recent } from './recent'
 
 /**
  * Correcting what a filed piece says about itself.
@@ -28,10 +28,14 @@ import { samePath } from './recent'
  * model and a rule kept in two places is soon two rules. This module carries
  * the answers across the bridge in the shapes the contract declares.
  *
- * What is main's alone is which file the window has open, so it is main that
- * says whether this was that piece, and main that follows the file when it
- * moves — a keep written into the name a piece used to have would go to a
- * file nothing reads.
+ * What is main's alone are the two caches of what a piece is called and where
+ * it is. Which file the window has open is one, so it is main that says
+ * whether this was that piece and main that follows the file when it moves —
+ * a keep written into the name a piece used to have would go to a file
+ * nothing reads. The recent list is the other: its entries are copied from a
+ * score as it opens and never read again, so after this write the menu can
+ * offer a piece under a name somebody has just taken back, at a path that is
+ * not there any more.
  */
 
 /** What correcting needs of the library, so a test needs no disk to exercise it. */
@@ -43,6 +47,9 @@ export type OpenScore = {
   readonly moved: (path: string) => void
 }
 
+/** The recent list, which caches what a piece is called and where it is. */
+export type Recently = Pick<Recent, 'corrected'>
+
 /** Whether two paths name one file, allowing for how each of them was spelled. */
 function sameFile(one: string, other: string): boolean {
   return samePath(resolve(one), resolve(other))
@@ -52,6 +59,7 @@ export async function correctInLibrary(
   request: LibraryCorrectRequest,
   library: Correcting,
   open: OpenScore,
+  recent: Recently,
 ): Promise<LibraryCorrectResult> {
   try {
     // Asked before the write, because after it the piece may be under another
@@ -78,6 +86,16 @@ export async function correctInLibrary(
     const mine = here !== null && was !== null && sameFile(here, was.file)
     if (mine) {
       open.moved(corrected.file)
+    }
+    if (was !== null) {
+      // The menu's copy of what this piece is called, and where: both can be
+      // wrong after this write, and a stale path fails outright when picked.
+      const file = resolve(corrected.file)
+      await recent.corrected(resolve(was.file), {
+        path: file,
+        name: basename(file),
+        title: corrected.score.metadata.title,
+      })
     }
     return {
       kind: 'corrected',

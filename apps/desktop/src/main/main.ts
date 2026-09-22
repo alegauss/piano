@@ -524,12 +524,25 @@ if (firstInstance) {
         // the window has open moves with it: a keep written into the name a
         // piece used to have would go to a file nothing reads.
         correctInLibrary: (request) =>
-          correctInLibrary(request, library, {
-            held: () => openFile,
-            moved: (path) => {
-              openFile = path
+          correctInLibrary(
+            request,
+            library,
+            {
+              held: () => openFile,
+              moved: (path) => {
+                openFile = path
+              },
             },
-          }),
+            // The menu holds the same copy the file does, so it is rebuilt
+            // from what the write left rather than waiting for a restart.
+            {
+              corrected: async (was, now) => {
+                const entries = await recent.corrected(was, now)
+                setMenu(entries)
+                return entries
+              },
+            },
+          ),
         // An id and nothing else, and the file goes to the system's bin: the
         // library knows which file that is, and the page has no say in it.
         removeFromLibrary: (request) => removeFromLibrary(request, library),

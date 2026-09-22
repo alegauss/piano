@@ -23,6 +23,20 @@ export type Recent = {
   readonly list: () => Promise<RecentEntry[]>
   /** Put a score at the top, moving it there if it was already on the list. */
   readonly add: (entry: RecentEntry) => Promise<RecentEntry[]>
+  /**
+   * Say a file has been corrected, and put the entry naming it right.
+   *
+   * The entries are a cache of titles nothing else refreshes: what a score is
+   * called is copied in as it opens, and the menu reads the copy from then on.
+   * A correction is a second writer, so an entry can offer a piece under a
+   * name somebody has just taken back — or, since a retitle moves the file,
+   * name a path that is not there and fail outright when it is picked.
+   *
+   * It keeps its place in the list, because what changed about the piece is
+   * not when it was last opened. Nothing happens where no entry names the
+   * file, which is the ordinary case.
+   */
+  readonly corrected: (was: string, now: RecentEntry) => Promise<RecentEntry[]>
   readonly has: (path: string) => Promise<boolean>
   readonly clear: () => Promise<void>
 }
@@ -60,6 +74,15 @@ export function createRecent(file: string, max = MAX_RECENT): Recent {
       const entries = [entry, ...kept].slice(0, max)
       await write(entries)
       return entries
+    },
+    corrected: async (was, now) => {
+      const entries = await read()
+      if (!entries.some((one) => samePath(one.path, was))) {
+        return entries
+      }
+      const put = entries.map((one) => (samePath(one.path, was) ? now : one))
+      await write(put)
+      return put
     },
     has: async (path) => (await read()).some((one) => samePath(one.path, path)),
     clear: () => write([]),

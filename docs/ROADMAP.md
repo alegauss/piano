@@ -14,8 +14,8 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI106** (deps: PI102 ✅) **Open recent names a piece by the title it had when it was opened, so a corrected one is listed under its old name** — The list is written from what the file says now, so correcting a piece changes what every way into it calls it. → §PI106
 - 📋 **PI107** (deps: —) **Deleting or retitling from chat skips the bin and leaves the practice records behind, where the panel does neither** — A model's delete is as recoverable as a person's, and a piece it retitles keeps the practice kept against it. → §PI107
+- 📋 **PI108** (deps: —) **Open recent still offers a deleted piece, and the system's own list still offers one at the path it has moved from** — Every door into a piece is dropped or put right when it goes or moves, rather than failing when somebody takes it. → §PI108
 
 ## Block H — Sheet music view
 

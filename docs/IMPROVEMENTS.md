@@ -32,26 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI106 Open recent, after a piece is put right
-
-The recent list is a cache of titles nothing refreshes. An open writes one entry — the
-path, the file name and the title the score had at that moment — and from then on the
-menu and the Open recent list read the entry and never the file. That was harmless while
-a title could only be set as a piece was filed. Correcting one is a second writer, so a
-piece put right from the library panel is offered under the name somebody has just taken
-back, until they open it again and the entry is rewritten by accident.
-
-The entry is keyed by path and a correction never moves the file, so the fix is a write
-and not a migration: after a correction main rewrites the entry naming that file, where
-there is one. Main is the side that can do it — it holds the list, and the correction
-already goes through it, so nothing new crosses the bridge. A correction landing on a
-piece no entry names changes nothing, which is the ordinary case.
-
-Both halves are wrong now. PI102 made a retitle move the file, so an entry can name a
-path that is not there and an open from the menu fails outright; the title was already
-stale without any renaming. Main is told where a moved file went, through the port that
-follows the open score, and this list wants the same write from the same place.
-
 ### §PI107 The two verbs chat cannot reach alone
 
 delete_score and correct_score go through the one library module the window writes with,
@@ -73,5 +53,26 @@ verb: a delete that cannot be undone should say so before it happens, and a corr
 should leave a note main applies when the window next reads the history. Decide that
 split here rather than per tool, or the two verbs drift apart the way the two libraries
 just did.
+
+### §PI108 The doors a correction does not reach
+
+A correction now reaches the app's own recent list, and neither of the other two ways an
+entry goes stale does. Deleting a piece leaves the entry naming it: the file is in the
+bin, and picking the entry answers that it is not there any more, which is true and is
+not what somebody asked for. The system keeps a list of its own too — Windows pins it to
+the taskbar, macOS to the dock — written by addRecentDocument as a score opens and never
+touched since, so a piece that moved is offered there at the path it used to have.
+
+The first is a write beside the one a correction already makes: main holds the list and
+the deletion goes through main, so the entry naming the file that went is dropped.
+Whether a piece out of the bin wants its place back answers itself — it comes back
+through an open, which writes an entry anyway.
+
+The second has one lever and it is blunt: Electron can clear the system list and add to
+it, and cannot amend it. So either the app rebuilds that list from its own after a
+write, which means clearing somebody's list and putting back only what this app knows
+about, or it leaves it alone and accepts one stale door until the piece is opened again.
+Decide which, and say so where addRecentDocument is called, rather than leaving the next
+reader to wonder whether it was missed.
 
 ## Block H — Sheet music view

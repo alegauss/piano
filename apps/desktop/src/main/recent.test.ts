@@ -32,6 +32,36 @@ describe('the recent list', () => {
     expect((await recent.list()).map((one) => one.title)).toEqual(['one', 'two'])
   })
 
+  it('puts an entry right when the file it names is corrected, keeping its place', async () => {
+    const recent = createRecent(join(directory, 'recent.json'))
+    await recent.add(entry('one'))
+    await recent.add(entry('two'))
+
+    const put = await recent.corrected('/music/one.json', {
+      path: '/music/prelude.json',
+      name: 'prelude.json',
+      title: 'Prelude',
+    })
+
+    // What changed about the piece is not when it was last opened.
+    expect(put.map((each) => each.title)).toEqual(['two', 'Prelude'])
+    expect(await recent.list()).toEqual(put)
+    expect(await recent.has('/music/prelude.json')).toBe(true)
+    expect(await recent.has('/music/one.json')).toBe(false)
+  })
+
+  it('writes nothing where no entry names that file, which is the ordinary case', async () => {
+    const path = join(directory, 'recent.json')
+    const recent = createRecent(path)
+    await recent.add(entry('one'))
+    const before = await readFile(path, 'utf8')
+
+    const put = await recent.corrected('/music/never-opened.json', entry('other'))
+
+    expect(put.map((each) => each.title)).toEqual(['one'])
+    expect(await readFile(path, 'utf8')).toBe(before)
+  })
+
   it('holds no more than a menu shows', async () => {
     const recent = createRecent(join(directory, 'recent.json'))
     for (let index = 0; index < MAX_RECENT + 3; index += 1) {
