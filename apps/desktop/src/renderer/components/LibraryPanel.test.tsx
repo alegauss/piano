@@ -339,6 +339,107 @@ describe('correcting a piece from its row', () => {
   })
 })
 
+describe('doing something to more than one piece', () => {
+  /** Open the panel and pick both rows, which is where every test below starts. */
+  async function picked(...args: Parameters<typeof setup>) {
+    const held = setup(...args)
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Pick Ode to Joy' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pick Étude' }))
+    return held
+  }
+
+  it('counts what is picked, and offers the two things to do with a set', async () => {
+    await picked()
+    expect(screen.getByText('2 pieces picked')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete them' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tag them' })).toBeInTheDocument()
+  })
+
+  it('asks once, naming the pieces rather than eleven times', async () => {
+    const { removed } = await picked()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete them' }))
+
+    expect(screen.getByText('Delete these 2 pieces?')).toBeInTheDocument()
+    const listed = screen.getByRole('list', { name: 'The pieces picked' })
+    expect(listed).toHaveTextContent('Ode to Joy')
+    expect(listed).toHaveTextContent('Étude')
+    expect(removed).toEqual([])
+  })
+
+  it('deletes every picked piece and says how many went', async () => {
+    const { removed } = await picked()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete them' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete them' }).at(-1) as HTMLElement)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Deleted 2 of 2 pieces.')
+    expect(removed).toEqual(['ode-to-joy', 'etude'])
+  })
+
+  it('says how many did not go, and leaves those picked for another try', async () => {
+    const { removed } = await picked(items, [], undefined, {
+      kind: 'refused',
+      message: 'nothing is filed there',
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Delete them' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete them' }).at(-1) as HTMLElement)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Deleted 0 of 2 pieces; 2 could not be.',
+    )
+    expect(removed).toHaveLength(2)
+    expect(screen.getByText('2 pieces picked')).toBeInTheDocument()
+  })
+
+  it('adds tags to every picked piece, keeping the ones each already has', async () => {
+    const { corrected } = await picked()
+    fireEvent.click(screen.getByRole('button', { name: 'Tag them' }))
+    fireEvent.change(screen.getByLabelText('Tags to add'), { target: { value: 'study, romantic' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add the tags' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tagged 2 of 2 pieces.')
+    // The first row had a tag already, and keeps it; the second had none.
+    expect(corrected[0]?.filing.tags).toBe('classical, study, romantic')
+    expect(corrected[1]?.filing.tags).toBe('study, romantic')
+  })
+
+  it('will not add nothing at all', async () => {
+    await picked()
+    fireEvent.click(screen.getByRole('button', { name: 'Tag them' }))
+    expect(screen.getByRole('button', { name: 'Add the tags' })).toBeDisabled()
+  })
+
+  it('keeps the picked rows through a refresh that still lists them', async () => {
+    // A file arriving in the folder re-asks for the list; the rows are the
+    // same rows, so what was picked is still picked.
+    const { change, asked } = await picked()
+    const before = asked.length
+
+    change()
+    await waitFor(() => {
+      expect(asked.length).toBeGreaterThan(before)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.getByText('2 pieces picked')).toBeInTheDocument()
+  })
+
+  it('drops a row the list no longer has', async () => {
+    const listed = [...items]
+    const { change } = await picked(listed)
+
+    // The second piece leaves the library while the panel is open.
+    listed.pop()
+    change()
+
+    await waitFor(() => {
+      expect(screen.getByText('1 piece picked')).toBeInTheDocument()
+    })
+  })
+})
+
 describe('deleting a piece from its row', () => {
   /** Open the panel and press delete on the first row, which asks the question. */
   async function deleting(...args: Parameters<typeof setup>) {

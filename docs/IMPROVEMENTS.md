@@ -32,27 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI105 Tidying more than one piece
-
-Everything the panel does is one row at a time, which is right for opening a piece and
-wrong for tidying. A library grows by the batch — a folder of downloads copied in, the
-shipped scores seeded on first launch, an afternoon of asking for studies — and it is
-tidied by the batch too: eleven MIDI files that all arrived as Untitled, a dozen pieces
-that want the same tag, a set somebody has outgrown. Deleting those one at a time is
-eleven confirmations, and nobody gets to the eleventh.
-
-So rows can be picked: a box on each, a count of what is picked, and two things to do
-with a selection. Delete it, asking once and naming how many pieces rather than asking
-eleven times. And tag it, because tags are what make a large library searchable and
-adding one to eleven pieces is otherwise eleven trips through the edit form. Level can
-follow the same path if it turns out people want it.
-
-The panel re-asks for its list whenever anything changes, including a file arriving in
-the folder while it is open, so a selection has to survive a refresh that leaves the
-rows alone and be dropped by one that does not. What this is not is a file manager: no
-folders, no moving, no renaming in bulk — a rename asks a clash question that only makes
-sense about one piece.
-
 ### §PI106 Open recent, after a piece is put right
 
 The recent list is a cache of titles nothing refreshes. An open writes one entry — the

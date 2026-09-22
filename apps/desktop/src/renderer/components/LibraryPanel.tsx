@@ -9,7 +9,7 @@ import { FolderOpen, Library as LibraryIcon, Pencil, Trash2, X } from 'lucide-re
 import { useEffect, useState } from 'react'
 
 import { cn } from '../lib/cn'
-import { clock, filingOf, type Filing } from '../lib/library'
+import { clock, filingOf, tagsOf, type Filing } from '../lib/library'
 import { LibraryFiling, type Clash } from './LibraryFiling'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
@@ -38,6 +38,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  * that same form filled in, and the list is asked for again once the write
  * lands. Deleting asks once, naming the piece rather than the id, because the
  * row is the last chance to notice it is the wrong one.
+ *
+ * A library grows by the batch and is tidied by the batch, so rows can be
+ * picked and then deleted or tagged together, with one question asked of the
+ * whole set. What this is not is a file manager: no folders, no moving, and
+ * no renaming in bulk, because a rename asks a question that only makes sense
+ * about one piece.
  */
 
 type Level = NonNullable<LibraryQuery['level']>
@@ -104,6 +110,10 @@ export function LibraryPanel({
   const [deleting, setDeleting] = useState<LibraryItem | null>(null)
   /** What the panel has to say after a write, where the list is rather than over it. */
   const [said, setSaid] = useState<string | null>(null)
+  /** The rows picked for something to be done to all of them at once. */
+  const [picked, setPicked] = useState<readonly string[]>([])
+  /** What a picked set is about to have done to it, once that is asked about. */
+  const [asking, setAsking] = useState<'delete' | 'tag' | null>(null)
 
   useEffect(() => {
     if (!showing) {
@@ -130,6 +140,13 @@ export function LibraryPanel({
       (found) => {
         if (current) {
           setItems(found)
+          // A pick is of a row, so it survives a listing that still has that
+          // row — a file arriving in the folder — and goes with one that does
+          // not, which is a narrowed search or a piece that has been deleted.
+          setPicked((was) => {
+            const there = new Set(found.map((one) => one.id))
+            return was.length === 0 ? was : was.filter((id) => there.has(id))
+          })
         }
       },
       () => {
@@ -230,6 +247,85 @@ export function LibraryPanel({
           `That could not be deleted: ${cause instanceof Error ? cause.message : String(cause)}`,
         )
       },
+    )
+  }
+
+  /** The rows picked, as the list has them now. */
+  const chosen = (items ?? []).filter((item) => picked.includes(item.id))
+
+  /**
+   * Do something to every picked row, one call at a time, and say how it went
+   * in one sentence rather than a dialog per piece.
+   *
+   * In order rather than at once: these are writes to one directory, and a
+   * dozen of them racing is how an index gets rebuilt from a half-written
+   * folder. What is left picked afterwards is whatever did not work, so a
+   * second attempt is about the pieces that still need one.
+   */
+  async function toEach(
+    ids: readonly string[],
+    each: (id: string) => Promise<boolean>,
+    said: (done: number, failed: number) => string,
+  ): Promise<void> {
+    const failed: string[] = []
+    let done = 0
+    for (const id of ids) {
+      try {
+        if (await each(id)) {
+          done += 1
+        } else {
+          failed.push(id)
+        }
+      } catch {
+        failed.push(id)
+      }
+    }
+    setAsking(null)
+    setPicked(failed)
+    setSaid(said(done, failed.length))
+    setRevision((was) => was + 1)
+  }
+
+  /** Delete every picked piece, having asked once about the whole set. */
+  function removeAll(): void {
+    const of = picked.length
+    void toEach(
+      picked,
+      async (id) => (await onRemove(id)).kind === 'removed',
+      (done, failed) =>
+        failed === 0
+          ? `Deleted ${String(done)} of ${String(of)} pieces.`
+          : `Deleted ${String(done)} of ${String(of)} pieces; ${String(failed)} could not be.`,
+    )
+  }
+
+  /**
+   * Add tags to every picked piece, keeping the ones each already has.
+   *
+   * A tag cannot move a piece the way a title can, so this never meets the
+   * question about a name something else holds, and it needs no answer to one.
+   */
+  function tagAll(words: string): void {
+    const added = tagsOf(words)
+    const of = picked.length
+    void toEach(
+      picked,
+      async (id) => {
+        const item = chosen.find((one) => one.id === id)
+        if (item === undefined) {
+          return false
+        }
+        const filing = filingOf(item)
+        const result = await onCorrect(item, {
+          ...filing,
+          tags: [...new Set([...tagsOf(filing.tags), ...added])].join(', '),
+        })
+        return result.kind === 'corrected'
+      },
+      (done, failed) =>
+        failed === 0
+          ? `Tagged ${String(done)} of ${String(of)} pieces.`
+          : `Tagged ${String(done)} of ${String(of)} pieces; ${String(failed)} could not be.`,
     )
   }
 
@@ -347,8 +443,22 @@ export function LibraryPanel({
               {items.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-start justify-between gap-3 rounded-(--radius) px-2 py-2 hover:bg-surface-raised"
+                  className="flex items-start justify-between gap-2 rounded-(--radius) px-2 py-2 hover:bg-surface-raised"
                 >
+                  <input
+                    type="checkbox"
+                    aria-label={`Pick ${item.title}`}
+                    checked={picked.includes(item.id)}
+                    onChange={(event) => {
+                      setSaid(null)
+                      setPicked((was) =>
+                        event.target.checked
+                          ? [...was, item.id]
+                          : was.filter((one) => one !== item.id),
+                      )
+                    }}
+                    className="mt-1 size-4 shrink-0 accent-accent"
+                  />
                   <button
                     type="button"
                     className="flex min-w-0 flex-1 flex-col text-left focus-visible:outline-2 focus-visible:outline-accent"
@@ -371,12 +481,12 @@ export function LibraryPanel({
                     </span>
                   </button>
                   {/*
-                   * Capped at half the row, the door to correct it included:
-                   * a composer is a sentence in a score written for this app,
+                   * Capped short of half the row, the two doors included: a
+                   * composer is a sentence in a score written for this app,
                    * not a name, and chips that refused to give ground left the
                    * title nothing to show.
                    */}
-                  <span className="flex max-w-[50%] items-start gap-1">
+                  <span className="flex max-w-[45%] items-start gap-1">
                     <span className="flex min-w-0 flex-wrap justify-end gap-1 text-xs">
                       {item.composer === undefined ? null : (
                         <FilterChip
@@ -438,6 +548,55 @@ export function LibraryPanel({
           )}
         </div>
 
+        {picked.length === 0 ? null : (
+          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 border-t border-border-subtle pt-3 text-sm">
+            <span className="text-text-default">
+              {picked.length === 1 ? '1 piece picked' : `${String(picked.length)} pieces picked`}
+            </span>
+            <span className="ml-auto flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setPicked([])
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setAsking('tag')
+                }}
+              >
+                Tag them
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => {
+                  setAsking('delete')
+                }}
+              >
+                Delete them
+              </Button>
+            </span>
+          </div>
+        )}
+
+        {asking === null ? null : (
+          <AskAboutAll
+            what={asking}
+            items={chosen}
+            onTag={tagAll}
+            onDelete={removeAll}
+            onClose={() => {
+              setAsking(null)
+            }}
+          />
+        )}
+
         {said === null ? null : (
           <p className="mt-3 shrink-0 text-sm text-text-strong" role="alert">
             {said}
@@ -483,6 +642,99 @@ export function LibraryPanel({
             }}
           />
         )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * The one question asked of a whole selection.
+ *
+ * One question and not eleven, which is the point: eleven MIDI files that all
+ * arrived as Untitled are deleted by somebody who stopped reading at the
+ * third dialog, and tagging a dozen pieces one at a time is a dozen trips
+ * through a form. So the count is what is named, and the pieces are listed
+ * under it so nobody deletes a set they did not mean to pick.
+ *
+ * Tagging adds rather than replaces: the reason to tag twelve pieces at once
+ * is that they have something in common, not that they should stop being
+ * whatever else they are.
+ */
+function AskAboutAll({
+  what,
+  items,
+  onTag,
+  onDelete,
+  onClose,
+}: {
+  readonly what: 'delete' | 'tag'
+  readonly items: readonly LibraryItem[]
+  readonly onTag: (words: string) => void
+  readonly onDelete: () => void
+  readonly onClose: () => void
+}) {
+  const [words, setWords] = useState('')
+  const count = items.length === 1 ? 'this piece' : `these ${String(items.length)} pieces`
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(showing) => {
+        if (!showing) {
+          onClose()
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{what === 'delete' ? `Delete ${count}?` : `Tag ${count}`}</DialogTitle>
+          <DialogDescription>
+            {what === 'delete'
+              ? 'They go to the bin, so you can put them back from there. What each one has been practised is kept.'
+              : 'The tags each piece already has are kept; these are added to them.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <ul aria-label="The pieces picked" className="max-h-48 overflow-auto text-sm">
+          {items.map((item) => (
+            <li key={item.id} className="truncate py-0.5 text-text-default">
+              {[item.title, item.composer].filter((part) => part !== undefined).join(' · ')}
+            </li>
+          ))}
+        </ul>
+
+        {what === 'tag' ? (
+          <input
+            aria-label="Tags to add"
+            placeholder="Separated by commas: study, baroque"
+            value={words}
+            onChange={(event) => {
+              setWords(event.target.value)
+            }}
+            className="mt-2 h-9 w-full rounded-(--radius) border border-border-subtle bg-surface-base px-3 text-sm text-text-default placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-accent"
+          />
+        ) : null}
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            {what === 'delete' ? 'Keep them' : 'Cancel'}
+          </Button>
+          {what === 'delete' ? (
+            <Button variant="danger" size="sm" onClick={onDelete}>
+              Delete them
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={words.trim() === ''}
+              onClick={() => {
+                onTag(words)
+              }}
+            >
+              Add the tags
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -212,6 +212,7 @@
 - ✅ **PI102** **A retitled piece keeps the file name and id it was filed under, so the panel, the folder and chat disagree** — Retitling a piece moves it to the name that title gives, asks about a name already taken the way filing does, and says what it is filed as now.
 - ✅ **PI103** **Practice history is keyed by a score's id or, where it has none, its title: renaming a piece starts its record over** — A correction gives a piece the id it is filed under, its records move to that key, and deleting says the attempts recorded against it are kept.
 - ✅ **PI104** **Claude Code can write a score into the library but never remove one, nor correct what one says without rewriting it** — correct_score changes what a score says about itself and delete_score takes one out, both through the library module the window writes with.
+- ✅ **PI105** **Tidying a library that grew by the batch means opening, confirming and closing one row at a time** — Rows can be picked in the panel and then deleted or tagged together, with one question asked of the whole set and one sentence about how it went.
 
 ## Block H — Sheet music view
 
