@@ -190,20 +190,23 @@ describe('TransportBar', () => {
     expect(glyph('Show the falling notes')).not.toBe(glyph('Play with the typing keyboard'))
   })
 
-  it('says what a button does, on focus, in the button’s own words', async () => {
-    setup()
-    const button = screen.getByLabelText('Loop (L)')
-    expect(screen.queryByRole('tooltip')).toBeNull()
+  it.each([['Loop (L)'], ['Back to the start (Home)']])(
+    'says on focus that a button will %s, in its own words',
+    async (label) => {
+      setup()
+      const button = screen.getByLabelText(label)
+      expect(screen.queryByRole('tooltip')).toBeNull()
 
-    // Focus rather than hover: it is the half a keyboard reader needs, and it
-    // is the half jsdom can drive without a pointer.
-    act(() => {
-      button.focus()
-    })
-    const tip = await screen.findByRole('tooltip')
-    // The same string the button carries, not a second copy of it.
-    expect(tip.textContent).toBe('Loop (L)')
-  })
+      // Focus rather than hover: it is the half a keyboard reader needs, and it
+      // is the half jsdom can drive without a pointer.
+      act(() => {
+        button.focus()
+      })
+      const tips = await screen.findAllByRole('tooltip')
+      // The same string the button carries, not a second copy of it.
+      expect(tips.map((tip) => tip.textContent)).toEqual([label])
+    },
+  )
 
   it('leaves the button underneath clickable', async () => {
     const { transport } = setup()

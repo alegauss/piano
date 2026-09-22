@@ -251,16 +251,14 @@ export function TransportBar({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Hint>
-          <Hint>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={restart}
-              aria-label="Back to the start (Home)"
-            >
-              <SkipBack />
-            </Button>
-          </Hint>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={restart}
+            aria-label="Back to the start (Home)"
+          >
+            <SkipBack />
+          </Button>
         </Hint>
         <Hint>
           <Button

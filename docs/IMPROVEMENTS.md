@@ -79,28 +79,3 @@ over — will not hold for the other two. Either the fixture is chosen so the tw
 or the smoke line reports the path it was given beside the name.
 
 ## Block H — Sheet music view
-
-### §PI91 The doubled hint on Back to the start
-
-PI86 put a `Hint` around each icon on the transport bar, and the first one — "Back to
-the start (Home)" — came out wrapped twice: a `Hint` holding a `Hint` holding the
-button.
-
-It is not merely redundant, it is inert. `Hint` takes `children` and nothing else, and
-renders `TooltipTrigger asChild` around it. `asChild` works by cloning the child element
-with the trigger's own props: the pointer and focus handlers, the ref, the
-`aria-describedby` that ties the button to the bubble. The outer trigger's child is the
-inner `Hint`, a function component whose signature accepts one prop and drops every
-other on the floor. So the outer tooltip has a trigger nothing can ever open, and what
-renders for it is a second provider and a second `Tooltip` that no reader will ever see.
-
-Nothing looks wrong, which is why it survived a review: the inner hint works, the button
-stays clickable, and the outer one is silent rather than noisy.
-
-The fix is the outer wrapper's deletion and nothing else. `PartsPanel` and
-`TransportBar` between them wrap fifteen buttons, and this is the only one doubled.
-
-Leave `Hint` itself alone. Forwarding props to the child so a nested pair composes would
-be building a meaning for nesting, and a hint inside a hint has none. The bar's existing
-tooltip test covers the button underneath; whether a case that renders nothing is worth
-a test of its own is the one open call here.

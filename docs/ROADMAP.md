@@ -20,8 +20,6 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI91** (deps: —) **The transport bar's first button is wrapped in two hints, and the outer one can never open** — A Hint hands no props to its child, so the outer trigger's handlers are dropped and a provider and a tooltip render for nobody. → §PI91
-
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,
