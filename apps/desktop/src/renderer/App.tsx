@@ -1,6 +1,7 @@
 import type {
   AppInfoResponse,
   LibraryItem,
+  LibraryLeft,
   LibraryQuery,
   OpenRequest,
   OpenResult,
@@ -93,6 +94,11 @@ import { setTheme, type ThemeName } from './lib/theme'
 /** The library as main answers it; nothing when there is no bridge to ask. */
 function searchLibrary(query: LibraryQuery): Promise<LibraryItem[]> {
   return readBridge()?.libraryScores(query) ?? Promise.resolve([])
+}
+
+/** What the library folder holds that never became a score; nothing without a bridge. */
+function libraryLeftBehind(): Promise<LibraryLeft[]> {
+  return readBridge()?.libraryLeftBehind() ?? Promise.resolve([])
 }
 
 function libraryChanges(listener: () => void): () => void {
@@ -832,6 +838,10 @@ export function App() {
                 }}
                 onOpenFile={() => {
                   openFrom({ from: 'dialog' })
+                }}
+                leftBehind={libraryLeftBehind}
+                onOpenLeft={(name) => {
+                  openFrom({ from: 'folder', name })
                 }}
               />
               {/*

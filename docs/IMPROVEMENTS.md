@@ -32,26 +32,4 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI99 What the folder would not take
-
-The inbox takes in what it can and writes a line to the log about the rest. A `.mid`
-that is not a MIDI file, a `.musicxml` that is some other XML, one too large to read,
-and one whose id the library already holds are each left where they are, recorded so the
-reading is not repeated, and mentioned nowhere a person will look. Nobody reads a
-desktop app's stderr.
-
-From the outside this is the old complaint again: a file copied into the folder and
-nothing happens. The difference is that the app now knows exactly why, in a sentence the
-reader already wrote — `openScoreFile` refuses by name — and throws it away.
-
-So the panel says it. The sweep's answer already carries what it left and why; what is
-missing is a way to reach the window, which today hears only that the folder changed. A
-push carrying the last sweep's refusals, or a read the panel asks for when it opens, and
-a line under the list: two files here were not taken in, each name and reason on demand.
-
-The one taken id is the interesting case, because the answer is a door rather than a
-sentence: the piece can be opened from the folder and filed through the form, where the
-clash is a question somebody answers. So its line is worth making openable, which the
-panel can already do for a score but not for a file it does not list.
-
 ## Block H — Sheet music view

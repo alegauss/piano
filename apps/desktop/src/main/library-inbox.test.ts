@@ -97,6 +97,7 @@ describe('taking in what was copied into the library folder', () => {
     const swept = await inbox.sweep()
     expect(swept.filed).toEqual([])
     expect(swept.left[0]?.name).toBe('broken.mid')
+    expect(swept.left[0]?.opens).toBe(false)
     await inbox.sweep()
     expect(asked).toHaveLength(1)
 
@@ -104,6 +105,32 @@ describe('taking in what was copied into the library folder', () => {
     await files.write(`${root}/broken.mid`, 'MThd…')
     await inbox.sweep()
     expect(asked).toHaveLength(2)
+  })
+
+  it('keeps naming what is still lying there, sweeps later included', async () => {
+    const { inbox } = inboxOver({ [`${root}/broken.mid`]: 'not midi' }, {})
+
+    await inbox.sweep()
+    // The file is read once, but it is still in the folder, so every answer
+    // from here on says so: a panel reading a delta would go quiet on restart.
+    const later = await inbox.sweep()
+    expect(later.left).toEqual([
+      { name: 'broken.mid', why: 'broken.mid is not a MIDI file this app can read', opens: false },
+    ])
+  })
+
+  it('says a file whose name is the only problem can still be opened', async () => {
+    const { library, inbox } = inboxOver(
+      { [`${root}/prelude.mid`]: 'MThd…' },
+      { 'prelude.mid': 'Prelude' },
+    )
+    await library.save(scoreFor('Prelude'))
+
+    const swept = await inbox.sweep()
+
+    expect(swept.left).toEqual([
+      { name: 'prelude.mid', why: 'the library already has a prelude', opens: true },
+    ])
   })
 
   it('leaves a file whose id the library already holds, and says so', async () => {
@@ -116,7 +143,7 @@ describe('taking in what was copied into the library folder', () => {
     const swept = await inbox.sweep()
 
     expect(swept.filed).toEqual([])
-    expect(swept.left).toEqual([{ name: 'prelude.mid', why: 'the library already has a prelude' }])
+    expect(swept.left.map((one) => one.name)).toEqual(['prelude.mid'])
     // Nothing numbered was written: nobody is here to be asked which piece wins.
     expect(files.held.has(`${root}/prelude-2.piano`)).toBe(false)
   })

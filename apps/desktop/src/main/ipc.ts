@@ -6,6 +6,7 @@ import {
   historyRead,
   historySave,
   historyWrite,
+  libraryLeft,
   libraryList,
   librarySave,
   linkAnswer,
@@ -31,6 +32,7 @@ import {
   type KeepRequest,
   type KeepResult,
   type LibraryItem,
+  type LibraryLeft,
   type LibraryQuery,
   type LibrarySaveRequest,
   type LibrarySaveResult,
@@ -104,6 +106,8 @@ export function registerIpcHandlers(options: {
   readonly openScore: (request: OpenRequest) => Promise<OpenResult>
   readonly recentScores: () => Promise<RecentEntry[]>
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
+  /** What the library folder holds that was never taken in, as the last sweep found it. */
+  readonly libraryLeftBehind: () => LibraryLeft[]
   /** Put the score a window sent into the library, under the id its metadata gives it. */
   readonly fileInLibrary: (request: LibrarySaveRequest) => Promise<LibrarySaveResult>
   readonly settings: SettingsStore
@@ -157,6 +161,8 @@ export function registerIpcHandlers(options: {
   handle(libraryList, (query) => options.libraryScores(query))
 
   handle(librarySave, (request) => options.fileInLibrary(request))
+
+  handle(libraryLeft, () => options.libraryLeftBehind())
 
   handle(settingsRead, () => options.settings.read())
 

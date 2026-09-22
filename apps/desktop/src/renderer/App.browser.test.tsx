@@ -172,6 +172,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   const filed: unknown[] = []
   /** What is in the library, by the id it is filed under. */
   const library = new Map<string, { readonly title: string; readonly composer?: string }>()
+  /** What the folder holds that was never taken in, as the sweep found it. */
+  const left: { name: string; why: string; opens: boolean }[] = []
   /** The score file the window has open, as main would hold it. */
   let held: Score | null = null
   const bridge: PianoBridge = {
@@ -201,6 +203,7 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
       }
     },
     libraryScores: () => Promise.resolve([]),
+    libraryLeftBehind: () => Promise.resolve(left),
     // A library of titles by id, which is enough for the one thing the window
     // decides about filing: what to do when the id is already somebody's.
     saveToLibrary: ({ score, taken }) => {
@@ -251,6 +254,7 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     asked,
     kept,
     filed,
+    left,
     push: async (result: OpenResult) => {
       if (result.kind === 'opened') {
         held = result.score as Score

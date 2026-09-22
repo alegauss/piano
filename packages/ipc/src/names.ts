@@ -20,6 +20,7 @@ export const CHANNEL_NAMES = {
   scoreRecent: 'score:recent',
   libraryList: 'library:list',
   librarySave: 'library:save',
+  libraryLeft: 'library:left',
   settingsRead: 'settings:read',
   settingsWrite: 'settings:write',
   settingsReset: 'settings:reset',

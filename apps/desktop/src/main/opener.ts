@@ -82,6 +82,20 @@ export function createOpener(deps: OpenerDeps): Opener {
         }
         return openPath(path)
       }
+      case 'folder': {
+        // A name, joined to the library folder here: the page never says where
+        // a file is, and one the sweep left is still inside the one folder.
+        const path = `${deps.libraryRoot()}/${request.name}`
+        if (!exists(path)) {
+          return {
+            kind: 'refused',
+            name: request.name,
+            message: `${request.name} is not in the library folder any more.`,
+            problems: [],
+          }
+        }
+        return openPath(path)
+      }
       case 'launch': {
         const path = deps.launched()
         return path === null ? { kind: 'none' } : openPath(path)

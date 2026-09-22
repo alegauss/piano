@@ -137,6 +137,20 @@ export const openRequestSchema = z.discriminatedUnion('from', [
   z.object({ from: z.literal('recent'), path: PATH }),
   /** A score in the library, by the id Claude Code saved it under. */
   z.object({ from: z.literal('library'), id: z.string().min(1).max(200) }),
+  /**
+   * A file sitting in the library folder that was never taken in, by its own
+   * name. A name and nothing else: main joins it to the library folder, so
+   * this cannot become a way to read a file somewhere else.
+   */
+  z.object({
+    from: z.literal('folder'),
+    name: z
+      .string()
+      .min(1)
+      .max(255)
+      .regex(/^[^\\/:*?"<>|]+$/, 'a file name, as the library folder holds it')
+      .refine((name) => name !== '.' && name !== '..', 'a file name, not a folder'),
+  }),
   /** Whatever the app was started to open, asked for once the window can show it. */
   z.object({ from: z.literal('launch') }),
 ])
@@ -282,6 +296,30 @@ export const librarySave = {
     z.object({ kind: z.literal('refused'), message: z.string() }),
   ]),
 } as const satisfies Channel<'library:save', z.ZodType, z.ZodType>
+
+/** One file the library folder holds and could not take in, as the panel says it. */
+export const libraryLeftSchema = z.object({
+  name: z.string(),
+  /** Why it is still a file and not a piece, in the words the reader used. */
+  why: z.string(),
+  /** Whether it opens: a clash over a name is a piece somebody can still file by hand. */
+  opens: z.boolean(),
+})
+
+/**
+ * What is lying in the library folder that never became a score.
+ *
+ * Asked for rather than pushed: the panel is the only thing that shows it, and
+ * it asks when it opens and whenever the folder changes, which is when the
+ * answer can have changed. The list is what is there now and not what the last
+ * sweep happened to look at, or a file left behind last week would go unsaid
+ * until somebody touched it.
+ */
+export const libraryLeft = {
+  channel: CHANNEL_NAMES.libraryLeft,
+  request: z.null(),
+  response: z.array(libraryLeftSchema),
+} as const satisfies Channel<'library:left', z.ZodType, z.ZodType>
 
 /**
  * The settings as main holds them, with word of anything that had to go back
@@ -455,6 +493,7 @@ export const allChannels = [
   scoreRecent,
   libraryList,
   librarySave,
+  libraryLeft,
   settingsRead,
   settingsWrite,
   settingsReset,
@@ -483,6 +522,7 @@ export type OpenResult = z.infer<typeof openResultSchema>
 export type RecentEntry = z.infer<typeof recentEntrySchema>
 export type LibraryQuery = z.infer<typeof libraryQuerySchema>
 export type LibraryItem = z.infer<typeof libraryItemSchema>
+export type LibraryLeft = z.infer<typeof libraryLeftSchema>
 export type LibrarySaveRequest = z.infer<typeof librarySave.request>
 export type LibrarySaveResult = z.infer<typeof librarySave.response>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>

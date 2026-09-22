@@ -1,4 +1,4 @@
-import type { LibraryItem, LibraryQuery } from '@piano/ipc'
+import type { LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -23,11 +23,13 @@ const items: LibraryItem[] = [
   { id: 'etude', title: 'Étude', level: 'advanced', tags: [], seconds: 125, added: 1 },
 ]
 
-function setup(found: LibraryItem[] = items) {
+function setup(found: LibraryItem[] = items, left: LibraryLeft[] = []) {
   const asked: LibraryQuery[] = []
   const opened: string[] = []
   /** How many times the other way in was taken: open a file, then file it. */
   let files = 0
+  /** The names of files the folder would not take in, opened from the panel. */
+  const openedLeft: string[] = []
   let changed: (() => void) | null = null
   render(
     <LibraryPanel
@@ -47,12 +49,17 @@ function setup(found: LibraryItem[] = items) {
       onOpenFile={() => {
         files += 1
       }}
+      leftBehind={() => Promise.resolve(left)}
+      onOpenLeft={(name) => {
+        openedLeft.push(name)
+      }}
     />,
   )
   return {
     asked,
     opened,
     files: () => files,
+    openedLeft,
     change: () => {
       act(() => {
         changed?.()
@@ -132,6 +139,32 @@ describe('the library on screen', () => {
 
     expect(await screen.findByText('Nothing in the library matches.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Open a file' })).toBeNull()
+  })
+
+  it('says what the folder would not take in, and offers the ones that open', async () => {
+    const { openedLeft } = setup(items, [
+      { name: 'broken.mid', why: 'it is not a MIDI file this app can read', opens: false },
+      { name: 'prelude.mid', why: 'the library already has a prelude', opens: true },
+    ])
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+    await screen.findByText('Ode to Joy')
+
+    expect(screen.getByText('2 files in the folder were not taken in')).toBeInTheDocument()
+    expect(screen.getByText('it is not a MIDI file this app can read')).toBeInTheDocument()
+
+    // Only the file that reads can be opened: what stopped it was its name,
+    // and that is a question the filing form asks once the piece is open.
+    const doors = screen.getAllByRole('button', { name: 'Open it' })
+    expect(doors).toHaveLength(1)
+    fireEvent.click(doors[0] as HTMLElement)
+    expect(openedLeft).toEqual(['prelude.mid'])
+  })
+
+  it('says nothing about the folder when it took everything in', async () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+    await screen.findByText('Ode to Joy')
+    expect(screen.queryByLabelText('Files the library did not take in')).toBeNull()
   })
 
   it('writes a length as minutes and seconds', () => {

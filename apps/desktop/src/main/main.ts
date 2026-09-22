@@ -9,6 +9,7 @@ import {
   PRESENCE_DIRECTORY,
   PUSH_NAMES,
   type AppRecord,
+  type LibraryLeft,
   type OpenResult,
   type RecentEntry,
   type Settings,
@@ -134,6 +135,13 @@ const inbox = createInbox({
 })
 
 /**
+ * What the folder holds that never became a score, as the last sweep found
+ * it. Kept here because the panel asks for it: a sweep runs when the folder
+ * changes, and the window opens its list whenever somebody wants one.
+ */
+let leftInFolder: readonly LibraryLeft[] = []
+
+/**
  * Take in what is in the folder, and come back for anything that was still
  * being written. A file is copied in, not written by this app, so the moment
  * the watcher hears about it is often before the copy has finished.
@@ -141,11 +149,14 @@ const inbox = createInbox({
 function sweepInbox(): void {
   void inbox.sweep().then(
     (swept) => {
-      for (const { name, why } of swept.left) {
-        process.stderr.write(`piano: ${name} is still in the library folder: ${why}\n`)
-      }
+      leftInFolder = swept.left
       if (swept.waiting > 0) {
         setTimeout(sweepInbox, SETTLE_MS).unref()
+      }
+      // The window is told once something has actually moved: a file taken in
+      // is a new row, and one left behind is a line under the list.
+      if (mainWindow !== null && !mainWindow.isDestroyed() && swept.filed.length > 0) {
+        mainWindow.webContents.send(PUSH_NAMES.libraryChanged)
       }
     },
     (error: unknown) => {
@@ -492,6 +503,7 @@ if (firstInstance) {
         recentScores: () => recent.list(),
         libraryScores: async ({ order, ...filter }) =>
           (await library.search(filter, order)).map(libraryItem),
+        libraryLeftBehind: () => [...leftInFolder],
         // The score is the window's; where it goes is the library's own answer
         // from the score's metadata, which is why no path crosses.
         fileInLibrary: (request) => fileInLibrary(request, library),

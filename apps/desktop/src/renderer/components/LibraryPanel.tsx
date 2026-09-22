@@ -1,4 +1,4 @@
-import type { LibraryItem, LibraryQuery } from '@piano/ipc'
+import type { LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
 import { FolderOpen, Library as LibraryIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -47,6 +47,8 @@ export function LibraryPanel({
   changes,
   onOpen,
   onOpenFile,
+  leftBehind,
+  onOpenLeft,
 }: {
   readonly search: (query: LibraryQuery) => Promise<LibraryItem[]>
   /** Told when the folder changes; returns the way to stop being told. */
@@ -54,6 +56,10 @@ export function LibraryPanel({
   readonly onOpen: (id: string) => void
   /** The other way in: open a file already on the disk, and file it from there. */
   readonly onOpenFile: () => void
+  /** What is in the folder and never became a score, asked for with the list. */
+  readonly leftBehind: () => Promise<LibraryLeft[]>
+  /** Open one of those by name, which only works for a file that reads. */
+  readonly onOpenLeft: (name: string) => void
 }) {
   const [showing, setShowing] = useState(false)
   const [text, setText] = useState('')
@@ -62,6 +68,7 @@ export function LibraryPanel({
   const [tag, setTag] = useState<string | null>(null)
   const [composer, setComposer] = useState<string | null>(null)
   const [items, setItems] = useState<readonly LibraryItem[] | null>(null)
+  const [left, setLeft] = useState<readonly LibraryLeft[]>([])
   const [revision, setRevision] = useState(0)
 
   useEffect(() => {
@@ -101,6 +108,30 @@ export function LibraryPanel({
       current = false
     }
   }, [showing, text, level, order, tag, composer, revision, search])
+
+  // Asked for beside the list, and again whenever the folder changes: a file
+  // copied in is taken in or left behind in the same moment.
+  useEffect(() => {
+    if (!showing) {
+      return
+    }
+    let current = true
+    void leftBehind().then(
+      (found) => {
+        if (current) {
+          setLeft(found)
+        }
+      },
+      () => {
+        if (current) {
+          setLeft([])
+        }
+      },
+    )
+    return () => {
+      current = false
+    }
+  }, [showing, revision, leftBehind])
 
   const narrowed = text.trim() !== '' || level !== null || tag !== null || composer !== null
 
@@ -272,8 +303,68 @@ export function LibraryPanel({
             </ul>
           )}
         </div>
+
+        {left.length === 0 ? null : (
+          <LeftBehind
+            left={left}
+            onOpen={(name) => {
+              setShowing(false)
+              onOpenLeft(name)
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+/**
+ * What is lying in the folder and never became a score.
+ *
+ * Under the list rather than in it: these are not pieces, and a row that
+ * cannot be played does not belong among rows that can. Folded away, because
+ * on most days there is nothing here and the count is the whole story.
+ *
+ * A file that reads is offered as a door: what stopped it was its name
+ * colliding with a piece already filed, and that is a question the filing form
+ * asks once the piece is open.
+ */
+function LeftBehind({
+  left,
+  onOpen,
+}: {
+  readonly left: readonly LibraryLeft[]
+  readonly onOpen: (name: string) => void
+}) {
+  return (
+    <details className="mt-3 shrink-0 border-t border-border-subtle pt-3 text-sm">
+      <summary className="cursor-pointer text-text-muted">
+        {left.length === 1
+          ? 'One file in the folder was not taken in'
+          : `${String(left.length)} files in the folder were not taken in`}
+      </summary>
+      <ul aria-label="Files the library did not take in" className="mt-2 flex flex-col gap-2">
+        {left.map((one) => (
+          <li key={one.name} className="flex items-start justify-between gap-3">
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-text-default">{one.name}</span>
+              <span className="text-xs text-text-muted">{one.why}</span>
+            </span>
+            {one.opens ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onOpen(one.name)
+                }}
+              >
+                Open it
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </details>
   )
 }
 

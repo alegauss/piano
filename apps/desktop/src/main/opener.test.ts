@@ -152,6 +152,21 @@ describe('one road for every way of opening a score', () => {
     }
   })
 
+  it('opens a file the library folder holds by name, and nothing outside it', async () => {
+    const { opener, library } = await setup()
+    await write(join(library, 'untaken.json'), valid)
+    expect(await opener.open({ from: 'folder', name: 'untaken.json' })).toMatchObject({
+      kind: 'opened',
+      name: 'untaken.json',
+    })
+
+    const gone = await opener.open({ from: 'folder', name: 'never-there.mid' })
+    expect(gone).toMatchObject({ kind: 'refused' })
+    if (gone.kind === 'refused') {
+      expect(gone.message).toContain('not in the library folder')
+    }
+  })
+
   it('opens nothing when the dialog is closed, or the app was started with no file', async () => {
     const { opener } = await setup(null, null)
     expect(await opener.open({ from: 'dialog' })).toEqual({ kind: 'none' })

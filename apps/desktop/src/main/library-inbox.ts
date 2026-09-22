@@ -50,6 +50,8 @@ const recordSchema = z.object({
       id: z.string().optional(),
       /** Why it was not, in the words the reader used. */
       left: z.string().optional(),
+      /** Whether the file itself reads: a clash over an id is a piece somebody can still open. */
+      opens: z.boolean().optional(),
     }),
   ),
 })
@@ -61,12 +63,24 @@ type Seen = z.infer<typeof recordSchema>['files']
 export const SETTLE_MS = 2000
 
 export type Swept = {
-  /** What was imported and filed, by the id it took. */
+  /** What this sweep imported and filed, by the id it took. */
   readonly filed: readonly { readonly name: string; readonly id: string }[]
-  /** What was looked at and left, with the reason: unreadable, or an id already taken. */
-  readonly left: readonly { readonly name: string; readonly why: string }[]
+  /**
+   * Everything in the folder that has not been taken in, with the reason:
+   * unreadable, or an id already somebody else's. Not this sweep's refusals
+   * alone — a file left behind last week is still lying there, and a panel
+   * saying so from a delta would go quiet the moment the app restarted.
+   */
+  readonly left: readonly Left[]
   /** How many were too freshly written to read, which is a reason to sweep again. */
   readonly waiting: number
+}
+
+export type Left = {
+  readonly name: string
+  readonly why: string
+  /** Whether the file itself reads, in which case it can be opened and filed by hand. */
+  readonly opens: boolean
 }
 
 export type Inbox = {
@@ -109,7 +123,6 @@ export function createInbox(deps: {
     const record = await readRecord()
     const next: Seen = {}
     const filed: { name: string; id: string }[] = []
-    const left: { name: string; why: string }[] = []
     let waiting = 0
     let changed = false
 
@@ -135,14 +148,18 @@ export function createInbox(deps: {
       const opened = await open(path)
       if (opened.kind !== 'opened') {
         next[name] = { size: found.size, modified: found.modified, left: opened.message }
-        left.push({ name, why: opened.message })
         continue
       }
       const id = libraryId(opened.score)
       if ((await library.held(id)) !== null) {
-        const why = `the library already has a ${id}`
-        next[name] = { size: found.size, modified: found.modified, left: why }
-        left.push({ name, why })
+        // The file reads: what is in the way is the name, which is a question
+        // only somebody who can see both pieces is able to answer.
+        next[name] = {
+          size: found.size,
+          modified: found.modified,
+          left: `the library already has a ${id}`,
+          opens: true,
+        }
         continue
       }
       try {
@@ -154,8 +171,7 @@ export function createInbox(deps: {
         filed.push({ name, id: saved.id })
       } catch (error: unknown) {
         const why = error instanceof Error ? error.message : String(error)
-        next[name] = { size: found.size, modified: found.modified, left: why }
-        left.push({ name, why })
+        next[name] = { size: found.size, modified: found.modified, left: why, opens: true }
       }
     }
 
@@ -167,6 +183,11 @@ export function createInbox(deps: {
         .catch(() => {})
     }
 
+    const left = Object.entries(next).flatMap(([name, record_]) =>
+      record_.left === undefined
+        ? []
+        : [{ name, why: record_.left, opens: record_.opens ?? false }],
+    )
     return { filed, left, waiting }
   }
 

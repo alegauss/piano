@@ -5,6 +5,7 @@ import {
   allChannels,
   appInfo,
   formatIssues,
+  libraryLeft,
   libraryList,
   librarySave,
   packDownload,
@@ -119,6 +120,7 @@ describe('score:open', () => {
     ['a dropped file', { from: 'dropped', path: '/home/ada/aria.json' }],
     ['a recent file', { from: 'recent', path: 'C:\\Music\\aria.json' }],
     ['a library id', { from: 'library', id: 'bwv-846' }],
+    ['a file in the library folder', { from: 'folder', name: 'prelude.mid' }],
     ['what the app was launched with', { from: 'launch' }],
   ])('accepts %s', (_label, request) => {
     expect(scoreOpen.request.safeParse(request).success).toBe(true)
@@ -129,6 +131,10 @@ describe('score:open', () => {
     ['a drop with no path', { from: 'dropped' }],
     ['an empty library id', { from: 'library', id: '' }],
     ['a library id longer than any title', { from: 'library', id: 'x'.repeat(201) }],
+    ['a folder name that climbs out', { from: 'folder', name: '../secrets.mid' }],
+    ['a folder name that is a path', { from: 'folder', name: 'C:\\Windows\\win.ini' }],
+    ['the folder itself', { from: 'folder', name: '..' }],
+    ['no folder name at all', { from: 'folder', name: '' }],
     ['nothing', null],
   ])('refuses %s', (_label, request) => {
     expect(scoreOpen.request.safeParse(request).success).toBe(false)
@@ -221,6 +227,23 @@ describe('library:save', () => {
         .success,
     ).toBe(true)
     expect(response.safeParse({ kind: 'taken', id: 'aria' }).success).toBe(false)
+  })
+})
+
+describe('library:left', () => {
+  it('takes nothing, since what is in the folder is main’s to know', () => {
+    expect(libraryLeft.request.safeParse(null).success).toBe(true)
+    expect(libraryLeft.request.safeParse({ root: '/elsewhere' }).success).toBe(false)
+  })
+
+  it('answers with each file, why it is still one, and whether it opens', () => {
+    const { response } = libraryLeft
+    expect(response.safeParse([]).success).toBe(true)
+    expect(
+      response.safeParse([{ name: 'a.mid', why: 'it is not a MIDI file', opens: false }]).success,
+    ).toBe(true)
+    // Whether it opens decides whether a door is offered, so it is never left out.
+    expect(response.safeParse([{ name: 'a.mid', why: 'no' }]).success).toBe(false)
   })
 })
 

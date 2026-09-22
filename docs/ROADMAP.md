@@ -14,8 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI99** (deps: PI97 ✅) **A file the library folder cannot take in stays there unlisted, and only the log says why** — The Library panel says which files in the folder were left and why, so a piece that never appears is not a silent failure. → §PI99
-
 ## Block H — Sheet music view
 
 ## Done when — Block A
