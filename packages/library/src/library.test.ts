@@ -152,7 +152,7 @@ describe('correcting what a piece says about itself', () => {
     expect(corrected?.score.metadata.tags).toBeUndefined()
   })
 
-  it('writes back under the id it was filed as, whatever the new title says', async () => {
+  it('writes back where it is unless the caller says otherwise', async () => {
     const { files, library } = await filed()
     const corrected = await library.correct('untitled', { title: 'Prelude in C' })
 
@@ -162,10 +162,48 @@ describe('correcting what a piece says about itself', () => {
     expect(written(files, 'untitled')['metadata']).toMatchObject({ title: 'Prelude in C' })
   })
 
-  it('keeps the id the score carries, which is what records are kept against', async () => {
+  it('moves it where the caller says, and the old name goes', async () => {
+    const { files, library } = await filed()
+
+    const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c')
+
+    expect(corrected?.id).toBe('prelude-in-c')
+    expect(corrected?.file).toBe(`${root}/prelude-in-c${SCORE_SUFFIX}`)
+    expect(files.held.has(`${root}/untitled${SCORE_SUFFIX}`)).toBe(false)
+    // Moved, not deleted: a rename loses nothing, so it never reaches a bin.
+    expect(files.discarded).toEqual([])
+  })
+
+  it('leaves a piece with no id of its own without one, where the title takes it there', async () => {
+    const files = memoryFiles({
+      [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify({
+        ...(minimal as Record<string, unknown>),
+        metadata: { title: 'Untitled' },
+      }),
+    })
+    const library = createLibrary(root, files)
+
+    const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c')
+
+    // Nothing is pinned, so the next retitle moves it again rather than not.
+    expect(corrected?.score.metadata.id).toBeUndefined()
+  })
+
+  it('writes the id in where the piece is going somewhere its own name would not', async () => {
     const { library } = await filed()
-    const corrected = await library.correct('untitled', { title: 'Prelude in C' })
-    expect(corrected?.score.metadata.id).toBe('untitled')
+    const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c-2')
+    expect(corrected?.score.metadata.id).toBe('prelude-in-c-2')
+  })
+
+  it('keeps an id the score already carried, which is what records are kept against', async () => {
+    const files = memoryFiles({
+      [`${root}/bwv-846${SCORE_SUFFIX}`]: JSON.stringify(named('bwv-846', 'Untitled')),
+    })
+    const library = createLibrary(root, files)
+
+    const corrected = await library.correct('bwv-846', { title: 'Prelude in C' })
+
+    expect(corrected?.score.metadata.id).toBe('bwv-846')
   })
 
   it('says nothing is there for an id nothing is filed under', async () => {

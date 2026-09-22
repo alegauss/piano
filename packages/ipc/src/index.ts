@@ -15,6 +15,7 @@ export {
   libraryQuerySchema,
   libraryRemove,
   librarySave,
+  libraryTakenSchema,
   linkAnswer,
   linkListening,
   openProblemSchema,

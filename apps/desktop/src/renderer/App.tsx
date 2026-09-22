@@ -1,5 +1,5 @@
 import {
-  libraryFileNames,
+  libraryFileName,
   type AppInfoResponse,
   type LibraryCorrectResult,
   type LibraryItem,
@@ -733,21 +733,30 @@ export function App() {
    * window is showing it is shown again from what was written — otherwise the
    * header would go on naming a composer somebody has just taken back.
    *
-   * The file it was opened from is what says whether it is the same piece:
-   * a correction never moves a piece, so the names an id may be kept under
-   * are the whole answer.
+   * Whether it is the same piece is main's answer and not a guess made here:
+   * a retitled piece moves to the name its new title gives it, and this side
+   * knows a file by its name alone, which two folders can both hold.
    */
-  async function correctInLibrary(id: string, described: Filing): Promise<LibraryCorrectResult> {
+  async function correctInLibrary(
+    id: string,
+    described: Filing,
+    taken?: 'beside' | 'replace',
+  ): Promise<LibraryCorrectResult> {
     const bridge = readBridge()
     if (bridge === null) {
       return { kind: 'refused', message: 'this window has no way to write the library' }
     }
-    const result = await bridge.correctInLibrary({ id, metadata: correctionOf(described) })
-    if (result.kind === 'corrected' && file !== null && libraryFileNames(id).includes(file)) {
+    const result = await bridge.correctInLibrary({
+      id,
+      metadata: correctionOf(described),
+      ...(taken === undefined ? {} : { taken }),
+    })
+    if (result.kind === 'corrected' && result.open) {
       const parsed = parseScore(result.score)
       if (parsed.ok) {
         setScore(parsed.score)
       }
+      setFile(libraryFileName(result.id))
     }
     return result
   }

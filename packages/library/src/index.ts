@@ -4,6 +4,7 @@ export {
   durationOf,
   INDEX_FILE,
   libraryId,
+  libraryIdOf,
   SEEDED_FILE,
   type Correction,
   type Library,

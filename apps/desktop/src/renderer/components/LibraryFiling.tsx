@@ -1,4 +1,4 @@
-import type { LibrarySaveResult } from '@piano/ipc'
+import type { LibraryCorrectResult, LibrarySaveResult } from '@piano/ipc'
 import { LEVELS } from '@piano/score-format'
 import { useState } from 'react'
 
@@ -23,20 +23,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  *
  * One form and not two, because these are the same questions asked at a
  * different moment, and a second form would drift from this one the first time
- * a field was added. What differs is what a wrong answer costs: filing may
- * find the id taken, which is asked about below rather than in a dialog of its
- * own — what a piece is called and where it goes is one question, and asking
- * it twice would be asking somebody to describe a piece and then argue about
- * its name. Correcting cannot clash, because a correction never moves a piece;
- * what it can do is ask about a piece that is no longer there, and that is
- * said in the form rather than behind it.
+ * a field was added. Either may find the id it wants taken — an import's is
+ * whatever a track name happened to say, and a piece retitled moves to the
+ * name its new title gives it — so that is asked about below rather than in a
+ * dialog of its own: what a piece is called and where it goes is one question,
+ * and asking it twice would be asking somebody to describe a piece and then
+ * argue about its name. Correcting can also find the piece gone, and that too
+ * is said in the form rather than behind it.
  *
  * Only a correction offers difficulty. Filing has nobody to ask — the number
  * grades a piece somebody has played — but it is what orders the rows inside a
  * level, and nothing else on screen can set it.
  */
 
-export type Clash = Extract<LibrarySaveResult, { kind: 'taken' }>
+export type Clash = Extract<LibrarySaveResult | LibraryCorrectResult, { kind: 'taken' }>
 
 const FIELD =
   'h-9 w-full rounded-(--radius) border border-border-subtle bg-surface-base px-3 text-sm text-text-default placeholder:text-text-muted focus-visible:outline-2 focus-visible:outline-accent'
@@ -83,7 +83,7 @@ export function LibraryFiling({
           <DialogTitle>{correcting ? 'Correct this piece' : 'Add to the library'}</DialogTitle>
           <DialogDescription>
             {correcting
-              ? 'What the piece says about itself. Its notes are not touched, and it keeps the name it is filed under.'
+              ? 'What the piece says about itself. Its notes are not touched; a new title moves it to the name that title gives it.'
               : 'What the file could not say. Only the title is needed; the rest is what the list filters by.'}
           </DialogDescription>
         </DialogHeader>

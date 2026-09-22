@@ -176,6 +176,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   const left: { name: string; why: string; opens: boolean }[] = []
   /** The score file the window has open, as main would hold it. */
   let held: Score | null = null
+  /** And what that file is called, which is what a move changes. */
+  let openName: string | null = null
   const bridge: PianoBridge = {
     appInfo: () =>
       Promise.resolve({
@@ -232,8 +234,9 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
       })
       return Promise.resolve({ kind: 'filed', id: under, title })
     },
-    // A correction never moves a piece, so the id stays and only what it says
-    // about itself changes. The score comes back as main would have written it.
+    // A piece with no id of its own is addressed by its title, so retitling
+    // one moves it. The score comes back as main would have written it, and
+    // main is the side that says whether this was the open piece.
     correctInLibrary: ({ id, metadata }) => {
       const there = library.get(id)
       if (there === undefined) {
@@ -242,13 +245,25 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
           message: `nothing is filed as ${id} any more`,
         })
       }
-      library.set(id, {
+      const under = metadata.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      library.delete(id)
+      library.set(under, {
         title: metadata.title,
         ...(metadata.composer === undefined ? {} : { composer: metadata.composer }),
       })
       const score: Score = { ...(held ?? { formatVersion: 1, notes: [] }), metadata }
-      held = score
-      return Promise.resolve({ kind: 'corrected' as const, id, title: metadata.title, score })
+      const open = openName === `${id}.piano`
+      if (open) {
+        held = score
+        openName = `${under}.piano`
+      }
+      return Promise.resolve({
+        kind: 'corrected' as const,
+        id: under,
+        title: metadata.title,
+        score,
+        open,
+      })
     },
     removeFromLibrary: ({ id }) => {
       if (!library.has(id)) {
@@ -294,6 +309,7 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     push: async (result: OpenResult) => {
       if (result.kind === 'opened') {
         held = result.score as Score
+        openName = result.name
       }
       await act(async () => {
         listener?.(result)

@@ -520,7 +520,16 @@ if (firstInstance) {
         fileInLibrary: (request) => fileInLibrary(request, library),
         // An id and five fields, never a score: a correction is about what a
         // piece says about itself and never about its notes.
-        correctInLibrary: (request) => correctInLibrary(request, library),
+        // A retitled piece moves to the name its title gives it, so the file
+        // the window has open moves with it: a keep written into the name a
+        // piece used to have would go to a file nothing reads.
+        correctInLibrary: (request) =>
+          correctInLibrary(request, library, {
+            held: () => openFile,
+            moved: (path) => {
+              openFile = path
+            },
+          }),
         // An id and nothing else, and the file goes to the system's bin: the
         // library knows which file that is, and the page has no say in it.
         removeFromLibrary: (request) => removeFromLibrary(request, library),

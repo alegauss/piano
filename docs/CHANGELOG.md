@@ -209,6 +209,7 @@
 - ✅ **PI99** **A file the library folder cannot take in stays there unlisted, and only the log says why** — The Library panel names every file the folder would not take in and why, and offers to open the ones whose only problem is a name already used.
 - ✅ **PI100** **A piece's title, composer, level and tags can be set only as it is filed, never corrected afterwards** — A row in the library opens the filing form filled in, and saving it writes the corrected title, composer, level, difficulty and tags back into the same file, leaving the notes alone.
 - ✅ **PI101** **Nothing in the app removes a score: a piece filed by mistake leaves the library only through the file manager** — A row offers to delete, asks once naming the piece by title, composer and length, and sends the file to the system's bin, so a wrong click can be put back from there.
+- ✅ **PI102** **A retitled piece keeps the file name and id it was filed under, so the panel, the folder and chat disagree** — Retitling a piece moves it to the name that title gives, asks about a name already taken the way filing does, and says what it is filed as now.
 
 ## Block H — Sheet music view
 

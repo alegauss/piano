@@ -247,6 +247,28 @@ export const libraryList = {
 } as const satisfies Channel<'library:list', z.ZodType, z.ZodType>
 
 /**
+ * The id a write wanted is somebody else's, and nothing was written.
+ *
+ * One shape for both writes that can meet it. Filing meets it because an
+ * import's id is whatever a track name happened to say; a correction meets it
+ * because retitling a piece moves it to the name the new title gives, and that
+ * name may be taken too. The same question deserves the same answer, and two
+ * spellings of it would be two dialogs asking it differently.
+ *
+ * What is there is described and not named, because the choice is between two
+ * pieces and not between two ids.
+ */
+export const libraryTakenSchema = z.object({
+  kind: z.literal('taken'),
+  id: z.string(),
+  held: z.object({
+    title: z.string(),
+    composer: z.string().optional(),
+    seconds: z.number().nonnegative(),
+  }),
+})
+
+/**
  * Put the score the window has open into the library, so an imported MIDI or
  * MusicXML piece survives the window being closed.
  *
@@ -283,16 +305,7 @@ export const librarySave = {
       id: z.string(),
       title: z.string(),
     }),
-    z.object({
-      kind: z.literal('taken'),
-      id: z.string(),
-      /** What is filed there now, so the choice is made against a piece and not an id. */
-      held: z.object({
-        title: z.string(),
-        composer: z.string().optional(),
-        seconds: z.number().nonnegative(),
-      }),
-    }),
+    libraryTakenSchema,
     z.object({ kind: z.literal('refused'), message: z.string() }),
   ]),
 } as const satisfies Channel<'library:save', z.ZodType, z.ZodType>
@@ -322,6 +335,12 @@ export const libraryCorrectionSchema = z.object({
  * knows where a piece lives. So this cannot become a way to rewrite a score's
  * notes from the page, and the notes are not in the payload to begin with.
  *
+ * A piece is addressed by the id its own metadata gives it, so retitling one
+ * that has no id of its own moves it: the answer carries the id it is filed
+ * under now, which may not be the one that was asked about. Where that id is
+ * taken the answer is `taken` and nothing is written, exactly as filing
+ * answers it, and the window comes back with the choice that was made.
+ *
  * The corrected score comes back because a window showing that piece is
  * showing what was just corrected. It arrives as unknown and is validated by
  * the renderer like any other score.
@@ -330,15 +349,33 @@ export const libraryCorrect = {
   channel: CHANNEL_NAMES.libraryCorrect,
   // Strict, so a request that tries to say where the piece goes, or what its
   // notes are, is refused rather than quietly trimmed.
-  request: z.object({ id: z.string().min(1).max(200), metadata: libraryCorrectionSchema }).strict(),
+  request: z
+    .object({
+      id: z.string().min(1).max(200),
+      metadata: libraryCorrectionSchema,
+      /**
+       * What to do about the id a new title asks for, where something else
+       * holds it. Absent is the first ask: main answers `taken` rather than
+       * choosing, because both choices lose something when guessed wrong.
+       */
+      taken: z.enum(['beside', 'replace']).optional(),
+    })
+    .strict(),
   response: z.discriminatedUnion('kind', [
     z.object({
       kind: z.literal('corrected'),
-      /** Still the id it was filed under: a correction never moves a piece. */
+      /** What it is filed under now, which is what opens it from here on. */
       id: z.string(),
       title: z.string(),
       score: z.unknown(),
+      /**
+       * Whether this is the piece the window has open. Main answers it
+       * because main is the side that knows which file that is; the page
+       * knows only a name, and two folders can hold one of those.
+       */
+      open: z.boolean(),
     }),
+    libraryTakenSchema,
     z.object({ kind: z.literal('refused'), message: z.string() }),
   ]),
 } as const satisfies Channel<'library:correct', z.ZodType, z.ZodType>

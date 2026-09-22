@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 
 import { cn } from '../lib/cn'
 import { clock, filingOf, type Filing } from '../lib/library'
-import { LibraryFiling } from './LibraryFiling'
+import { LibraryFiling, type Clash } from './LibraryFiling'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 
@@ -71,7 +71,11 @@ export function LibraryPanel({
   /** Open one of those by name, which only works for a file that reads. */
   readonly onOpenLeft: (name: string) => void
   /** Write a row's corrected description back, answered with what became of it. */
-  readonly onCorrect: (id: string, filing: Filing) => Promise<LibraryCorrectResult>
+  readonly onCorrect: (
+    id: string,
+    filing: Filing,
+    taken?: 'beside' | 'replace',
+  ) => Promise<LibraryCorrectResult>
   /** Take a row's piece out of the library, answered with what became of it. */
   readonly onRemove: (id: string) => Promise<LibraryRemoveResult>
 }) {
@@ -87,10 +91,12 @@ export function LibraryPanel({
   /** The row being put right, and why the last attempt at it was refused. */
   const [correcting, setCorrecting] = useState<LibraryItem | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
+  /** The new title's id is somebody else's; nothing is written until that is answered. */
+  const [clash, setClash] = useState<Clash | null>(null)
   /** The row being deleted, which is the one question asked before it goes. */
   const [deleting, setDeleting] = useState<LibraryItem | null>(null)
-  /** Why a deletion did not happen, said where the list is rather than over it. */
-  const [gone, setGone] = useState<string | null>(null)
+  /** What the panel has to say after a write, where the list is rather than over it. */
+  const [said, setSaid] = useState<string | null>(null)
 
   useEffect(() => {
     if (!showing) {
@@ -158,19 +164,36 @@ export function LibraryPanel({
 
   /**
    * Write a corrected row back and ask for the list again, so the row says
-   * what was just saved. A refusal keeps the form open with the reason in it:
-   * the piece may have been deleted while the form was up, and the one place
-   * somebody can act on that is where they typed.
+   * what was just saved.
+   *
+   * A refusal keeps the form open with the reason in it: the piece may have
+   * been deleted while the form was up, and the one place somebody can act on
+   * that is where they typed. A taken id is not a refusal but a question, and
+   * it is asked in the same form, which is where the title that caused it is.
+   *
+   * A piece that moved is said out loud. Its old name is what a chat, a
+   * shortcut or the recent list may still ask for, and finding out by having
+   * an open fail a week later is not a way to be told.
    */
-  function correct(id: string, filing: Filing): void {
-    void onCorrect(id, filing).then(
+  function correct(id: string, filing: Filing, taken?: 'beside' | 'replace'): void {
+    void onCorrect(id, filing, taken).then(
       (result) => {
         if (result.kind === 'refused') {
           setProblem(`That could not be saved: ${result.message}.`)
           return
         }
+        if (result.kind === 'taken') {
+          setClash(result)
+          return
+        }
         setCorrecting(null)
+        setClash(null)
         setProblem(null)
+        setSaid(
+          result.id === id
+            ? null
+            : `${result.title} is filed as ${result.id} now, not ${id}. Anything still asking for the old name will not find it.`,
+        )
         setRevision((was) => was + 1)
       },
       (cause: unknown) => {
@@ -191,12 +214,12 @@ export function LibraryPanel({
     void onRemove(id).then(
       (result) => {
         setDeleting(null)
-        setGone(result.kind === 'removed' ? null : `That could not be deleted: ${result.message}.`)
+        setSaid(result.kind === 'removed' ? null : `That could not be deleted: ${result.message}.`)
         setRevision((was) => was + 1)
       },
       (cause: unknown) => {
         setDeleting(null)
-        setGone(
+        setSaid(
           `That could not be deleted: ${cause instanceof Error ? cause.message : String(cause)}`,
         )
       },
@@ -381,6 +404,8 @@ export function LibraryPanel({
                       title={`Correct ${item.title}`}
                       onClick={() => {
                         setProblem(null)
+                        setClash(null)
+                        setSaid(null)
                         setCorrecting(item)
                       }}
                     >
@@ -393,7 +418,7 @@ export function LibraryPanel({
                       aria-label={`Delete ${item.title}`}
                       title={`Delete ${item.title}`}
                       onClick={() => {
-                        setGone(null)
+                        setSaid(null)
                         setDeleting(item)
                       }}
                     >
@@ -406,9 +431,9 @@ export function LibraryPanel({
           )}
         </div>
 
-        {gone === null ? null : (
+        {said === null ? null : (
           <p className="mt-3 shrink-0 text-sm text-text-strong" role="alert">
-            {gone}
+            {said}
           </p>
         )}
 
@@ -438,13 +463,14 @@ export function LibraryPanel({
           <LibraryFiling
             start={filingOf(correcting)}
             purpose="correcting"
-            clash={null}
+            clash={clash}
             problem={problem}
-            onFile={(filing) => {
-              correct(correcting.id, filing)
+            onFile={(filing, taken) => {
+              correct(correcting.id, filing, taken)
             }}
             onClose={() => {
               setCorrecting(null)
+              setClash(null)
               setProblem(null)
             }}
           />

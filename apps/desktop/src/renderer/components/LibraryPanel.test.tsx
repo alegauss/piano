@@ -34,11 +34,13 @@ const items: LibraryItem[] = [
 function setup(
   found: LibraryItem[] = items,
   left: LibraryLeft[] = [],
-  answer: LibraryCorrectResult = {
+  /** What main answers a correction with, or what it answers the nth one with. */
+  answer: LibraryCorrectResult | ((attempt: number) => LibraryCorrectResult) = {
     kind: 'corrected',
     id: 'ode-to-joy',
     title: 'Ode to Joy',
     score: null,
+    open: false,
   },
   gone: LibraryRemoveResult = { kind: 'removed', id: 'ode-to-joy' },
 ) {
@@ -49,7 +51,7 @@ function setup(
   /** The names of files the folder would not take in, opened from the panel. */
   const openedLeft: string[] = []
   /** Every correction the panel asked main to write. */
-  const corrected: { id: string; filing: Filing }[] = []
+  const corrected: { id: string; filing: Filing; taken?: 'beside' | 'replace' }[] = []
   /** Every id the panel asked main to take out of the library. */
   const removed: string[] = []
   let changed: (() => void) | null = null
@@ -75,9 +77,9 @@ function setup(
       onOpenLeft={(name) => {
         openedLeft.push(name)
       }}
-      onCorrect={(id, filing) => {
-        corrected.push({ id, filing })
-        return Promise.resolve(answer)
+      onCorrect={(id, filing, taken) => {
+        corrected.push({ id, filing, ...(taken === undefined ? {} : { taken }) })
+        return Promise.resolve(typeof answer === 'function' ? answer(corrected.length) : answer)
       }}
       onRemove={(id) => {
         removed.push(id)
@@ -254,10 +256,65 @@ describe('correcting a piece from its row', () => {
     ])
   })
 
-  it('never asks about a clash, since a correction does not move a piece', async () => {
+  it('says up front that a new title moves the piece', async () => {
     await correcting()
+    expect(screen.getByText(/a new title moves it to the name that title gives it/)).toBeVisible()
     expect(screen.queryByRole('button', { name: 'File this one beside it' })).toBeNull()
-    expect(screen.getByText(/keeps the name it is filed under/)).toBeInTheDocument()
+  })
+
+  it('says where a retitled piece is filed now, and under what it no longer is', async () => {
+    await correcting(items, [], {
+      kind: 'corrected',
+      id: 'ode-an-die-freude',
+      title: 'Ode an die Freude',
+      score: null,
+      open: false,
+    })
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Ode an die Freude' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ode an die Freude is filed as ode-an-die-freude now, not ode-to-joy. Anything still asking for the old name will not find it.',
+    )
+  })
+
+  it('says nothing about a name when the piece did not move', async () => {
+    const { asked } = await correcting()
+    const before = asked.length
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    await waitFor(() => {
+      expect(asked.length).toBeGreaterThan(before)
+    })
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('asks about the name a new title wants when something else holds it', async () => {
+    const { corrected } = await correcting(items, [], (attempt) =>
+      attempt === 1
+        ? {
+            kind: 'taken',
+            id: 'etude',
+            held: { title: 'Étude', composer: 'Chopin', seconds: 125 },
+          }
+        : { kind: 'corrected', id: 'etude-2', title: 'Étude', score: null, open: false },
+    )
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Étude' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    // Described rather than named: the choice is between two pieces.
+    expect(await screen.findByText('The library already has a etude')).toBeInTheDocument()
+    expect(screen.getByText(/Étude · Chopin · 2:05/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'File this one beside it' }))
+
+    await waitFor(() => {
+      expect(corrected).toHaveLength(2)
+    })
+    expect(corrected[1]).toMatchObject({ id: 'ode-to-joy', taken: 'beside' })
   })
 
   it('keeps the form open with the reason when the correction was refused', async () => {

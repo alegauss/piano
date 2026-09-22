@@ -106,13 +106,17 @@ export type Library = {
   /**
    * Correct what a filed piece says about itself, leaving its notes alone.
    *
-   * Under the id it is already filed as, whatever the new title says: the id
-   * is the handle a chat, a shortcut and a practice record all hold, and
-   * moving the file because somebody fixed a spelling would break all three
-   * at once. Null where nothing is filed under that id, which is the answer
-   * for a row somebody deleted while the form was open.
+   * `under` is where it ends up, which is the id it is already filed as
+   * unless the caller says otherwise; the file moves and the old name goes,
+   * because a score in two places is a score somebody will edit the wrong
+   * copy of. An `under` the piece's own metadata would not have chosen is
+   * written into it as its id, so that the file and what it says about itself
+   * agree from then on and nothing moves it again by surprise.
+   *
+   * Null where nothing is filed under `id`, which is the answer for a row
+   * somebody deleted while the form was open.
    */
-  readonly correct: (id: string, correction: Correction) => Promise<Saved | null>
+  readonly correct: (id: string, correction: Correction, under?: string) => Promise<Saved | null>
   /**
    * Take a piece out of the library, on somebody's say-so.
    *
@@ -141,10 +145,23 @@ export const SEEDED_FILE = '.seeded.json'
 
 const seededSchema = z.object({ ids: z.array(z.string()) })
 
-/** What a score is filed under: its own id where it has one, its title otherwise. */
+/**
+ * What a piece with this metadata is filed under: its own id where it has one,
+ * its title otherwise.
+ *
+ * The distinction the format draws and nothing here may blur. An id is the
+ * stable handle records are kept against, so a piece that has one keeps it
+ * however it is retitled; a piece that has none is addressed by what it is
+ * called, and renaming it is therefore a move.
+ */
+export function libraryIdOf(metadata: ScoreMetadata): string {
+  const id = metadata.id
+  return safeName(id !== undefined && id.trim() !== '' ? id : metadata.title)
+}
+
+/** The same question asked of a whole score. */
 export function libraryId(score: Score): string {
-  const id = score.metadata.id
-  return safeName(id !== undefined && id.trim() !== '' ? id : score.metadata.title)
+  return libraryIdOf(score.metadata)
 }
 
 /** How long a piece lasts, from its metadata or else from where its last note ends. */
@@ -364,7 +381,7 @@ export function createLibrary(root: string, files: Files): Library {
       }
       throw new Error(`the library already holds a thousand pieces called ${base}`)
     },
-    correct: async (id, correction) => {
+    correct: async (id, correction, under = id) => {
       const path = await foundFor(id)
       if (path === null) {
         return null
@@ -380,19 +397,30 @@ export function createLibrary(root: string, files: Files): Library {
         tags: _tags,
         ...rest
       } = held.metadata
+      const corrected = {
+        ...rest,
+        ...correction,
+        ...(correction.tags === undefined ? {} : { tags: [...correction.tags] }),
+      }
       const parsed = parseScore({
         ...held,
-        metadata: {
-          ...rest,
-          ...correction,
-          ...(correction.tags === undefined ? {} : { tags: [...correction.tags] }),
-        },
+        // Where the piece is going is not where its own metadata would send
+        // it, so it is told: a file at one name and metadata naming another
+        // is what moves a piece again the next time anybody touches it.
+        metadata: libraryIdOf(corrected) === under ? corrected : { ...corrected, id: under },
       })
       if (!parsed.ok) {
         throw new Error(parsed.message)
       }
-      const file = await keep(id, parsed.score)
-      return { id, file, metadata: parsed.score.metadata, score: parsed.score }
+      const file = await keep(under, parsed.score)
+      if (under !== id) {
+        // The old name goes, or the piece is in the library twice and the
+        // listing shows both.
+        for (const name of libraryFileNames(id)) {
+          await files.remove(`${root}/${name}`)
+        }
+      }
+      return { id: under, file, metadata: parsed.score.metadata, score: parsed.score }
     },
     remove: async (id) => {
       let held = false

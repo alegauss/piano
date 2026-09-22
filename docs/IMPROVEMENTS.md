@@ -32,25 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI102 One name everywhere
-
-A score is addressed by an id, and libraryId() takes it from metadata.id where there is
-one and from the title where there is not; safeName() then reduces it to a file name. So
-a piece filed as Untitled lives in untitled.piano, and correcting its title to something
-a person would recognise writes the new title into that same file. Nothing lies, but
-nothing agrees either: the panel shows the new title, the folder shows the old name, and
-a model opens it by the id it had.
-
-Renaming should move the file. keep() already writes one name and removes the others, so
-the write itself is small; the edges are why this is a task rather than a line inside
-the edit. The new id may be taken, and then it is exactly the clash the filing form
-knows how to ask about — file it beside, or replace what is there. The old id may be
-what a chat, a recent-files entry or a shortcut still names, so a rename has to say
-plainly what the piece is called now rather than leaving somebody to find out when
-opening it fails. And a piece whose metadata.id was set deliberately keeps it: the id is
-the stable handle records are kept against, and a title is not, which is the distinction
-the format already draws and this must not blur.
-
 ### §PI103 History that survives a correction
 
 Every practice record is keyed on the score's own id, or on what it is called where it
@@ -131,10 +112,9 @@ there is one. Main is the side that can do it — it holds the list, and the cor
 already goes through it, so nothing new crosses the bridge. A correction landing on a
 piece no entry names changes nothing, which is the ordinary case.
 
-Worth doing after the file can move rather than before. A rename makes the path stale
-too, and the answer is the same write from the same place: whatever PI102 decides about
-what a piece is called now has to reach this list, and deciding it twice is how the two
-answers end up different. So this is the title half, already wrong without any renaming
-at all.
+Both halves are wrong now. PI102 made a retitle move the file, so an entry can name a
+path that is not there and an open from the menu fails outright; the title was already
+stale without any renaming. Main is told where a moved file went, through the port that
+follows the open score, and this list wants the same write from the same place.
 
 ## Block H — Sheet music view
