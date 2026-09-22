@@ -55,27 +55,4 @@ repeat or a jump sent the reading back further than a score can hold".
 
 ## Block G — Score library and distribution
 
-### §PI92 Open one of each on the installed app
-
-PI70 gave `check-associations.mjs` its last step: start the installed binary with a
-score written outside the checkout and make it say which file it opened. That step runs
-once, with a `.piano`, on all three systems.
-
-The registry keys, the Launch Services claims and the MimeType line are now read for
-four extensions and checked for three groups, and every one of them is a promise that a
-double-click ends with the piano showing that file. Only the type the app owns outright
-has ever been shown to. A `.mxl` is the case with the most between the double-click and
-the score: a zip to open, a container to read and an import to run, any of which can
-fail on an installed app in a way no unit test sees, because the import lives in a
-package the packaging has to have carried.
-
-So hand the binary one of each: the bundled `.piano`, a `.mid` and a `.mxl`, each copied
-outside the checkout, each asserted separately so a failure names the type.
-
-The unknown to settle first is what `piano: opened <name>` says for an imported file.
-`openedScore` answers the score's name, and an import's name comes from the markup
-rather than from the path, so the current assertion — the basename of what was handed
-over — will not hold for the other two. Either the fixture is chosen so the two agree,
-or the smoke line reports the path it was given beside the name.
-
 ## Block H — Sheet music view

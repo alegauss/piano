@@ -199,6 +199,7 @@
 - ✅ **PI70** **Nothing starts the installed app with a score and watches it open that score** — A headless run started with a score says which one it opened, and the association check starts the installed app to read that line.
 - ✅ **PI84** **A library row whose composer is a sentence shows no title: the chips squeeze it to nothing** — Every library row shows its title: the chips are capped at half the row and truncate, and a browser test measures the width rather than assuming it.
 - ✅ **PI89** **A .musicxml or .mxl double-clicked in the file manager opens something else, the installer claiming neither** — A .musicxml or .mxl now offers the piano under Open With on Windows, as an Alternate claim on macOS and a MIME type on Linux, taking neither from a notation editor.
+- ✅ **PI92** **The installed-app check hands over a .piano only, so the MIDI and MusicXML it registers are never opened end to end** — The installed app is now started with a .piano, a .mid, a .musicxml and a .mxl, and has to say it opened each one.
 
 ## Block H — Sheet music view
 

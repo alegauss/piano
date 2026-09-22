@@ -1,11 +1,12 @@
 import { execFile, execFileSync, spawn } from 'node:child_process'
 import { access, chmod, copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import {
+  CLAIMED,
   desktopEntry,
   launchServices,
   parseRegQuery,
@@ -24,10 +25,11 @@ import {
  * again; on macOS the app out of the disk image and into Launch Services; on
  * Linux the desktop entry the AppImage carries.
  *
- * Each then ends the same way: the installed binary is started with a score
- * written outside the checkout, and has to say it opened that one. Everything
- * above it is a promise about what happens when somebody double-clicks a file,
- * and an app that refuses the path it is handed keeps every one of them.
+ * Each then ends the same way: the installed binary is started with one file
+ * of every type the installer claims, written outside the checkout, and has to
+ * say it opened each one. Everything above it is a promise about what happens
+ * when somebody double-clicks a file, and an app that refuses the path it is
+ * handed keeps none of them.
  *
  * It is not part of `npm run package`, and must not become part of it. It
  * installs software and writes to the registry, which is fine on a runner that
@@ -69,23 +71,25 @@ async function artifact(extension) {
 }
 
 /**
- * A score outside the checkout, for handing to an installed app.
+ * The files of CLAIMED, outside the checkout, for handing to an installed app.
  *
- * Its content is one the app ships, so nothing here has to know the format; a
- * copy rather than the file itself, because what is being tested is an
+ * Copies rather than the files themselves, because what is being tested is an
  * installed app on a machine that has nothing else of ours on it, and the
- * name has to be one no other score could answer for.
+ * names have to be ones no other file could answer for. The content is the
+ * repository's own, so nothing here has to know a format.
  *
  * @param {string} directory
- * @returns {Promise<string>}
+ * @returns {Promise<string[]>}
  */
-async function score(directory) {
-  const from = fileURLToPath(
-    new URL('../apps/desktop/src/main/bundled/ode-to-joy.score.json', import.meta.url),
-  )
-  const to = join(directory, 'association-check.piano')
-  await copyFile(from, to)
-  return to
+async function claimed(directory) {
+  /** @type {string[]} */
+  const copies = []
+  for (const { ext, from } of CLAIMED) {
+    const to = join(directory, `association-check${ext}`)
+    await copyFile(fileURLToPath(new URL(from, import.meta.url)), to)
+    copies.push(to)
+  }
+  return copies
 }
 
 /**
@@ -116,13 +120,35 @@ function opens(binary, path, profile) {
       const wanted = `piano: opened ${basename(path)}`
       resolve({
         ok: code === 0 && said.includes(wanted),
-        what: 'the installed app opens the score it is started with',
+        what: `the installed app opens the ${extname(path)} it is started with`,
         detail: said.includes(wanted)
           ? wanted
           : `exit ${String(code)}; it said: ${said.trim() || 'nothing'}`,
       })
     })
   })
+}
+
+/**
+ * Start the installed app once per type, and say how each went.
+ *
+ * One at a time and one profile each, so a launch cannot be answered by the
+ * instance before it, and a failure names the type rather than the run. A
+ * `.mxl` is the one with the most between the double-click and the score — a
+ * zip to open, a container to read, an import to run — and the one an
+ * installed app can fail at while every unit test passes.
+ *
+ * @param {string} binary
+ * @param {string} work
+ * @returns {Promise<import('./associations.mjs').Finding[]>}
+ */
+async function opensEach(binary, work) {
+  /** @type {import('./associations.mjs').Finding[]} */
+  const findings = []
+  for (const path of await claimed(work)) {
+    findings.push(await opens(binary, path, join(work, `profile${extname(path)}`)))
+  }
+  return findings
 }
 
 /**
@@ -199,7 +225,7 @@ async function onWindows() {
     await access(exe)
 
     let ok = report('windows', windowsInstalled(registry(), exe), say)
-    ok = report('windows', [await opens(exe, await score(work), join(work, 'profile'))], say) && ok
+    ok = report('windows', await opensEach(exe, work), say) && ok
 
     const uninstaller = (await readdir(target)).find((name) => /^Uninstall .*\.exe$/.test(name))
     if (uninstaller === undefined) {
@@ -243,7 +269,7 @@ async function onMac() {
     await run(lsregister, ['-u', copied])
 
     const binary = join(copied, 'Contents', 'MacOS', 'Piano')
-    ok = report('macos', [await opens(binary, await score(work), join(work, 'profile'))], say) && ok
+    ok = report('macos', await opensEach(binary, work), say) && ok
     return ok
   } finally {
     await rm(work, { recursive: true, force: true })
@@ -271,12 +297,7 @@ async function onLinux() {
 
     // AppRun out of the extracted image: the AppImage itself needs FUSE, and
     // what is being started is the same binary either way.
-    ok =
-      report(
-        'linux',
-        [await opens(join(root, 'AppRun'), await score(work), join(work, 'profile'))],
-        say,
-      ) && ok
+    ok = report('linux', await opensEach(join(root, 'AppRun'), work), say) && ok
 
     // The system's own reader, where the runner has it: it knows the rules of
     // the format, which this does not and should not learn.

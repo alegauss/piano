@@ -16,8 +16,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI92** (deps: —) **The installed-app check hands over a .piano only, so the MIDI and MusicXML it registers are never opened end to end** — Every claim the installer writes promises a double-click ends in the piano, and the one file the check opens is the type the app owns outright. → §PI92
-
 ## Block H — Sheet music view
 
 ## Done when — Block A

@@ -1,14 +1,20 @@
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import {
+  CLAIMED,
   claimsIn,
   desktopEntry,
   launchServices,
   MIDI_PROGID,
   MUSICXML_PROGID,
   namesExecutable,
+  OFFERED,
   parseRegQuery,
   report,
+  SCORE_EXT,
   windowsInstalled,
   windowsRemoved,
 } from './associations.mjs'
@@ -312,6 +318,29 @@ describe('what Launch Services knows', () => {
     expect(failed(launchServices(owned, 'com.alegauss.piano'))).toEqual([
       'MIDI is bound as an alternative and not taken over',
     ])
+  })
+})
+
+describe('the files an installed app is handed', () => {
+  it('covers the type the app owns and every type it is offered for', () => {
+    // The half of the check that cannot be tested here is the half that
+    // installs and launches, so this is where a type claimed in the packaging
+    // and never opened by the check is caught — at the moment it is added.
+    const covered = CLAIMED.map((one) => one.ext)
+    expect(covered).toContain(SCORE_EXT)
+    for (const offered of OFFERED) {
+      expect({
+        what: offered.what,
+        opened: offered.exts.some((ext) => covered.includes(ext)),
+      }).toEqual({ what: offered.what, opened: true })
+    }
+  })
+
+  it('names a file that is there, a missing one failing only at release', () => {
+    for (const { ext, from } of CLAIMED) {
+      const path = fileURLToPath(new URL(from, import.meta.url))
+      expect({ ext, there: existsSync(path) }).toEqual({ ext, there: true })
+    }
   })
 })
 

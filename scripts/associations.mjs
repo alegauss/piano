@@ -63,6 +63,26 @@ export const OFFERED = [
 ]
 
 /**
+ * One file per type the piano is handed, in the order they are opened.
+ *
+ * Every row above is a promise that a double-click ends with the piano showing
+ * that file, and these are what makes the check keep them: the app the
+ * installer just laid down is started with each, and has to say it opened it.
+ * Paths are relative to this directory, which is where the check lives too.
+ *
+ * `.xml` and `.midi` are missing on purpose. They are the same way in as a
+ * `.musicxml` and a `.mid` — one a launch argument the shell never claims, the
+ * other a second spelling of one it does — and a fixture each would buy
+ * nothing the pair does not already say.
+ */
+export const CLAIMED = [
+  { ext: SCORE_EXT, from: '../apps/desktop/src/main/bundled/ode-to-joy.score.json' },
+  { ext: '.mid', from: 'fixtures/association-check.mid' },
+  { ext: '.musicxml', from: 'fixtures/association-check.musicxml' },
+  { ext: '.mxl', from: 'fixtures/association-check.mxl' },
+]
+
+/**
  * One row of `reg query` output, or null where the value is absent.
  *
  * `reg query` prints a row per value: four spaces, the name, four spaces, the
