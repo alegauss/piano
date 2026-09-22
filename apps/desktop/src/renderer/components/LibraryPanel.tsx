@@ -1,5 +1,11 @@
-import type { LibraryCorrectResult, LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
-import { FolderOpen, Library as LibraryIcon, Pencil, X } from 'lucide-react'
+import type {
+  LibraryCorrectResult,
+  LibraryItem,
+  LibraryLeft,
+  LibraryQuery,
+  LibraryRemoveResult,
+} from '@piano/ipc'
+import { FolderOpen, Library as LibraryIcon, Pencil, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { cn } from '../lib/cn'
@@ -27,9 +33,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  * going to go looking for a button in the header on the strength of a
  * sentence about one.
  *
- * A row is also where a piece is put right. Everything the filing form asks
- * about is in the row already, so correcting one opens that same form filled
- * in, and the list is asked for again once the write lands.
+ * A row is also where a piece is put right, and where one leaves. Everything
+ * the filing form asks about is in the row already, so correcting one opens
+ * that same form filled in, and the list is asked for again once the write
+ * lands. Deleting asks once, naming the piece rather than the id, because the
+ * row is the last chance to notice it is the wrong one.
  */
 
 type Level = NonNullable<LibraryQuery['level']>
@@ -50,6 +58,7 @@ export function LibraryPanel({
   leftBehind,
   onOpenLeft,
   onCorrect,
+  onRemove,
 }: {
   readonly search: (query: LibraryQuery) => Promise<LibraryItem[]>
   /** Told when the folder changes; returns the way to stop being told. */
@@ -63,6 +72,8 @@ export function LibraryPanel({
   readonly onOpenLeft: (name: string) => void
   /** Write a row's corrected description back, answered with what became of it. */
   readonly onCorrect: (id: string, filing: Filing) => Promise<LibraryCorrectResult>
+  /** Take a row's piece out of the library, answered with what became of it. */
+  readonly onRemove: (id: string) => Promise<LibraryRemoveResult>
 }) {
   const [showing, setShowing] = useState(false)
   const [text, setText] = useState('')
@@ -76,6 +87,10 @@ export function LibraryPanel({
   /** The row being put right, and why the last attempt at it was refused. */
   const [correcting, setCorrecting] = useState<LibraryItem | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
+  /** The row being deleted, which is the one question asked before it goes. */
+  const [deleting, setDeleting] = useState<LibraryItem | null>(null)
+  /** Why a deletion did not happen, said where the list is rather than over it. */
+  const [gone, setGone] = useState<string | null>(null)
 
   useEffect(() => {
     if (!showing) {
@@ -161,6 +176,28 @@ export function LibraryPanel({
       (cause: unknown) => {
         setProblem(
           `That could not be saved: ${cause instanceof Error ? cause.message : String(cause)}`,
+        )
+      },
+    )
+  }
+
+  /**
+   * Take a piece away and ask for the list again. The question has been asked
+   * by the time this runs, so there is nothing more to say about a write that
+   * worked; one that did not says why where the list is, since the row it was
+   * about is the thing that did not change.
+   */
+  function remove(id: string): void {
+    void onRemove(id).then(
+      (result) => {
+        setDeleting(null)
+        setGone(result.kind === 'removed' ? null : `That could not be deleted: ${result.message}.`)
+        setRevision((was) => was + 1)
+      },
+      (cause: unknown) => {
+        setDeleting(null)
+        setGone(
+          `That could not be deleted: ${cause instanceof Error ? cause.message : String(cause)}`,
         )
       },
     )
@@ -339,7 +376,7 @@ export function LibraryPanel({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="shrink-0"
+                      className="shrink-0 px-2"
                       aria-label={`Correct ${item.title}`}
                       title={`Correct ${item.title}`}
                       onClick={() => {
@@ -349,6 +386,19 @@ export function LibraryPanel({
                     >
                       <Pencil />
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 px-2"
+                      aria-label={`Delete ${item.title}`}
+                      title={`Delete ${item.title}`}
+                      onClick={() => {
+                        setGone(null)
+                        setDeleting(item)
+                      }}
+                    >
+                      <Trash2 />
+                    </Button>
                   </span>
                 </li>
               ))}
@@ -356,12 +406,30 @@ export function LibraryPanel({
           )}
         </div>
 
+        {gone === null ? null : (
+          <p className="mt-3 shrink-0 text-sm text-text-strong" role="alert">
+            {gone}
+          </p>
+        )}
+
         {left.length === 0 ? null : (
           <LeftBehind
             left={left}
             onOpen={(name) => {
               setShowing(false)
               onOpenLeft(name)
+            }}
+          />
+        )}
+
+        {deleting === null ? null : (
+          <ConfirmDelete
+            item={deleting}
+            onDelete={() => {
+              remove(deleting.id)
+            }}
+            onClose={() => {
+              setDeleting(null)
             }}
           />
         )}
@@ -381,6 +449,60 @@ export function LibraryPanel({
             }}
           />
         )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * The one question asked before a piece goes.
+ *
+ * Described rather than named, the way the filing clash describes what is in
+ * the way: the title, the composer and how long it lasts are what say whether
+ * this is the piece somebody meant, and an id reduced to lower case and
+ * hyphens is not. Asked once and not twice — a second confirmation is one
+ * people learn to click through — and answerable afterwards, because the file
+ * goes to the system's bin rather than nowhere, which is what the sentence
+ * says so nobody has to find out by trying it.
+ */
+function ConfirmDelete({
+  item,
+  onDelete,
+  onClose,
+}: {
+  readonly item: LibraryItem
+  readonly onDelete: () => void
+  readonly onClose: () => void
+}) {
+  return (
+    <Dialog
+      open
+      onOpenChange={(showing) => {
+        if (!showing) {
+          onClose()
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete this piece?</DialogTitle>
+          <DialogDescription>
+            It goes to the bin, so you can put it back from there.
+          </DialogDescription>
+        </DialogHeader>
+        <p className="text-sm text-text-strong">
+          {[item.title, item.composer, clock(item.seconds)]
+            .filter((part) => part !== undefined)
+            .join(' · ')}
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Keep it
+          </Button>
+          <Button variant="danger" size="sm" onClick={onDelete}>
+            Delete it
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

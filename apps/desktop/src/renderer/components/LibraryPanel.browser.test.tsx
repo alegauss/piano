@@ -50,6 +50,7 @@ async function open(): Promise<void> {
       leftBehind={() => Promise.resolve([])}
       onOpenLeft={() => undefined}
       onCorrect={() => Promise.reject(new Error('not used'))}
+      onRemove={() => Promise.reject(new Error('not used'))}
     />,
   )
   fireEvent.click(screen.getByRole('button', { name: 'Library' }))

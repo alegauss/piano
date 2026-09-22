@@ -71,6 +71,7 @@ const bridge: PianoBridge = {
   libraryScores: async (query) => invoke(CHANNEL_NAMES.libraryList, query),
   saveToLibrary: async (request) => invoke(CHANNEL_NAMES.librarySave, request),
   correctInLibrary: async (request) => invoke(CHANNEL_NAMES.libraryCorrect, request),
+  removeFromLibrary: async (request) => invoke(CHANNEL_NAMES.libraryRemove, request),
   libraryLeftBehind: async () => invoke(CHANNEL_NAMES.libraryLeft, null),
   readSettings: async () => invoke(CHANNEL_NAMES.settingsRead, null),
   writeSettings: async (patch) => invoke(CHANNEL_NAMES.settingsWrite, patch),

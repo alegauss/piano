@@ -24,6 +24,17 @@ export type Files = {
   readonly stat: (path: string) => Promise<FileStat | null>
   /** Remove a file, and say nothing when it is already gone. */
   readonly remove: (path: string) => Promise<void>
+  /**
+   * Take a file away because somebody asked, which is a different act from
+   * removing one this module wrote.
+   *
+   * A score under the name it was kept under before is housekeeping, and
+   * nobody wants it in a bin. A piece somebody deleted is the only copy of
+   * something they may have asked for last week, and a host with a bin should
+   * put it there. So the two are separate, and a host with nowhere to put it
+   * answers with what it can do.
+   */
+  readonly discard: (path: string) => Promise<void>
 }
 
 /** Node's filesystem. */
@@ -43,6 +54,9 @@ export const nodeFiles: Files = {
     }
   },
   remove: (path) => rm(path, { force: true }),
+  // Plain Node has no bin. A host that has one — Electron, through
+  // shell.trashItem — hands in its own, and this is what is left otherwise.
+  discard: (path) => rm(path, { force: true }),
 }
 
 /**
@@ -54,14 +68,18 @@ export const nodeFiles: Files = {
 export function memoryFiles(seed: Readonly<Record<string, string>> = {}): Files & {
   readonly held: Map<string, string>
   readonly reads: string[]
+  /** What was taken away on somebody's behalf, which a bin would now hold. */
+  readonly discarded: string[]
 } {
   const held = new Map(Object.entries(seed))
   const written = new Map<string, number>([...held.keys()].map((path) => [path, 0]))
   const reads: string[] = []
+  const discarded: string[] = []
   let clock = 1
   return {
     held,
     reads,
+    discarded,
     read: (path) => {
       reads.push(path)
       const text = held.get(path)
@@ -89,6 +107,11 @@ export function memoryFiles(seed: Readonly<Record<string, string>> = {}): Files 
       )
     },
     remove: (path) => {
+      held.delete(path)
+      return Promise.resolve()
+    },
+    discard: (path) => {
+      discarded.push(path)
       held.delete(path)
       return Promise.resolve()
     },

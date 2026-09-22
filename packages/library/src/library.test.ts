@@ -194,6 +194,61 @@ describe('correcting what a piece says about itself', () => {
   })
 })
 
+describe('taking a piece out of the library', () => {
+  it('sends it to whatever bin the host keeps, rather than unlinking it', async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    await library.save(named('aria', 'Aria'))
+
+    expect(await library.remove('aria')).toBe(true)
+
+    expect(files.discarded).toEqual([`${root}/aria${SCORE_SUFFIX}`])
+    expect(files.held.has(`${root}/aria${SCORE_SUFFIX}`)).toBe(false)
+  })
+
+  it('takes the name it was written under before as well, or that comes back', async () => {
+    const files = memoryFiles({
+      [`${root}/aria${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('aria', 'Aria, last week')),
+      [`${root}/aria${SCORE_SUFFIX}`]: JSON.stringify(named('aria', 'Aria')),
+    })
+    const library = createLibrary(root, files)
+
+    expect(await library.remove('aria')).toBe(true)
+
+    expect(files.discarded).toHaveLength(2)
+    expect(await library.list()).toEqual([])
+  })
+
+  it('says nothing was there rather than failing, since a row can be deleted twice', async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    expect(await library.remove('never-filed')).toBe(false)
+    expect(files.discarded).toEqual([])
+  })
+
+  it('cannot be asked to take a file outside the library', async () => {
+    const files = memoryFiles({ '/secrets.piano': 'not a score' })
+    const library = createLibrary(root, files)
+
+    expect(await library.remove('../secrets')).toBe(false)
+
+    expect(files.held.has('/secrets.piano')).toBe(true)
+    expect(files.discarded).toEqual([])
+  })
+
+  it('leaves the listing with one fewer piece and the rest alone', async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    await library.save(named('one', 'One'))
+    await library.save(named('two', 'Two'))
+    await library.list()
+
+    await library.remove('one')
+
+    expect((await library.list()).map((entry) => entry.id)).toEqual(['two'])
+  })
+})
+
 describe('asking whether an id is taken', () => {
   it('describes the piece that is there, and answers nothing for one that is not', async () => {
     const library = createLibrary(root, memoryFiles())

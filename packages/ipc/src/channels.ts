@@ -343,6 +343,27 @@ export const libraryCorrect = {
   ]),
 } as const satisfies Channel<'library:correct', z.ZodType, z.ZodType>
 
+/**
+ * Take a piece out of the library, by the id a row names it with.
+ *
+ * An id and nothing else, for the reason every other library channel takes
+ * one: the page has no say in which file, and a delete that accepted a path
+ * would be the one channel where it did.
+ *
+ * Main puts it in the system's bin rather than unlinking it, so a wrong click
+ * is answerable without this app growing a bin of its own. An id nothing is
+ * filed under is refused and not silently accepted: the row said there was a
+ * piece there, and if there is not, that is worth saying.
+ */
+export const libraryRemove = {
+  channel: CHANNEL_NAMES.libraryRemove,
+  request: z.object({ id: z.string().min(1).max(200) }).strict(),
+  response: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('removed'), id: z.string() }),
+    z.object({ kind: z.literal('refused'), message: z.string() }),
+  ]),
+} as const satisfies Channel<'library:remove', z.ZodType, z.ZodType>
+
 /** One file the library folder holds and could not take in, as the panel says it. */
 export const libraryLeftSchema = z.object({
   name: z.string(),
@@ -540,6 +561,7 @@ export const allChannels = [
   libraryList,
   librarySave,
   libraryCorrect,
+  libraryRemove,
   libraryLeft,
   settingsRead,
   settingsWrite,
@@ -575,6 +597,8 @@ export type LibrarySaveResult = z.infer<typeof librarySave.response>
 export type LibraryCorrection = z.infer<typeof libraryCorrectionSchema>
 export type LibraryCorrectRequest = z.infer<typeof libraryCorrect.request>
 export type LibraryCorrectResult = z.infer<typeof libraryCorrect.response>
+export type LibraryRemoveRequest = z.infer<typeof libraryRemove.request>
+export type LibraryRemoveResult = z.infer<typeof libraryRemove.response>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>
 export type HistoryReadResponse = z.infer<typeof historyRead.response>
 export type HistoryWriteRequest = z.infer<typeof historyWrite.request>

@@ -13,6 +13,8 @@ import type {
   LibraryItem,
   LibraryLeft,
   LibraryQuery,
+  LibraryRemoveRequest,
+  LibraryRemoveResult,
   LibrarySaveRequest,
   LibrarySaveResult,
   LinkCommandPush,
@@ -80,6 +82,8 @@ export type PianoBridge = {
   readonly saveToLibrary: (request: LibrarySaveRequest) => Promise<LibrarySaveResult>
   /** Correct what a filed piece says about itself, answered with the score as now kept. */
   readonly correctInLibrary: (request: LibraryCorrectRequest) => Promise<LibraryCorrectResult>
+  /** Take a piece out of the library, into the system's bin. */
+  readonly removeFromLibrary: (request: LibraryRemoveRequest) => Promise<LibraryRemoveResult>
   /** Be told when a score arrives in the library folder, or leaves it. */
   readonly onLibraryChanged: (listener: () => void) => () => void
   /** What the app remembers between launches, and whether any of it had to be reset. */

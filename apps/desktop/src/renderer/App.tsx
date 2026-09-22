@@ -5,6 +5,7 @@ import {
   type LibraryItem,
   type LibraryLeft,
   type LibraryQuery,
+  type LibraryRemoveResult,
   type OpenRequest,
   type OpenResult,
 } from '@piano/ipc'
@@ -752,6 +753,22 @@ export function App() {
   }
 
   /**
+   * Take a piece out of the library, from a row in the panel.
+   *
+   * The id goes and nothing comes back but what became of it: the piece the
+   * window has open is left exactly as it is, even where it is the one that
+   * has just gone. What is on screen was read into memory and can still be
+   * played, and closing somebody's music because they tidied a list is a
+   * worse answer than a piece that outlives its file.
+   */
+  function removeFromLibrary(id: string): Promise<LibraryRemoveResult> {
+    const bridge = readBridge()
+    return bridge === null
+      ? Promise.resolve({ kind: 'refused', message: 'this window has no way to write the library' })
+      : bridge.removeFromLibrary({ id })
+  }
+
+  /**
    * Keep the worked-out version in the score's file, so it can be read and
    * corrected there. The score main wrote is the one shown after, as the same
    * piece rather than a new one: what is being practised stays as it was.
@@ -874,6 +891,7 @@ export function App() {
                   openFrom({ from: 'folder', name })
                 }}
                 onCorrect={correctInLibrary}
+                onRemove={removeFromLibrary}
               />
               {/*
                 Nothing to file until something is open: the placeholder is

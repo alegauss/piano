@@ -113,6 +113,17 @@ export type Library = {
    * for a row somebody deleted while the form was open.
    */
   readonly correct: (id: string, correction: Correction) => Promise<Saved | null>
+  /**
+   * Take a piece out of the library, on somebody's say-so.
+   *
+   * Through `discard` rather than `remove`, so a host with a bin puts it
+   * there: this is the only copy of something that may have taken a week to
+   * ask for, and a wrong click has to be answerable. Every name the id may be
+   * kept under goes, or the one written before the suffix changed would come
+   * back as the piece the next listing finds. False where nothing was there,
+   * which is a row somebody deleted twice and never an error.
+   */
+  readonly remove: (id: string) => Promise<boolean>
   readonly read: (id: string) => Promise<Score>
   readonly list: (order?: Order) => Promise<LibraryEntry[]>
   readonly search: (filter: LibraryFilter, order?: Order) => Promise<LibraryEntry[]>
@@ -382,6 +393,17 @@ export function createLibrary(root: string, files: Files): Library {
       }
       const file = await keep(id, parsed.score)
       return { id, file, metadata: parsed.score.metadata, score: parsed.score }
+    },
+    remove: async (id) => {
+      let held = false
+      for (const name of libraryFileNames(id)) {
+        const path = `${root}/${name}`
+        if ((await files.stat(path)) !== null) {
+          held = true
+          await files.discard(path)
+        }
+      }
+      return held
     },
     read: async (id) => readScore((await foundFor(id)) ?? pathFor(id)),
     seed: async (scores) => {

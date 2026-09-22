@@ -21,6 +21,7 @@ import {
   dialog,
   Menu,
   session,
+  shell,
   type OpenDialogOptions,
   type SaveDialogOptions,
 } from 'electron'
@@ -32,6 +33,7 @@ import { registerIpcHandlers } from './ipc'
 import { keepInFile } from './keep-arrangement'
 import { correctInLibrary } from './library-correct'
 import { createInbox, SETTLE_MS } from './library-inbox'
+import { removeFromLibrary } from './library-remove'
 import { fileInLibrary } from './library-save'
 import { watchLibrary } from './library-watch'
 import { startLinkHost, type LinkHost } from './link-host'
@@ -124,8 +126,16 @@ let listening = false
 /** The scores opened lately, kept in this profile. */
 const recent = createRecent(join(app.getPath('userData'), 'recent-scores.json'))
 
-/** The library Claude Code saves into, read through the same index its tools read. */
-const library = createLibrary(libraryRoot(), nodeFiles)
+/**
+ * The library Claude Code saves into, read through the same index its tools
+ * read — and, here alone, with a bin under it: a piece somebody deletes is the
+ * only copy of something they may have spent a week asking for, so it goes
+ * where the system puts deleted files and not where nothing goes.
+ */
+const library = createLibrary(libraryRoot(), {
+  ...nodeFiles,
+  discard: (path) => shell.trashItem(path),
+})
 
 /** The MIDI and MusicXML files somebody copies into the library folder. */
 const inbox = createInbox({
@@ -511,6 +521,9 @@ if (firstInstance) {
         // An id and five fields, never a score: a correction is about what a
         // piece says about itself and never about its notes.
         correctInLibrary: (request) => correctInLibrary(request, library),
+        // An id and nothing else, and the file goes to the system's bin: the
+        // library knows which file that is, and the page has no say in it.
+        removeFromLibrary: (request) => removeFromLibrary(request, library),
         settings,
         history,
         saveHistory: async (window) =>

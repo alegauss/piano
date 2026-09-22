@@ -9,6 +9,7 @@ import {
   libraryCorrect,
   libraryLeft,
   libraryList,
+  libraryRemove,
   librarySave,
   linkAnswer,
   linkListening,
@@ -37,6 +38,8 @@ import {
   type LibraryItem,
   type LibraryLeft,
   type LibraryQuery,
+  type LibraryRemoveRequest,
+  type LibraryRemoveResult,
   type LibrarySaveRequest,
   type LibrarySaveResult,
   type LinkResult,
@@ -115,6 +118,8 @@ export function registerIpcHandlers(options: {
   readonly fileInLibrary: (request: LibrarySaveRequest) => Promise<LibrarySaveResult>
   /** Correct what a filed piece says about itself, leaving its notes alone. */
   readonly correctInLibrary: (request: LibraryCorrectRequest) => Promise<LibraryCorrectResult>
+  /** Take a piece out of the library, into whatever bin the system keeps. */
+  readonly removeFromLibrary: (request: LibraryRemoveRequest) => Promise<LibraryRemoveResult>
   readonly settings: SettingsStore
   readonly history: HistoryStore
   /** Save the history main holds as a file, asking where in front of that window. */
@@ -168,6 +173,8 @@ export function registerIpcHandlers(options: {
   handle(librarySave, (request) => options.fileInLibrary(request))
 
   handle(libraryCorrect, (request) => options.correctInLibrary(request))
+
+  handle(libraryRemove, (request) => options.removeFromLibrary(request))
 
   handle(libraryLeft, () => options.libraryLeftBehind())
 

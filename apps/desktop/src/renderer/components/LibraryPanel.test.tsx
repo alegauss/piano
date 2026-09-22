@@ -1,4 +1,10 @@
-import type { LibraryCorrectResult, LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
+import type {
+  LibraryCorrectResult,
+  LibraryItem,
+  LibraryLeft,
+  LibraryQuery,
+  LibraryRemoveResult,
+} from '@piano/ipc'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -34,6 +40,7 @@ function setup(
     title: 'Ode to Joy',
     score: null,
   },
+  gone: LibraryRemoveResult = { kind: 'removed', id: 'ode-to-joy' },
 ) {
   const asked: LibraryQuery[] = []
   const opened: string[] = []
@@ -43,6 +50,8 @@ function setup(
   const openedLeft: string[] = []
   /** Every correction the panel asked main to write. */
   const corrected: { id: string; filing: Filing }[] = []
+  /** Every id the panel asked main to take out of the library. */
+  const removed: string[] = []
   let changed: (() => void) | null = null
   render(
     <LibraryPanel
@@ -70,6 +79,10 @@ function setup(
         corrected.push({ id, filing })
         return Promise.resolve(answer)
       }}
+      onRemove={(id) => {
+        removed.push(id)
+        return Promise.resolve(gone)
+      }}
     />,
   )
   return {
@@ -78,6 +91,7 @@ function setup(
     files: () => files,
     openedLeft,
     corrected,
+    removed,
     change: () => {
       act(() => {
         changed?.()
@@ -246,7 +260,7 @@ describe('correcting a piece from its row', () => {
     expect(screen.getByText(/keeps the name it is filed under/)).toBeInTheDocument()
   })
 
-  it('keeps the form open with the reason when the write was refused', async () => {
+  it('keeps the form open with the reason when the correction was refused', async () => {
     const { asked } = await correcting(items, [], {
       kind: 'refused',
       message: 'nothing is filed as ode-to-joy any more',
@@ -258,7 +272,65 @@ describe('correcting a piece from its row', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'That could not be saved: nothing is filed as ode-to-joy any more.',
     )
+
     expect(screen.getByLabelText('Title')).toHaveValue('Ode to Joy')
     expect(asked.length).toBe(before)
+  })
+})
+
+describe('deleting a piece from its row', () => {
+  /** Open the panel and press delete on the first row, which asks the question. */
+  async function deleting(...args: Parameters<typeof setup>) {
+    const held = setup(...args)
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Ode to Joy' }))
+    return held
+  }
+
+  it('asks once, naming the piece rather than the id it is filed under', async () => {
+    const { removed } = await deleting()
+
+    expect(screen.getByText('Delete this piece?')).toBeInTheDocument()
+    expect(screen.getByText('Ode to Joy · Beethoven · 0:30')).toBeInTheDocument()
+    // Somewhere to put a wrong click back from, said before it is made.
+    expect(screen.getByText(/It goes to the bin/)).toBeInTheDocument()
+    expect(removed).toEqual([])
+  })
+
+  it('takes nothing away when the answer is to keep it', async () => {
+    const { removed } = await deleting()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Delete this piece?')).toBeNull()
+    })
+    expect(removed).toEqual([])
+  })
+
+  it('takes the piece away by its id and asks for the list again', async () => {
+    const { removed, asked } = await deleting()
+    const before = asked.length
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete it' }))
+
+    await waitFor(() => {
+      expect(asked.length).toBeGreaterThan(before)
+    })
+    expect(removed).toEqual(['ode-to-joy'])
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('says why where the list is when nothing was taken away', async () => {
+    await deleting(items, [], undefined, {
+      kind: 'refused',
+      message: 'nothing is filed as ode-to-joy',
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete it' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'That could not be deleted: nothing is filed as ode-to-joy.',
+    )
+    expect(screen.queryByText('Delete this piece?')).toBeNull()
   })
 })

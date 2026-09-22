@@ -32,28 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI101 Taking a piece out of the library
-
-A library that only grows is a library that fills with mistakes: the import that came in
-twice, the download that turned out to be a drum track, the piece filed as Untitled
-before anyone knew what it was. Today the only way out is the file manager — find the
-library folder under the home directory, work out which .piano file is which from names
-safeName() has already reduced to lower case and hyphens, and delete it there. The
-listing does notice, because every listing compares the index with the directory, but
-somebody who never opens a terminal has to be told where the folder is before any of
-that helps.
-
-Delete belongs on the row, beside opening it. What it must not be is a button that
-quietly destroys the only copy of a piece somebody asked for last week: ask once, and
-name the piece by title, composer and length, the way the filing clash already names
-what is in the way. Electron's shell.trashItem puts the file in the system's bin rather
-than unlinking it, which makes a wrong click recoverable without this app growing a bin
-of its own.
-
-Two records outlive the file. The seeded list already remembers which shipped scores
-were given, so a deleted sample does not come back next launch; that is deliberate and
-stays. Practice history does not, and what becomes of it is PI103's question.
-
 ### §PI102 One name everywhere
 
 A score is addressed by an id, and libraryId() takes it from metadata.id where there is
@@ -113,8 +91,9 @@ alone.
 Both belong after the window's own edit and delete rather than before. What to do about
 a taken id, about a piece being renamed, and about practice history is decided there,
 and a tool that answered any of it differently would be a second set of rules to keep in
-step. The MCP server and the app already read and write through one library module;
-these two go through it too.
+step. The MCP server and the app read and write through one library module, but not one
+filesystem: the window's library was handed a discard that is the system's bin, and the
+server's was not.
 
 ### §PI105 Tidying more than one piece
 

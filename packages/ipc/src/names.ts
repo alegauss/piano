@@ -21,6 +21,7 @@ export const CHANNEL_NAMES = {
   libraryList: 'library:list',
   librarySave: 'library:save',
   libraryCorrect: 'library:correct',
+  libraryRemove: 'library:remove',
   libraryLeft: 'library:left',
   settingsRead: 'settings:read',
   settingsWrite: 'settings:write',

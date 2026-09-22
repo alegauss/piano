@@ -250,6 +250,13 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
       held = score
       return Promise.resolve({ kind: 'corrected' as const, id, title: metadata.title, score })
     },
+    removeFromLibrary: ({ id }) => {
+      if (!library.has(id)) {
+        return Promise.resolve({ kind: 'refused' as const, message: `nothing is filed as ${id}` })
+      }
+      library.delete(id)
+      return Promise.resolve({ kind: 'removed' as const, id })
+    },
     onLibraryChanged: () => () => {},
     readSettings: () => Promise.resolve({ settings: DEFAULT_SETTINGS, notice: null, fresh: false }),
     writeSettings: () => Promise.resolve(DEFAULT_SETTINGS),
@@ -512,6 +519,28 @@ describe('correcting a piece the window has open', () => {
     await press('Save it')
 
     expect(heading()).toContain('Prelude')
+  })
+})
+
+describe('deleting a piece the window has open', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'piano')
+  })
+
+  it('takes it out of the library and goes on showing it, since it is already read', async () => {
+    const main = fakeMain()
+    main.library.set('aria', { title: 'Aria', composer: 'Somebody' })
+    render(<App />)
+    await main.push({ kind: 'opened', name: 'aria.piano', score: aria, notices: [] })
+
+    await press('Library')
+    await press('Delete Aria')
+    await press('Delete it')
+
+    // Closing somebody's music because they tidied a list is a worse answer
+    // than a piece that outlives its file.
+    expect(main.library.has('aria')).toBe(false)
+    expect(heading()).toContain('Aria')
   })
 })
 
