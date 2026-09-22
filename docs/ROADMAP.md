@@ -6,8 +6,6 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI93** (deps: —) **An import whose repeats and jumps expand past 4,000 bars is cut off mid-piece and nothing says it was cut** — The walk stops on the cap the same way it stops at the end, and the bar count it reports reads as a result rather than a limit. → §PI93
-
 ## Block C — Audio engine and transport
 
 ## Block E — Practice mode and difficulty levels

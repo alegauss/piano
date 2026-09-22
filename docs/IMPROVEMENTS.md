@@ -24,29 +24,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block B — Score JSON format
 
-### §PI93 Say when the expansion hit its ceiling
-
-`playOrder` walks until it has 4,000 measures and then stops, which is right: a repeat
-structure that never lands anywhere is a broken file and not a long piece. What it does
-not do is say so. The walk ends, the order is whatever it had reached, and the import
-returns a valid score that is simply missing its end.
-
-`inferred['repeat']` makes it worse rather than better. It reports the count it arrived
-at — "the 900 written bars were played out as 4000 bars" — in the same sentence it uses
-when nothing was cut, so the one number that would give it away reads as a result. The
-score validates, the library lists it, and the piece stops mid-phrase with nothing
-anywhere saying why.
-
-PI90 widened the door. A jump can send the walk back over measures a repeat already
-expanded, so the two compound, and a file whose repeats alone stayed well inside the cap
-can cross it once its da capo is followed.
-
-What is missing is one flag off the walk — the loop ended on the cap rather than on
-running out of measures — and a sentence for it. The sentence belongs in `dropped` and
-not in `inferred`: `inferred` is what the import worked out, and this is music the file
-held and the score does not. Something like "the piece was cut at 4,000 bars, where a
-repeat or a jump sent the reading back further than a score can hold".
-
 ## Block C — Audio engine and transport
 
 ## Block E — Practice mode and difficulty levels

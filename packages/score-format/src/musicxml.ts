@@ -211,6 +211,8 @@ type Leftovers = {
   otherDynamics: number
   oddMeters: number
   transposed: number
+  /** Whether the repeats and jumps expanded past what one import plays out. */
+  cut: boolean
   readonly jumps: Set<string>
   readonly rights: Set<string>
 }
@@ -228,6 +230,7 @@ function emptyLeftovers(): Leftovers {
     otherDynamics: 0,
     oddMeters: 0,
     transposed: 0,
+    cut: false,
     jumps: new Set(),
     rights: new Set(),
   }
@@ -239,6 +242,14 @@ function describeLeftovers(leftovers: Leftovers, keyChanges: number): string[] {
     if (count > 0) {
       dropped.push(sentence)
     }
+  }
+
+  // First, because it is the only line here that means the end of the piece is
+  // missing rather than a detail of it.
+  if (leftovers.cut) {
+    dropped.push(
+      `everything past bar ${String(MAX_PLAYED_MEASURES)}, where a repeat or a jump sent the reading back further than one import plays out`,
+    )
   }
 
   add(
@@ -824,6 +835,7 @@ function playOrder(plans: readonly MeasurePlan[]): {
   order: number[]
   repeated: boolean
   followed: Set<string>
+  cut: boolean
 } {
   const order: number[] = []
   const played = new Map<number, number>()
@@ -839,6 +851,8 @@ function playOrder(plans: readonly MeasurePlan[]): {
   let jumped = false
   /** Whether a da capo or a dal segno has been taken, which is what wakes `fine`. */
   let returning = false
+  /** Whether the ceiling stopped the walk with a measure still to play. */
+  let cut = false
 
   /** Where a sign of this name is written, or the only one of its kind where none matches. */
   const signed = (which: 'segno' | 'coda', label: string): number | null => {
@@ -847,7 +861,16 @@ function playOrder(plans: readonly MeasurePlan[]): {
     return any >= 0 ? any : null
   }
 
-  while (index >= 0 && index < plans.length && order.length < MAX_PLAYED_MEASURES) {
+  while (index >= 0 && index < plans.length) {
+    // Inside the loop rather than in its condition, so the ceiling is told
+    // apart from the end of the piece: what is refused here is a measure this
+    // walk had reached and would have played, which is music the file holds
+    // and the score will not.
+    if (order.length >= MAX_PLAYED_MEASURES) {
+      cut = true
+      break
+    }
+
     const plan = plans[index] ?? emptyPlan()
 
     if (plan.forward) {
@@ -924,7 +947,7 @@ function playOrder(plans: readonly MeasurePlan[]): {
     index += 1
   }
 
-  return { order, repeated, followed }
+  return { order, repeated, followed, cut }
 }
 
 // ---------------------------------------------------------------------------
@@ -1193,7 +1216,8 @@ export function importMusicXml(xml: string, options: MusicXmlImportOptions = {})
 
   const measureCount = Math.max(...sources.map((part) => part.measures.length))
   const plans = readPlans(sources, measureCount)
-  const { order, repeated, followed } = playOrder(plans)
+  const { order, repeated, followed, cut } = playOrder(plans)
+  leftovers.cut = cut
   const why: string[] = []
   if (repeated) {
     why.push('a repeat being taken')

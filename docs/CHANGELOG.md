@@ -64,6 +64,7 @@
   checked **Export reports what it dropped** Exporting a score carrying fingering, articulation and arrangements lists each thing MIDI cannot represent, instead of writing a file that silently lost them.
 - ✅ **PI88** **A MusicXML file cannot be opened, so the stave guesses spellings, hands and fingering the file already states** — MusicXML opens as a score, keeping the spellings, hands, fingering and articulation the file wrote down, as .musicxml, .xml or a zipped .mxl.
 - ✅ **PI90** **A da capo or dal segno is reported and not followed, so an imported piece ends where the writing stops** — A da capo, a dal segno, a to coda and a fine are now followed, so an imported piece plays its jumps the way a reader takes them.
+- ✅ **PI93** **An import whose repeats and jumps expand past 4,000 bars is cut off mid-piece and nothing says it was cut** — An import stopped by the 4,000-bar ceiling now says so in `dropped`, told apart from one that simply reached the end of the piece.
 
 ## Block C — Audio engine and transport
 

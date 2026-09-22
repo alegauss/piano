@@ -394,6 +394,41 @@ describe('importMusicXml', () => {
     ])
   })
 
+  it('says when the expansion was cut rather than reaching the end', () => {
+    // One bar repeating ten thousand times: a repeat structure like this is a
+    // broken file and not a long piece, and the import stops. What it must not
+    // do is stop quietly, leaving a score that validates and ends mid-phrase.
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}
+            <barline location="left"><repeat direction="forward"/></barline>
+            ${note('C', 4, 4)}
+            <barline location="right"><repeat direction="backward" times="9999"/></barline>
+          </measure>`,
+      }),
+    )
+
+    expect(played(result.score)).toHaveLength(4000)
+    expect(result.dropped).toEqual([
+      'everything past bar 4000, where a repeat or a jump sent the reading back further than one import plays out',
+    ])
+  })
+
+  it('says nothing about a ceiling a piece never reached', () => {
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}
+            <barline location="left"><repeat direction="forward"/></barline>
+            ${note('C', 4, 4)}
+            <barline location="right"><repeat direction="backward" times="3"/></barline>
+          </measure>`,
+      }),
+    )
+
+    expect(played(result.score)).toHaveLength(3)
+    expect(result.dropped).toEqual([])
+  })
+
   it('follows a da capo al fine, stopping where the second pass is told to', () => {
     // Bars 1 2 3, Fine on 2, D.C. on 3: the piece is 1 2 3 1 2 and not 1 2 3.
     const result = imported(
