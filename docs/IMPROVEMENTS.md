@@ -32,30 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI96 What an import cannot know
-
-`importMidi` builds metadata out of a title and, where the file says so, a key. Nothing
-else is there to find: General MIDI has no field for how hard a piece is, and a track
-name is not a composer. MusicXML does better, carrying a work title and a creator, but
-neither format carries a level or a tag.
-
-The library is built around those fields. `compareForLibrary` orders by level and
-difficulty, so a piece with neither sorts last under Easiest first. `matchesFilter`
-answers the level buttons, the composer chip and the tag chips, and a piece with none of
-them is reachable only by typing part of its title. Import twenty MIDI files and the
-panel becomes a list its own filters cannot narrow.
-
-So the filing door asks. One small form, prefilled with what the import did work out —
-the title from the file name, the composer where MusicXML named one — and the three it
-could not: composer, level, and tags as free words. Nothing is compulsory; a piece filed
-with a title alone is still filed, and the rest can be added later by asking Claude
-Code, which already writes metadata through `save_score`.
-
-The form is also where PI95's name clash is answered, since both are the same question —
-what is this piece called and where does it go — asked once rather than twice.
-
-Needs PI94.
-
 ### §PI97 What the folder will hold
 
 `libraryIdOfFile` accepts `.piano` and the older `.score.json` and answers null for

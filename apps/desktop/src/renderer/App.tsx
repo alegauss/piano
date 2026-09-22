@@ -37,7 +37,7 @@ import {
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
-import { LibraryClash, type Clash } from './components/LibraryClash'
+import { LibraryFiling, type Clash } from './components/LibraryFiling'
 import { LibraryPanel } from './components/LibraryPanel'
 import { OpenControls } from './components/OpenControls'
 import { OpenReport, type Report } from './components/OpenReport'
@@ -82,7 +82,7 @@ import {
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { describeExport, exportedScore } from './lib/export'
-import { describeFiling } from './lib/library'
+import { describeFiling, withMetadata, type Filing } from './lib/library'
 import { outcomeOf, type Opened } from './lib/open'
 import { appPackDownload } from './lib/pack-download'
 import { appSettings } from './lib/settings'
@@ -192,6 +192,8 @@ export function App() {
   const loaded = useRef<(() => void)[]>([])
   /** What the last save said: where it went, and what the file could not keep. */
   const [notice, setNotice] = useState<string | null>(null)
+  /** The filing form is open, which is the one place a piece is described on its way in. */
+  const [filing, setFiling] = useState(false)
   /** The library already holds this piece's id; nothing is filed until that is answered. */
   const [clash, setClash] = useState<Clash | null>(null)
 
@@ -679,27 +681,32 @@ export function App() {
    *
    * The whole score goes, not the version being played: an import's metadata
    * and a score's arrangements are what make it findable and playable later,
-   * and they are exactly what Save as MIDI leaves behind.
+   * and they are exactly what Save as MIDI leaves behind. The form's three
+   * fields are written into it on the way, which is how a piece a MIDI file
+   * could say nothing about becomes one the list's filters reach.
    *
    * Main answers rather than writing where the id is already in use. Then the
    * same call is made again carrying the answer to that, which is the one
    * thing the page decides about where a piece goes.
    */
-  function addToLibrary(taken?: 'beside' | 'replace'): void {
+  function addToLibrary(described: Filing, taken?: 'beside' | 'replace'): void {
     const bridge = readBridge()
     if (bridge === null) {
       return
     }
-    void bridge.saveToLibrary({ score, ...(taken === undefined ? {} : { taken }) }).then(
+    const filed = withMetadata(score, described)
+    void bridge.saveToLibrary({ score: filed, ...(taken === undefined ? {} : { taken }) }).then(
       (result) => {
         if (result.kind === 'taken') {
           setClash(result)
           return
         }
+        setFiling(false)
         setClash(null)
         setNotice(describeFiling(result))
       },
       (cause: unknown) => {
+        setFiling(false)
         setClash(null)
         setNotice(
           `Could not add it to the library: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -833,7 +840,8 @@ export function App() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    addToLibrary()
+                    setClash(null)
+                    setFiling(true)
                   }}
                 >
                   <LibraryBig />
@@ -853,13 +861,17 @@ export function App() {
         </header>
       )}
 
-      <LibraryClash
-        clash={clash}
-        onChoose={addToLibrary}
-        onClose={() => {
-          setClash(null)
-        }}
-      />
+      {filing ? (
+        <LibraryFiling
+          score={score}
+          clash={clash}
+          onFile={addToLibrary}
+          onClose={() => {
+            setFiling(false)
+            setClash(null)
+          }}
+        />
+      ) : null}
 
       <OpenReport
         report={report}

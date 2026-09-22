@@ -14,7 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI96** (deps: PI94 ✅) **An imported piece is filed with a title and nothing else: no composer, no level, no tags, so no filter finds it** — Filing an import from the window asks for the composer, level and tags it could not guess, prefilled from the file, so the piece is findable at once. → §PI96
 - 📋 **PI97** (deps: PI94 ✅, PI95 ✅) **A MIDI or MusicXML file copied into the library folder is ignored by the index, and nothing on screen says why** — A MIDI or MusicXML file left in the library folder is imported once and filed as a score, so copying a file in works for every type the app opens. → §PI97
 - 📋 **PI98** (deps: PI94 ✅) **The empty library tells people to ask Claude Code and never says that a MIDI file of their own can go in** — The library's empty state and its description name both ways in: a piece asked for in chat, and a file already on disk brought in through the door beside Open. → §PI98
 

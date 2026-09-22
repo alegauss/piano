@@ -325,6 +325,37 @@ describe('opening a score in the window', () => {
 
 const addToLibrary = () => screen.queryByRole('button', { name: 'Add to library', hidden: true })
 
+/** Click a button the filing form shows, by the words on it. */
+async function press(name: string) {
+  await act(async () => {
+    screen.getByRole('button', { name, hidden: true }).click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+  })
+}
+
+/** One of the form's fields, by the label above it. */
+const field = (label: string) => screen.getByLabelText<HTMLInputElement>(label)
+
+/** Type into one of the form's fields, as somebody filling it in would. */
+function type(label: string, text: string) {
+  const typed = field(label)
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.bind(
+      typed,
+    )
+    setter?.(text)
+    typed.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+/** Open the form on whatever is open, which the header button does. */
+async function openFiling() {
+  await act(async () => {
+    addToLibrary()?.click()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+  })
+}
+
 describe('putting the open piece in the library', () => {
   afterEach(() => {
     Reflect.deleteProperty(window, 'piano')
@@ -336,29 +367,50 @@ describe('putting the open piece in the library', () => {
     expect(addToLibrary()).toBeNull()
   })
 
-  it('sends the whole score, and says what it went in as', async () => {
+  it('asks for what the file could not say, prefilled with what it did', async () => {
     const main = fakeMain()
     render(<App />)
     // An import: the score is in memory and in no file the app can reopen.
     await main.push({ kind: 'opened', name: 'aria.mid', score: aria, notices: [] })
+    await openFiling()
 
-    await act(async () => {
-      addToLibrary()?.click()
-      await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(field('Title').value).toBe('Aria')
+    expect(field('Composer').value).toBe('Somebody')
+    expect(field('Tags').value).toBe('')
+    // Nothing is filed by opening the form.
+    expect(main.filed).toHaveLength(0)
+
+    type('Composer', 'J. S. Bach')
+    type('Tags', 'baroque, study')
+    await press('Beginner')
+    await press('Add it')
+
+    expect(main.filed).toHaveLength(1)
+    expect((main.filed[0] as Score).metadata).toEqual({
+      title: 'Aria',
+      composer: 'J. S. Bach',
+      level: 'beginner',
+      tags: ['baroque', 'study'],
     })
-
-    expect(main.filed).toEqual([aria])
     expect(screen.getByText(/Added Aria to the library, as aria\./)).toBeTruthy()
+  })
+
+  it('sends the notes and everything else the score carries, untouched', async () => {
+    const main = fakeMain()
+    render(<App />)
+    await main.push({ kind: 'opened', name: 'aria.mid', score: aria, notices: [] })
+    await openFiling()
+    await press('Add it')
+
+    expect((main.filed[0] as Score).notes).toEqual(aria.notes)
   })
 
   it('asks before replacing a piece already filed under that id, and files beside it', async () => {
     const main = fakeMain()
     render(<App />)
     await main.push({ kind: 'opened', name: 'aria.mid', score: aria, notices: [] })
-    await act(async () => {
-      addToLibrary()?.click()
-      await new Promise((resolve) => requestAnimationFrame(resolve))
-    })
+    await openFiling()
+    await press('Add it')
 
     // A different piece a MIDI file happens to call the same thing.
     await main.push({
@@ -367,20 +419,17 @@ describe('putting the open piece in the library', () => {
       score: { ...aria, metadata: { title: 'Aria', composer: 'Somebody else' } },
       notices: [],
     })
-    await act(async () => {
-      addToLibrary()?.click()
-      await new Promise((resolve) => requestAnimationFrame(resolve))
-    })
+    await openFiling()
+    await press('Add it')
 
-    // Nothing was filed: what is there is described, and the choice is open.
+    // Nothing was filed twice: what is there is described, in the same form,
+    // and the choice is open.
     expect(main.filed).toHaveLength(1)
     expect(screen.getByText('The library already has a aria')).toBeTruthy()
     expect(screen.getByText(/Aria · Somebody · 1:35/)).toBeTruthy()
+    expect(screen.getByLabelText('Composer')).toBeTruthy()
 
-    await act(async () => {
-      screen.getByRole('button', { name: 'File this one beside it', hidden: true }).click()
-      await new Promise((resolve) => requestAnimationFrame(resolve))
-    })
+    await press('File this one beside it')
 
     expect(main.filed).toHaveLength(2)
     expect(screen.getByText(/Added Aria to the library, as aria-2\./)).toBeTruthy()
