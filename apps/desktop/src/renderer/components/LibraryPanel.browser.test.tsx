@@ -46,6 +46,7 @@ async function open(): Promise<void> {
       search={(_query: LibraryQuery) => Promise.resolve(items)}
       changes={() => () => undefined}
       onOpen={() => undefined}
+      onOpenFile={() => undefined}
     />,
   )
   fireEvent.click(screen.getByRole('button', { name: 'Library' }))

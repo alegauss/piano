@@ -26,6 +26,8 @@ const items: LibraryItem[] = [
 function setup(found: LibraryItem[] = items) {
   const asked: LibraryQuery[] = []
   const opened: string[] = []
+  /** How many times the other way in was taken: open a file, then file it. */
+  let files = 0
   let changed: (() => void) | null = null
   render(
     <LibraryPanel
@@ -42,11 +44,15 @@ function setup(found: LibraryItem[] = items) {
       onOpen={(id) => {
         opened.push(id)
       }}
+      onOpenFile={() => {
+        files += 1
+      }}
     />,
   )
   return {
     asked,
     opened,
+    files: () => files,
     change: () => {
       act(() => {
         changed?.()
@@ -105,10 +111,27 @@ describe('the library on screen', () => {
     expect(asked.length).toBe(before + 1)
   })
 
-  it('says how to fill an empty library', async () => {
+  it('names both ways into an empty library, and offers the second as a door', async () => {
+    const { files } = setup([])
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+
+    const said = await screen.findByText(/The library is empty/)
+    expect(said).toHaveTextContent('/piano:compose')
+    expect(said).toHaveTextContent('a file you already have')
+
+    // Nobody goes looking for a button in the header on the strength of a
+    // sentence about one, so the sentence is the button.
+    fireEvent.click(screen.getByRole('button', { name: 'Open a file' }))
+    expect(files()).toBe(1)
+  })
+
+  it('offers nothing to open when it is a search that found nothing', async () => {
     setup([])
     fireEvent.click(screen.getByRole('button', { name: 'Library' }))
-    expect(await screen.findByText(/The library is empty/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Search the library'), { target: { value: 'ode' } })
+
+    expect(await screen.findByText('Nothing in the library matches.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open a file' })).toBeNull()
   })
 
   it('writes a length as minutes and seconds', () => {

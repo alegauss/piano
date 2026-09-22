@@ -830,6 +830,9 @@ export function App() {
                 onOpen={(id) => {
                   openFrom({ from: 'library', id })
                 }}
+                onOpenFile={() => {
+                  openFrom({ from: 'dialog' })
+                }}
               />
               {/*
                 Nothing to file until something is open: the placeholder is

@@ -14,7 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI98** (deps: PI94 ✅) **The empty library tells people to ask Claude Code and never says that a MIDI file of their own can go in** — The library's empty state and its description name both ways in: a piece asked for in chat, and a file already on disk brought in through the door beside Open. → §PI98
 - 📋 **PI99** (deps: PI97 ✅) **A file the library folder cannot take in stays there unlisted, and only the log says why** — The Library panel says which files in the folder were left and why, so a piece that never appears is not a silent failure. → §PI99
 
 ## Block H — Sheet music view

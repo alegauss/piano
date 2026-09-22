@@ -32,30 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI98 Saying the second way in
-
-The panel says two things about where scores come from. Its description: "Every score
-saved from Claude Code, and any copied into the library folder." Its empty state: "The
-library is empty. Ask Claude Code for a piece with /piano:compose."
-
-Both were true while the library had one writer. Once PI94 lands they are not: the app
-itself can file a piece, and the way somebody with a folder of MIDI files gets them in
-is Open, then file. Nobody reads a header button they are not looking for, and the one
-place they are certainly looking is the empty list.
-
-So the empty state names both routes and hangs the second on the action rather than
-describing it: ask Claude Code for a piece, or open a file you already have. The
-description follows — the folder sentence stays, because copying a file in still works,
-but it stops being the only alternative offered.
-
-This is a paragraph of text, filed on its own because it is the half of the complaint
-that is not code. Somebody who has opened a MIDI file, heard it play and then found no
-way to keep it is not missing a feature at that moment; they are missing the sentence
-saying where the feature is. A button added in PI94 and never mentioned here leaves them
-where they started.
-
-Needs PI94.
-
 ### §PI99 What the folder would not take
 
 The inbox takes in what it can and writes a line to the log about the rest. A `.mid`

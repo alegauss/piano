@@ -205,6 +205,7 @@
 - ✅ **PI95** **An import filed under a title the library already holds overwrites it, with nothing asked and nothing said** — Filing a piece whose id is taken says what is there and offers to number the new one or replace the old, so two pieces with one title both survive.
 - ✅ **PI96** **An imported piece is filed with a title and nothing else: no composer, no level, no tags, so no filter finds it** — Filing asks for the composer, level and tags in one form, prefilled from the file, so an imported piece is one the list's own filters reach.
 - ✅ **PI97** **A MIDI or MusicXML file copied into the library folder is ignored by the index, and nothing on screen says why** — A MIDI or MusicXML file copied into the library folder is imported once and filed as a score beside it, so a folder of downloads becomes a library.
+- ✅ **PI98** **The empty library tells people to ask Claude Code and never says that a MIDI file of their own can go in** — The empty library names both ways in and offers the second as a door: ask Claude Code for a piece, or open a file already on the disk.
 
 ## Block H — Sheet music view
 

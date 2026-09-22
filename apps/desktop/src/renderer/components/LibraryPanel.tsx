@@ -1,5 +1,5 @@
 import type { LibraryItem, LibraryQuery } from '@piano/ipc'
-import { Library as LibraryIcon, X } from 'lucide-react'
+import { FolderOpen, Library as LibraryIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { cn } from '../lib/cn'
@@ -17,6 +17,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  * what is typed, what is picked, or a score arriving in the folder while it
  * is open — and the answer comes from the same index Claude Code's tools
  * read, so a list here and a list in the chat are the same list.
+ *
+ * The library has two ways in now, and an empty list is the one place
+ * somebody is certainly looking: ask Claude Code for a piece, or bring in a
+ * file already on the disk. The second is offered as the door itself rather
+ * than described, because somebody who has just found an empty library is not
+ * going to go looking for a button in the header on the strength of a
+ * sentence about one.
  */
 
 type Level = NonNullable<LibraryQuery['level']>
@@ -39,11 +46,14 @@ export function LibraryPanel({
   search,
   changes,
   onOpen,
+  onOpenFile,
 }: {
   readonly search: (query: LibraryQuery) => Promise<LibraryItem[]>
   /** Told when the folder changes; returns the way to stop being told. */
   readonly changes: (listener: () => void) => () => void
   readonly onOpen: (id: string) => void
+  /** The other way in: open a file already on the disk, and file it from there. */
+  readonly onOpenFile: () => void
 }) {
   const [showing, setShowing] = useState(false)
   const [text, setText] = useState('')
@@ -110,7 +120,8 @@ export function LibraryPanel({
         <DialogHeader>
           <DialogTitle>Library</DialogTitle>
           <DialogDescription>
-            Every score saved from Claude Code, and any copied into the library folder.
+            Every score saved from Claude Code, added from a file you opened, or copied into the
+            library folder.
           </DialogDescription>
         </DialogHeader>
 
@@ -182,11 +193,26 @@ export function LibraryPanel({
           {items === null ? (
             <p className="px-2 py-3 text-sm text-text-muted">Looking…</p>
           ) : items.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-text-muted">
-              {narrowed
-                ? 'Nothing in the library matches.'
-                : 'The library is empty. Ask Claude Code for a piece with /piano:compose.'}
-            </p>
+            <div className="flex flex-col items-start gap-2 px-2 py-3">
+              <p className="text-sm text-text-muted">
+                {narrowed
+                  ? 'Nothing in the library matches.'
+                  : 'The library is empty. Ask Claude Code for a piece with /piano:compose, or bring in a file you already have.'}
+              </p>
+              {narrowed ? null : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setShowing(false)
+                    onOpenFile()
+                  }}
+                >
+                  <FolderOpen />
+                  Open a file
+                </Button>
+              )}
+            </div>
           ) : (
             <ul aria-label="Scores in the library" className="flex flex-col">
               {items.map((item) => (
