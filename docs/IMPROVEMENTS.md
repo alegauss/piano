@@ -32,4 +32,128 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
+### §PI100 Correcting what a piece says about itself
+
+The library is built on metadata it gives nobody a way to write. LibraryFiling asks for
+a title, a composer, a level and tags once, as a file comes in, and after that the only
+writer is Claude Code through save_score. Everything the panel does reads those fields:
+the level buttons, the composer chip, the tag chips, the easiest-first order that sorts
+on difficulty. So a piece filed in a hurry — a MIDI file whose track name became its
+title, a level nobody picked — is a row the panel's own filters cannot find, and today
+the answer is to ask a model to rewrite the file.
+
+The form exists; what is missing is a way into it from a row, and a write back. Reuse
+LibraryFiling rather than build a second one: these are the same questions asked later,
+and two forms would drift apart the first time a field is added. Difficulty belongs here
+even though filing does not ask for it, because it is what orders the rows inside a
+level and nothing on screen can set it. The write goes through the same library save the
+window already uses, so validation stays in one place, and a piece open in the window is
+re-read after it rather than left showing what was corrected. Editing what a piece says
+about itself is not editing its notes: the staff notation editor stays a non-goal.
+
+### §PI101 Taking a piece out of the library
+
+A library that only grows is a library that fills with mistakes: the import that came in
+twice, the download that turned out to be a drum track, the piece filed as Untitled
+before anyone knew what it was. Today the only way out is the file manager — find the
+library folder under the home directory, work out which .piano file is which from names
+safeName() has already reduced to lower case and hyphens, and delete it there. The
+listing does notice, because every listing compares the index with the directory, but
+somebody who never opens a terminal has to be told where the folder is before any of
+that helps.
+
+Delete belongs on the row, beside opening it. What it must not be is a button that
+quietly destroys the only copy of a piece somebody asked for last week: ask once, and
+name the piece by title, composer and length, the way the filing clash already names
+what is in the way. Electron's shell.trashItem puts the file in the system's bin rather
+than unlinking it, which makes a wrong click recoverable without this app growing a bin
+of its own.
+
+Two records outlive the file. The seeded list already remembers which shipped scores
+were given, so a deleted sample does not come back next launch; that is deliberate and
+stays. Practice history does not, and what becomes of it is PI103's question.
+
+### §PI102 One name everywhere
+
+A score is addressed by an id, and libraryId() takes it from metadata.id where there is
+one and from the title where there is not; safeName() then reduces it to a file name. So
+a piece filed as Untitled lives in untitled.piano, and correcting its title to something
+a person would recognise writes the new title into that same file. Nothing lies, but
+nothing agrees either: the panel shows the new title, the folder shows the old name, and
+a model opens it by the id it had.
+
+Renaming should move the file. keep() already writes one name and removes the others, so
+the write itself is small; the edges are why this is a task rather than a line inside
+the edit. The new id may be taken, and then it is exactly the clash the filing form
+knows how to ask about — file it beside, or replace what is there. The old id may be
+what a chat, a recent-files entry or a shortcut still names, so a rename has to say
+plainly what the piece is called now rather than leaving somebody to find out when
+opening it fails. And a piece whose metadata.id was set deliberately keeps it: the id is
+the stable handle records are kept against, and a title is not, which is the distinction
+the format already draws and this must not blur.
+
+### §PI103 History that survives a correction
+
+Every practice record is keyed on the score's own id, or on what it is called where it
+has none. The format says why in the metadata comment: a piece re-saved, retitled or
+corrected is the same piece, and weeks of records should not turn on somebody spelling
+the composer properly. The catch is that most pieces in a real library have no id. An
+import takes one from a track name only if it carries one, a score written for the app
+has whatever it was given, and the library never sets one itself — libraryId() falls
+back to the title. So the protection the format describes is not there for the files
+people actually have, and retitling is about to become one click.
+
+Two things follow. An edit is the moment to give a piece a stable id, taken from what it
+is filed under now, so its record goes on matching whatever the title becomes. Where
+records already exist under the old key, they move with it rather than starting over;
+the history file is main's and written whole, so this is a rewrite of a key and not a
+migration.
+
+Deleting is the other half. Records for a piece that has gone are dead weight, but they
+are also the only thing that says somebody practised it. Ask, or keep them, and say
+which when the piece is deleted.
+
+### §PI104 The same two verbs from chat
+
+The project's first premise is that Claude Code is a first-class way to use the app:
+save_score writes a piece, list_scores and search_scores find one, play and practise
+drive the window. The library's other two verbs are missing. A model cannot remove a
+piece it has just written badly, and it cannot correct what one says without re-saving
+the whole score — read it, edit the JSON, write it back: three calls that can half-fail,
+in place of one that cannot, and every one of them a chance to lose a bar while fixing a
+level.
+
+delete_score takes an id and nothing else, which is the rule this package already
+enforces everywhere: no tool call names a path, and an id is reduced to a name under one
+root before it is a file name at all. The update takes an id and the fields to change,
+validates the result against the same schema the app opens by, and leaves the notes
+alone.
+
+Both belong after the window's own edit and delete rather than before. What to do about
+a taken id, about a piece being renamed, and about practice history is decided there,
+and a tool that answered any of it differently would be a second set of rules to keep in
+step. The MCP server and the app already read and write through one library module;
+these two go through it too.
+
+### §PI105 Tidying more than one piece
+
+Everything the panel does is one row at a time, which is right for opening a piece and
+wrong for tidying. A library grows by the batch — a folder of downloads copied in, the
+shipped scores seeded on first launch, an afternoon of asking for studies — and it is
+tidied by the batch too: eleven MIDI files that all arrived as Untitled, a dozen pieces
+that want the same tag, a set somebody has outgrown. Deleting those one at a time is
+eleven confirmations, and nobody gets to the eleventh.
+
+So rows can be picked: a box on each, a count of what is picked, and two things to do
+with a selection. Delete it, asking once and naming how many pieces rather than asking
+eleven times. And tag it, because tags are what make a large library searchable and
+adding one to eleven pieces is otherwise eleven trips through the edit form. Level can
+follow the same path if it turns out people want it.
+
+The panel re-asks for its list whenever anything changes, including a file arriving in
+the folder while it is open, so a selection has to survive a refresh that leaves the
+rows alone and be dropped by one that does not. What this is not is a file manager: no
+folders, no moving, no renaming in bulk — a rename asks a clash question that only makes
+sense about one piece.
+
 ## Block H — Sheet music view

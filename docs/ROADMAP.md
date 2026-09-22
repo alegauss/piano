@@ -14,6 +14,13 @@
 
 ## Block G — Score library and distribution
 
+- 📋 **PI100** (deps: —) **A piece's title, composer, level and tags can be set only as it is filed, never corrected afterwards** — A row in the Library panel opens the filing form filled from the score, and writes the corrected metadata back into the same file. → §PI100
+- 📋 **PI101** (deps: —) **Nothing in the app removes a score: a piece filed by mistake leaves the library only through the file manager** — A row offers to delete, asks once naming the piece, and sends the file to the system's bin so the mistake is recoverable. → §PI101
+- 📋 **PI102** (deps: PI100) **A retitled piece keeps the file name and id it was filed under, so the panel, the folder and chat disagree** — Editing a title moves the score to the id that title gives, answers a clash the way filing does, and says what the piece is called now. → §PI102
+- 📋 **PI103** (deps: PI101, PI102) **Practice history is keyed by a score's id or, where it has none, its title: renaming a piece starts its record over** — An edit gives a piece a stable id, its records follow the rename, and a deletion says what becomes of them. → §PI103
+- 📋 **PI104** (deps: PI100, PI101) **Claude Code can write a score into the library but never remove one, nor correct what one says without rewriting it** — delete_score and a metadata update go through the library package the window edits with, so chat and panel keep one set of rules. → §PI104
+- 📋 **PI105** (deps: PI100, PI101) **Tidying a library that grew by the batch means opening, confirming and closing one row at a time** — Rows can be picked in the panel and then deleted or tagged together, with one question asked of the whole selection. → §PI105
+
 ## Block H — Sheet music view
 
 ## Done when — Block A
