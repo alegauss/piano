@@ -62,6 +62,30 @@ describe('the recent list', () => {
     expect(await readFile(path, 'utf8')).toBe(before)
   })
 
+  it('stops offering a file that has gone, and leaves the others where they are', async () => {
+    const recent = createRecent(join(directory, 'recent.json'))
+    await recent.add(entry('one'))
+    await recent.add(entry('two'))
+
+    const left = await recent.dropped('/music/one.json')
+
+    expect(left.map((each) => each.title)).toEqual(['two'])
+    expect(await recent.list()).toEqual(left)
+    expect(await recent.has('/music/one.json')).toBe(false)
+  })
+
+  it('writes nothing where no entry names that file, which is most deletions', async () => {
+    const path = join(directory, 'recent.json')
+    const recent = createRecent(path)
+    await recent.add(entry('one'))
+    const before = await readFile(path, 'utf8')
+
+    const left = await recent.dropped('/music/never-opened.json')
+
+    expect(left.map((each) => each.title)).toEqual(['one'])
+    expect(await readFile(path, 'utf8')).toBe(before)
+  })
+
   it('holds no more than a menu shows', async () => {
     const recent = createRecent(join(directory, 'recent.json'))
     for (let index = 0; index < MAX_RECENT + 3; index += 1) {

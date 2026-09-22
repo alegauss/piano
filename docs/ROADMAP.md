@@ -14,8 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI108** (deps: —) **Open recent still offers a deleted piece, and the system's own list still offers one at the path it has moved from** — Every door into a piece is dropped or put right when it goes or moves, rather than failing when somebody takes it. → §PI108
-
 ## Block H — Sheet music view
 
 ## Done when — Block A

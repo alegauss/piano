@@ -32,25 +32,4 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI108 The doors a correction does not reach
-
-A correction now reaches the app's own recent list, and neither of the other two ways an
-entry goes stale does. Deleting a piece leaves the entry naming it: the file is in the
-bin, and picking the entry answers that it is not there any more, which is true and is
-not what somebody asked for. The system keeps a list of its own too — Windows pins it to
-the taskbar, macOS to the dock — written by addRecentDocument as a score opens and never
-touched since, so a piece that moved is offered there at the path it used to have.
-
-The first is a write beside the one a correction already makes: main holds the list and
-the deletion goes through main, so the entry naming the file that went is dropped.
-Whether a piece out of the bin wants its place back answers itself — it comes back
-through an open, which writes an entry anyway.
-
-The second has one lever and it is blunt: Electron can clear the system list and add to
-it, and cannot amend it. So either the app rebuilds that list from its own after a
-write, which means clearing somebody's list and putting back only what this app knows
-about, or it leaves it alone and accepts one stale door until the piece is opened again.
-Decide which, and say so where addRecentDocument is called, rather than leaving the next
-reader to wonder whether it was missed.
-
 ## Block H — Sheet music view

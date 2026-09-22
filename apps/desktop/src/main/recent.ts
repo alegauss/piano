@@ -37,6 +37,16 @@ export type Recent = {
    * file, which is the ordinary case.
    */
   readonly corrected: (was: string, now: RecentEntry) => Promise<RecentEntry[]>
+  /**
+   * Say a file has gone, and take the entry naming it off the list.
+   *
+   * A piece deleted from the panel is in the system's bin, and an entry that
+   * offers it answers that it is not there any more — true, and not what
+   * anybody picked it for. Whether a piece taken back out of the bin wants its
+   * place back answers itself: it comes back through an open, which writes an
+   * entry anyway.
+   */
+  readonly dropped: (path: string) => Promise<RecentEntry[]>
   readonly has: (path: string) => Promise<boolean>
   readonly clear: () => Promise<void>
 }
@@ -83,6 +93,15 @@ export function createRecent(file: string, max = MAX_RECENT): Recent {
       const put = entries.map((one) => (samePath(one.path, was) ? now : one))
       await write(put)
       return put
+    },
+    dropped: async (path) => {
+      const entries = await read()
+      const left = entries.filter((one) => !samePath(one.path, path))
+      if (left.length === entries.length) {
+        return entries
+      }
+      await write(left)
+      return left
     },
     has: async (path) => (await read()).some((one) => samePath(one.path, path)),
     clear: () => write([]),

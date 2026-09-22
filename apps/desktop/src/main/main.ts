@@ -236,9 +236,8 @@ const opener = createOpener({
     launchFile = null
     return file
   },
-  remembered: (entries, opened) => {
-    app.addRecentDocument(opened.path)
-    setMenu(entries)
+  remembered: (entries) => {
+    showRecent(entries)
   },
   opened: (path) => {
     openFile = path
@@ -290,6 +289,24 @@ function openFromOutside(path: string): void {
   void openForWindow(() => opener.openPath(path))
 }
 
+/**
+ * Both lists of what was opened lately, from the one this app keeps.
+ *
+ * The other is the system's — the jump list on Windows, Recent Items on the
+ * dock in macOS — and Electron can only clear it and add to it, never amend
+ * an entry. So it is rebuilt rather than appended to: a piece deleted or
+ * retitled is a path that has gone, and an entry offering it fails when it is
+ * picked, which is worse than a list that holds ten and not twelve. Oldest
+ * first, because each one added goes on top.
+ */
+function showRecent(entries: readonly RecentEntry[]): void {
+  app.clearRecentDocuments()
+  for (const entry of [...entries].reverse()) {
+    app.addRecentDocument(entry.path)
+  }
+  setMenu(entries)
+}
+
 function setMenu(entries: readonly RecentEntry[]): void {
   const template = menuTemplate(process.platform, entries, {
     open: () => {
@@ -300,8 +317,7 @@ function setMenu(entries: readonly RecentEntry[]): void {
     },
     clearRecent: () => {
       void recent.clear().then(() => {
-        app.clearRecentDocuments()
-        setMenu([])
+        showRecent([])
       })
     },
     // The score is the window's, at the level it is playing, so the window is
@@ -548,14 +564,21 @@ if (firstInstance) {
             {
               corrected: async (was, now) => {
                 const entries = await recent.corrected(was, now)
-                setMenu(entries)
+                showRecent(entries)
                 return entries
               },
             },
           ),
         // An id and nothing else, and the file goes to the system's bin: the
         // library knows which file that is, and the page has no say in it.
-        removeFromLibrary: (request) => removeFromLibrary(request, library),
+        removeFromLibrary: (request) =>
+          removeFromLibrary(request, library, {
+            dropped: async (path) => {
+              const entries = await recent.dropped(path)
+              showRecent(entries)
+              return entries
+            },
+          }),
         settings,
         history,
         saveHistory: async (window) =>
@@ -594,8 +617,11 @@ if (firstInstance) {
         keepArrangement: (request) => keepInFile(openFile, request.arrangement),
       })
 
+      // A menu before the list is read, then both lists from what it holds:
+      // a launch is also where an entry the last session dropped stops being
+      // offered by the system.
       setMenu([])
-      void recent.list().then(setMenu)
+      void recent.list().then(showRecent)
       const theme = async () => (await settings.read()).settings.theme
       createWindow(await theme())
       if (!isSmokeRun && !isSelfCheckRun) {
