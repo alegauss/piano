@@ -7,6 +7,7 @@ import {
   historySave,
   historyWrite,
   libraryList,
+  librarySave,
   linkAnswer,
   linkListening,
   packCancel,
@@ -31,6 +32,8 @@ import {
   type KeepResult,
   type LibraryItem,
   type LibraryQuery,
+  type LibrarySaveRequest,
+  type LibrarySaveResult,
   type LinkResult,
   type OpenRequest,
   type OpenResult,
@@ -101,6 +104,8 @@ export function registerIpcHandlers(options: {
   readonly openScore: (request: OpenRequest) => Promise<OpenResult>
   readonly recentScores: () => Promise<RecentEntry[]>
   readonly libraryScores: (query: LibraryQuery) => Promise<LibraryItem[]>
+  /** Put the score a window sent into the library, under the id its metadata gives it. */
+  readonly fileInLibrary: (request: LibrarySaveRequest) => Promise<LibrarySaveResult>
   readonly settings: SettingsStore
   readonly history: HistoryStore
   /** Save the history main holds as a file, asking where in front of that window. */
@@ -150,6 +155,8 @@ export function registerIpcHandlers(options: {
   handle(scoreRecent, () => options.recentScores())
 
   handle(libraryList, (query) => options.libraryScores(query))
+
+  handle(librarySave, (request) => options.fileInLibrary(request))
 
   handle(settingsRead, () => options.settings.read())
 

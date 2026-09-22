@@ -29,6 +29,7 @@ import { createHistoryStore } from './history-store'
 import { saveHistory } from './history-save'
 import { registerIpcHandlers } from './ipc'
 import { keepInFile } from './keep-arrangement'
+import { fileInLibrary } from './library-save'
 import { watchLibrary } from './library-watch'
 import { startLinkHost, type LinkHost } from './link-host'
 import { createRelay } from './link-relay'
@@ -461,6 +462,9 @@ if (firstInstance) {
         recentScores: () => recent.list(),
         libraryScores: async ({ order, ...filter }) =>
           (await library.search(filter, order)).map(libraryItem),
+        // The score is the window's; where it goes is the library's own answer
+        // from the score's metadata, which is why no path crosses.
+        fileInLibrary: (request) => fileInLibrary(request.score, library),
         settings,
         history,
         saveHistory: async (window) =>

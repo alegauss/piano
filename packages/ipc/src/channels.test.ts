@@ -6,6 +6,7 @@ import {
   appInfo,
   formatIssues,
   libraryList,
+  librarySave,
   packDownload,
   packFile,
   packManifest,
@@ -178,6 +179,24 @@ describe('library:list', () => {
     ['nothing', null],
   ])('refuses %s', (_label, query) => {
     expect(libraryList.request.safeParse(query).success).toBe(false)
+  })
+})
+
+describe('library:save', () => {
+  it('carries the score and nothing that names a file, which the library decides', () => {
+    const { request } = librarySave
+    expect(request.safeParse({ score: {} }).success).toBe(true)
+    expect(request.safeParse({ score: {}, id: 'somewhere-else' }).success).toBe(false)
+    expect(request.safeParse({ score: {}, path: 'C:/elsewhere.piano' }).success).toBe(false)
+    expect(request.safeParse(null).success).toBe(false)
+  })
+
+  it('answers filed with the id it went in under, or refused with why', () => {
+    const { response } = librarySave
+    expect(response.safeParse({ kind: 'filed', id: 'aria', title: 'Aria' }).success).toBe(true)
+    expect(response.safeParse({ kind: 'refused', message: 'no' }).success).toBe(true)
+    // The id is what opens it again, so it is never left out.
+    expect(response.safeParse({ kind: 'filed', title: 'Aria' }).success).toBe(false)
   })
 })
 

@@ -32,30 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI94 Filing what is open
-
-The library has one writer and it is not the app. `save_score` in the MCP server calls
-`library.save`, and everything in the window reads: `library:list` searches the index,
-and `score:open` with `from: 'library'` reads one back. No channel writes, so the
-Library panel shows only what Claude Code put there or what somebody copied into
-`~/.piano/library` by hand.
-
-That is bearable for a score written in chat, which is in the library before the window
-ever sees it. It is not bearable for an import. `openScoreFile` reads a `.mid`, a
-`.musicxml` or a `.mxl`, hands the renderer a score built in memory, and writes it
-nowhere; close the window and the import is done again from the original file, guesses
-and all. The one route out is Save as MIDI, which throws away everything the import
-inferred.
-
-So: a `library:save` channel carrying the score the window has open, a handler in main
-that parses it again — the renderer is not trusted — and files it through
-`@piano/library`, and a door in the header beside Save as MIDI. Main owns the path, as
-it already does for reads: the window sends a score, never a destination. The watcher
-already tells the panel the folder changed, so the piece appears in the list without
-being asked for.
-
-Nothing blocks this, and it is the write every other line in this group constrains.
-
 ### §PI95 Two pieces, one name
 
 `libraryId` reduces a score's id, or its title where it has none, to a safe name:

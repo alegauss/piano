@@ -233,6 +233,32 @@ export const libraryList = {
 } as const satisfies Channel<'library:list', z.ZodType, z.ZodType>
 
 /**
+ * Put the score the window has open into the library, so an imported MIDI or
+ * MusicXML piece survives the window being closed.
+ *
+ * The score crosses, never a destination: the library addresses a piece by the
+ * id its own metadata gives it and reduces that to a file name itself, which is
+ * why a model can be trusted with the same write. Main validates it again,
+ * since it comes from the renderer, and files it through the one package the
+ * MCP server's save also goes through.
+ */
+export const librarySave = {
+  channel: CHANNEL_NAMES.librarySave,
+  // Strict, so a request that tries to say where the piece goes is refused
+  // rather than quietly trimmed: the page has no say in the path.
+  request: z.object({ score: z.unknown() }).strict(),
+  response: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('filed'),
+      /** What it is in the library under, which is what opens it again. */
+      id: z.string(),
+      title: z.string(),
+    }),
+    z.object({ kind: z.literal('refused'), message: z.string() }),
+  ]),
+} as const satisfies Channel<'library:save', z.ZodType, z.ZodType>
+
+/**
  * The settings as main holds them, with word of anything that had to go back
  * to its default, and whether there was a file at all — the one moment the
  * window imports what an older version kept in the browser's storage.
@@ -403,6 +429,7 @@ export const allChannels = [
   scoreOpen,
   scoreRecent,
   libraryList,
+  librarySave,
   settingsRead,
   settingsWrite,
   settingsReset,
@@ -431,6 +458,8 @@ export type OpenResult = z.infer<typeof openResultSchema>
 export type RecentEntry = z.infer<typeof recentEntrySchema>
 export type LibraryQuery = z.infer<typeof libraryQuerySchema>
 export type LibraryItem = z.infer<typeof libraryItemSchema>
+export type LibrarySaveRequest = z.infer<typeof librarySave.request>
+export type LibrarySaveResult = z.infer<typeof librarySave.response>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>
 export type HistoryReadResponse = z.infer<typeof historyRead.response>
 export type HistoryWriteRequest = z.infer<typeof historyWrite.request>

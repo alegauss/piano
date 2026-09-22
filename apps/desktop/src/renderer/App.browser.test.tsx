@@ -168,6 +168,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   let listener: ((result: OpenResult) => void) | null = null
   const asked: OpenRequest[] = []
   const kept: unknown[] = []
+  /** Every score the window asked to be put in the library. */
+  const filed: unknown[] = []
   /** The score file the window has open, as main would hold it. */
   let held: Score | null = null
   const bridge: PianoBridge = {
@@ -197,6 +199,11 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
       }
     },
     libraryScores: () => Promise.resolve([]),
+    saveToLibrary: ({ score }) => {
+      filed.push(score)
+      const title = (score as Score | undefined)?.metadata.title ?? 'that'
+      return Promise.resolve({ kind: 'filed', id: 'aria', title })
+    },
     onLibraryChanged: () => () => {},
     readSettings: () => Promise.resolve({ settings: DEFAULT_SETTINGS, notice: null, fresh: false }),
     writeSettings: () => Promise.resolve(DEFAULT_SETTINGS),
@@ -228,6 +235,7 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   return {
     asked,
     kept,
+    filed,
     push: async (result: OpenResult) => {
       if (result.kind === 'opened') {
         held = result.score as Score
@@ -297,6 +305,35 @@ describe('opening a score in the window', () => {
     expect(screen.getByText('Could not open broken.json')).toBeTruthy()
     expect(screen.getByText(/is still open/)).toBeTruthy()
     expect(screen.getByText('Needs a MIDI pitch from 0 to 127.')).toBeTruthy()
+  })
+})
+
+const addToLibrary = () => screen.queryByRole('button', { name: 'Add to library', hidden: true })
+
+describe('putting the open piece in the library', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'piano')
+  })
+
+  it('offers nothing to file until something is open', () => {
+    fakeMain()
+    render(<App />)
+    expect(addToLibrary()).toBeNull()
+  })
+
+  it('sends the whole score, and says what it went in as', async () => {
+    const main = fakeMain()
+    render(<App />)
+    // An import: the score is in memory and in no file the app can reopen.
+    await main.push({ kind: 'opened', name: 'aria.mid', score: aria, notices: [] })
+
+    await act(async () => {
+      addToLibrary()?.click()
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    })
+
+    expect(main.filed).toEqual([aria])
+    expect(screen.getByText(/Added Aria to the library, as aria\./)).toBeTruthy()
   })
 })
 

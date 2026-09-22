@@ -23,7 +23,7 @@ import {
   type Note,
   type Score,
 } from '@piano/score-format'
-import { FileMusic } from 'lucide-react'
+import { FileMusic, LibraryBig } from 'lucide-react'
 import {
   lazy,
   Suspense,
@@ -81,6 +81,7 @@ import {
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { describeExport, exportedScore } from './lib/export'
+import { describeFiling } from './lib/library'
 import { outcomeOf, type Opened } from './lib/open'
 import { appPackDownload } from './lib/pack-download'
 import { appSettings } from './lib/settings'
@@ -670,6 +671,31 @@ export function App() {
   }
 
   /**
+   * Put the open piece in the library, where it is listed, searched and
+   * opened again next launch.
+   *
+   * The whole score goes, not the version being played: an import's metadata
+   * and a score's arrangements are what make it findable and playable later,
+   * and they are exactly what Save as MIDI leaves behind.
+   */
+  function addToLibrary(): void {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return
+    }
+    void bridge.saveToLibrary({ score }).then(
+      (result) => {
+        setNotice(describeFiling(result))
+      },
+      (cause: unknown) => {
+        setNotice(
+          `Could not add it to the library: ${cause instanceof Error ? cause.message : String(cause)}`,
+        )
+      },
+    )
+  }
+
+  /**
    * Keep the worked-out version in the score's file, so it can be read and
    * corrected there. The score main wrote is the one shown after, as the same
    * piece rather than a new one: what is being practised stays as it was.
@@ -785,6 +811,16 @@ export function App() {
                   openFrom({ from: 'library', id })
                 }}
               />
+              {/*
+                Nothing to file until something is open: the placeholder is
+                not a piece anybody means to keep.
+              */}
+              {file === null ? null : (
+                <Button variant="ghost" size="sm" onClick={addToLibrary}>
+                  <LibraryBig />
+                  Add to library
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={saveMidi}>
                 <FileMusic />
                 Save as MIDI

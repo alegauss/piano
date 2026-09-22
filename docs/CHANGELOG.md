@@ -201,6 +201,7 @@
 - ✅ **PI84** **A library row whose composer is a sentence shows no title: the chips squeeze it to nothing** — Every library row shows its title: the chips are capped at half the row and truncate, and a browser test measures the width rather than assuming it.
 - ✅ **PI89** **A .musicxml or .mxl double-clicked in the file manager opens something else, the installer claiming neither** — A .musicxml or .mxl now offers the piano under Open With on Windows, as an Alternate claim on macOS and a MIME type on Linux, taking neither from a notation editor.
 - ✅ **PI92** **The installed-app check hands over a .piano only, so the MIDI and MusicXML it registers are never opened end to end** — The installed app is now started with a .piano, a .mid, a .musicxml and a .mxl, and has to say it opened each one.
+- ✅ **PI94** **Nothing in the window puts a score into the library: an imported MIDI or MusicXML piece is gone when it closes** — An Add to library button files the open score through the library package, so an imported MIDI or MusicXML piece is listed and playable next launch.
 
 ## Block H — Sheet music view
 
