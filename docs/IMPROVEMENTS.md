@@ -24,24 +24,28 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block B — Score JSON format
 
-### §PI90 Follow the jumps a MusicXML score writes
+### §PI93 Say when the expansion hit its ceiling
 
-The MusicXML import expands barline repeats and first and second endings, which covers
-most of what a score writes. It does not follow a da capo, a dal segno or a jump to a
-coda: `readSound` counts them and `dropped` names each one, so nobody is misled, but a
-piece with a D.C. al Fine imports at roughly half its length.
+`playOrder` walks until it has 4,000 measures and then stops, which is right: a repeat
+structure that never lands anywhere is a broken file and not a long piece. What it does
+not do is say so. The walk ends, the order is whatever it had reached, and the import
+returns a valid score that is simply missing its end.
 
-The reason they were left is that repeats are local and jumps are not. A backward
-barline names its own destination; a dal segno means "go to wherever the segno is",
-which is a position the walk has to have recorded from a `<direction>` several measures
-earlier, and `fine` means "stop here, but only on the second time through". So
-`playOrder` would grow a second phase reading marks before it can walk, where today one
-pass over the barlines is enough.
+`inferred['repeat']` makes it worse rather than better. It reports the count it arrived
+at — "the 900 written bars were played out as 4000 bars" — in the same sentence it uses
+when nothing was cut, so the one number that would give it away reads as a result. The
+score validates, the library lists it, and the piece stops mid-phrase with nothing
+anywhere saying why.
 
-Worth doing after PI88 has met real files rather than before: the jumps a score site's
-library actually uses will say whether this is a handful of common shapes or the whole
-D.S. al Coda vocabulary, and building for the second before seeing the first is how a
-walker grows cases nobody has.
+PI90 widened the door. A jump can send the walk back over measures a repeat already
+expanded, so the two compound, and a file whose repeats alone stayed well inside the cap
+can cross it once its da capo is followed.
+
+What is missing is one flag off the walk — the loop ended on the cap rather than on
+running out of measures — and a sentence for it. The sentence belongs in `dropped` and
+not in `inferred`: `inferred` is what the import worked out, and this is music the file
+held and the score does not. Something like "the piece was cut at 4,000 bars, where a
+repeat or a jump sent the reading back further than a score can hold".
 
 ## Block C — Audio engine and transport
 

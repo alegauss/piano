@@ -6,7 +6,7 @@
 
 ## Block B — Score JSON format
 
-- 📋 **PI90** (deps: PI88 ✅) **A da capo or dal segno is reported and not followed, so an imported piece ends where the writing stops** — Barline repeats and endings are played out, and a jump needs the segno, coda and fine marks read as positions rather than counted as leftovers. → §PI90
+- 📋 **PI93** (deps: —) **An import whose repeats and jumps expand past 4,000 bars is cut off mid-piece and nothing says it was cut** — The walk stops on the cap the same way it stops at the end, and the bar count it reports reads as a result rather than a limit. → §PI93
 
 ## Block C — Audio engine and transport
 

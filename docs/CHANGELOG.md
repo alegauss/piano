@@ -63,6 +63,7 @@
 - ✅ **PI17** **The format exchanges with nothing: MIDI files cannot come in and no score can go out** — importMidi reads a MIDI file into a valid score and exportMidi writes one; both list what they dropped, and import marks what it guessed (design recorded in `packages/score-format/src/midi.ts`).
   checked **Export reports what it dropped** Exporting a score carrying fingering, articulation and arrangements lists each thing MIDI cannot represent, instead of writing a file that silently lost them.
 - ✅ **PI88** **A MusicXML file cannot be opened, so the stave guesses spellings, hands and fingering the file already states** — MusicXML opens as a score, keeping the spellings, hands, fingering and articulation the file wrote down, as .musicxml, .xml or a zipped .mxl.
+- ✅ **PI90** **A da capo or dal segno is reported and not followed, so an imported piece ends where the writing stops** — A da capo, a dal segno, a to coda and a fine are now followed, so an imported piece plays its jumps the way a reader takes them.
 
 ## Block C — Audio engine and transport
 

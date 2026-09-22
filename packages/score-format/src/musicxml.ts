@@ -449,7 +449,7 @@ function readDirection(
 }
 
 /** The tempo and the pedal a `<sound>` states, wherever it sits. */
-function readSound(sound: XmlElement, tick: number, marks: Marks, leftovers: Leftovers): void {
+function readSound(sound: XmlElement, tick: number, marks: Marks): void {
   const tempo = attributeNumber(sound, 'tempo')
   if (tempo !== undefined && tempo > 0) {
     marks.tempos.push({
@@ -465,17 +465,9 @@ function readSound(sound: XmlElement, tick: number, marks: Marks, leftovers: Lef
     marks.pedals.push({ tick, pedal: 'sustain', value: 0 })
   }
 
-  const JUMPS: Readonly<Record<string, string>> = {
-    dacapo: 'da capo',
-    dalsegno: 'dal segno',
-    tocoda: 'to coda',
-    fine: 'fine',
-  }
-  for (const [attribute, name] of Object.entries(JUMPS)) {
-    if (sound.attributes[attribute] !== undefined) {
-      leftovers.jumps.add(name)
-    }
-  }
+  // The jump attributes are read by readJumps instead, off the measure that
+  // carries them: a jump is a position in the piece and not an event in a
+  // part, and this is called without knowing which measure it is in.
 }
 
 function readAttributes(
@@ -628,13 +620,13 @@ function readMeasure(
         readDirection(element, tick, marks, leftovers)
         const sound = child(element, 'sound')
         if (sound !== undefined) {
-          readSound(sound, tick, marks, leftovers)
+          readSound(sound, tick, marks)
         }
         break
       }
 
       case 'sound':
-        readSound(element, cursor, marks, leftovers)
+        readSound(element, cursor, marks)
         break
 
       default:
@@ -664,10 +656,81 @@ type MeasurePlan = {
   backward: number | null
   endings: readonly number[] | null
   endingEnds: boolean
+  /**
+   * The label of a sign written in this measure, which is a destination and
+   * not an instruction: a jump elsewhere names it and lands at the start here.
+   */
+  segno: string | null
+  coda: string | null
+  /** What is taken at the end of this measure, and only once. */
+  dacapo: boolean
+  dalsegno: string | null
+  tocoda: string | null
+  fine: boolean
 }
 
 function emptyPlan(): MeasurePlan {
-  return { forward: false, backward: null, endings: null, endingEnds: false }
+  return {
+    forward: false,
+    backward: null,
+    endings: null,
+    endingEnds: false,
+    segno: null,
+    coda: null,
+    dacapo: false,
+    dalsegno: null,
+    tocoda: null,
+    fine: false,
+  }
+}
+
+/** Every `<sound>` a measure carries: the bare ones, and those a `<direction>` holds. */
+function sounds(measure: XmlElement): XmlElement[] {
+  const found: XmlElement[] = []
+  for (const element of measure.children) {
+    if (element.name === 'sound') {
+      found.push(element)
+    } else if (element.name === 'direction') {
+      found.push(...children(element, 'sound'))
+    }
+  }
+  return found
+}
+
+/** A jump instruction is present unless it is spelled out as absent. */
+function stated(value: string | undefined): boolean {
+  return value !== undefined && value !== 'no'
+}
+
+/**
+ * The marks a measure carries, read as positions and instructions.
+ *
+ * The `<sound>` attributes are what a player reads, and every exporter writes
+ * them. The printed `<segno>` and `<coda>` are read too, because a destination
+ * drawn and not sounded is still where the jump naming it lands, and a file
+ * missing one leaves a dal segno with nowhere to go.
+ */
+function readJumps(measure: XmlElement, plan: MeasurePlan): void {
+  for (const sound of sounds(measure)) {
+    const { segno, coda, dacapo, dalsegno, tocoda, fine } = sound.attributes
+    plan.segno ??= segno ?? null
+    plan.coda ??= coda ?? null
+    plan.dacapo ||= stated(dacapo)
+    plan.dalsegno ??= stated(dalsegno) ? (dalsegno ?? '') : null
+    plan.tocoda ??= stated(tocoda) ? (tocoda ?? '') : null
+    plan.fine ||= stated(fine)
+  }
+
+  for (const direction of children(measure, 'direction')) {
+    for (const type of children(direction, 'direction-type')) {
+      if (child(type, 'segno') !== undefined) {
+        plan.segno ??= ''
+      }
+      if (child(type, 'coda') !== undefined) {
+        plan.coda ??= ''
+      }
+    }
+  }
 }
 
 /** The passes an ending answers to, out of the "1, 2" its number attribute holds. */
@@ -711,28 +774,78 @@ function readPlans(parts: readonly PartSource[], measureCount: number): MeasureP
           plan.endingEnds = true
         }
       }
+
+      readJumps(measure, plan)
     })
   }
 
   return plans
 }
 
+/** The jumps a document writes, whether or not the walk turns out to follow them. */
+function jumpsWritten(plans: readonly MeasurePlan[]): Set<string> {
+  const written = new Set<string>()
+  for (const plan of plans) {
+    if (plan.dacapo) {
+      written.add('da capo')
+    }
+    if (plan.dalsegno !== null) {
+      written.add('dal segno')
+    }
+    if (plan.tocoda !== null) {
+      written.add('to coda')
+    }
+    if (plan.fine) {
+      written.add('fine')
+    }
+  }
+  return written
+}
+
 /**
- * Which measures are played, in order, with repeats taken.
+ * Which measures are played, in order, with repeats taken and jumps followed.
  *
  * Expanded rather than kept as structure: playback and the falling notes both
  * want real time, and a roll that drew a repeat as a marker would have to
  * expand it before anything sounded anyway.
+ *
+ * Two kinds of thing move the cursor and they are not alike. A repeat is
+ * local: a backward barline names its own destination, and the walk needs
+ * nothing it has not already passed. A jump is not: a dal segno means "go to
+ * wherever the segno is", which may be a measure this walk has not reached, so
+ * the destinations are looked up in the plans rather than remembered. Which is
+ * why the marks are read before the walk starts and not during it.
+ *
+ * `fine` and `to coda` are read only once a da capo or a dal segno has been
+ * taken. That is what makes a D.C. al Fine play the piece, go back and stop in
+ * the middle, rather than stopping there the first time and never jumping.
  */
-function playOrder(plans: readonly MeasurePlan[]): { order: number[]; expanded: boolean } {
+function playOrder(plans: readonly MeasurePlan[]): {
+  order: number[]
+  repeated: boolean
+  followed: Set<string>
+} {
   const order: number[] = []
   const played = new Map<number, number>()
+  const followed = new Set<string>()
+  /** The measures whose jump has fired, so a da capo sends the walk back once. */
+  const fired = new Set<number>()
   let start = 0
   let pass = 1
   let index = 0
-  let expanded = false
+  /** Whether a barline sent the walk back, which is a different sentence from a jump. */
+  let repeated = false
   /** Whether this measure was reached by a repeat, which is what counts a pass. */
   let jumped = false
+  /** Whether a da capo or a dal segno has been taken, which is what wakes `fine`. */
+  let returning = false
+
+  /** Where a sign of this name is written, or the only one of its kind where none matches. */
+  const signed = (which: 'segno' | 'coda', label: string): number | null => {
+    const exact = plans.findIndex((plan) => plan[which] === label)
+    const any = exact >= 0 ? exact : plans.findIndex((plan) => plan[which] !== null)
+    return any >= 0 ? any : null
+  }
 
   while (index >= 0 && index < plans.length && order.length < MAX_PLAYED_MEASURES) {
     const plan = plans[index] ?? emptyPlan()
@@ -753,20 +866,23 @@ function playOrder(plans: readonly MeasurePlan[]): { order: number[]; expanded: 
         skip += 1
       }
       index = skip + 1
-      expanded = true
+      repeated = true
       continue
     }
 
     order.push(index)
 
-    if (plan.backward !== null) {
+    // Repeats are not taken again on the way back. "Da capo senza
+    // repetizione" is what an engraver means unless they write otherwise, and
+    // a reader who took every repeat twice would play a different piece.
+    if (plan.backward !== null && !returning) {
       const times = played.get(index) ?? 1
       if (times < plan.backward) {
         played.set(index, times + 1)
         pass = times + 1
         index = start
         jumped = true
-        expanded = true
+        repeated = true
         continue
       }
       // Cleared, so a repeat sitting inside a larger one plays in full next time round.
@@ -774,10 +890,41 @@ function playOrder(plans: readonly MeasurePlan[]): { order: number[]; expanded: 
       pass = 1
     }
 
+    if (returning && plan.fine) {
+      followed.add('fine')
+      break
+    }
+
+    if (returning && plan.tocoda !== null) {
+      const at = signed('coda', plan.tocoda)
+      if (at !== null) {
+        followed.add('to coda')
+        index = at
+        continue
+      }
+    }
+
+    if ((plan.dacapo || plan.dalsegno !== null) && !fired.has(index)) {
+      // A da capo goes to the beginning, which is always there; a dal segno
+      // goes to a sign, and a file that draws none leaves it with nowhere to
+      // land. Then the jump is not taken, and `dropped` says so.
+      const at = plan.dacapo ? 0 : signed('segno', plan.dalsegno ?? '')
+      if (at !== null) {
+        fired.add(index)
+        followed.add(plan.dacapo ? 'da capo' : 'dal segno')
+        returning = true
+        index = at
+        start = at
+        pass = 1
+        played.clear()
+        continue
+      }
+    }
+
     index += 1
   }
 
-  return { order, expanded }
+  return { order, repeated, followed }
 }
 
 // ---------------------------------------------------------------------------
@@ -993,12 +1140,13 @@ function withoutRepeats<A extends { readonly tick: number }>(
  * Read a MusicXML document into a score.
  *
  * Takes the text: a .mxl is unwrapped by musicXmlText first, which is where
- * the zip container and the host's inflate live. Repeats are expanded, ties
- * joined, and hands read from the staff a note is written on rather than
- * guessed from its pitch — with whatever guessing was still necessary listed
- * in `inferred` and recorded under the score's extensions. The score is
- * validated before it is returned, so a successful import is a file the app
- * opens.
+ * the zip container and the host's inflate live. Repeats are expanded, the
+ * jumps over them followed — a da capo and a dal segno read as positions in
+ * the piece rather than marks on a page — ties joined, and hands read from
+ * the staff a note is written on rather than guessed from its pitch, with
+ * whatever guessing was still necessary listed in `inferred` and recorded
+ * under the score's extensions. The score is validated before it is returned,
+ * so a successful import is a file the app opens.
  */
 export function importMusicXml(xml: string, options: MusicXmlImportOptions = {}): MusicXmlImport {
   let root: XmlElement
@@ -1044,10 +1192,23 @@ export function importMusicXml(xml: string, options: MusicXmlImportOptions = {})
   })
 
   const measureCount = Math.max(...sources.map((part) => part.measures.length))
-  const { order, expanded } = playOrder(readPlans(sources, measureCount))
-  if (expanded) {
+  const plans = readPlans(sources, measureCount)
+  const { order, repeated, followed } = playOrder(plans)
+  const why: string[] = []
+  if (repeated) {
+    why.push('a repeat being taken')
+  }
+  if (followed.size > 0) {
+    why.push(`the ${[...followed].sort().join(' and ')} being followed`)
+  }
+  if (why.length > 0) {
     inferred['repeat'] =
-      `the ${counted(measureCount, 'written bar', 'written bars')} were played out as ${counted(order.length, 'bar', 'bars')}, a repeat being taken rather than drawn`
+      `the ${counted(measureCount, 'written bar', 'written bars')} were played out as ${counted(order.length, 'bar', 'bars')}, ${why.join(' and ')} rather than drawn`
+  }
+  for (const jump of jumpsWritten(plans)) {
+    if (!followed.has(jump)) {
+      leftovers.jumps.add(jump)
+    }
   }
 
   const lengths = Array.from({ length: measureCount }, (_, index) =>

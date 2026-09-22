@@ -394,6 +394,115 @@ describe('importMusicXml', () => {
     ])
   })
 
+  it('follows a da capo al fine, stopping where the second pass is told to', () => {
+    // Bars 1 2 3, Fine on 2, D.C. on 3: the piece is 1 2 3 1 2 and not 1 2 3.
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}${note('C', 4, 4)}</measure>
+          <measure number="2">${note('D', 4, 4)}<sound fine="yes"/></measure>
+          <measure number="3">${note('E', 4, 4)}<sound dacapo="yes"/></measure>`,
+      }),
+    )
+
+    expect(played(result.score).map((one) => [one.pitch, one.start])).toEqual([
+      [60, 0],
+      [62, 4],
+      [64, 8],
+      [60, 12],
+      [62, 16],
+    ])
+    // Followed, so it is no longer something the import admits to leaving out.
+    expect(result.dropped).toEqual([])
+    expect(result.inferred).toContainEqual(
+      expect.stringContaining('da capo and fine being followed'),
+    )
+  })
+
+  it('ignores a fine on the way out, which is the whole of what it means', () => {
+    // The same Fine with no D.C. anywhere: nothing sends the walk back, so it
+    // plays to the end and the mark is reported rather than obeyed.
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}${note('C', 4, 4)}<sound fine="yes"/></measure>
+          <measure number="2">${note('D', 4, 4)}</measure>`,
+      }),
+    )
+
+    expect(played(result.score).map((one) => one.pitch)).toEqual([60, 62])
+    expect(result.dropped).toContainEqual(
+      'the fine direction, which a reader follows and this import does not',
+    )
+  })
+
+  it('follows a dal segno al coda from the sign to the coda', () => {
+    // Segno on 2, to-coda on 3, D.S. on 4, coda on 5: plays 1 2 3 4 2 3 5. The
+    // sign is not bar 1, so a jump landing there would be a da capo instead.
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}${note('C', 4, 4)}</measure>
+          <measure number="2">
+            <direction><direction-type><segno/></direction-type><sound segno="A"/></direction>
+            ${note('D', 4, 4)}
+          </measure>
+          <measure number="3">${note('E', 4, 4)}<sound tocoda="B"/></measure>
+          <measure number="4">${note('F', 4, 4)}<sound dalsegno="A"/></measure>
+          <measure number="5">
+            <direction><direction-type><coda/></direction-type><sound coda="B"/></direction>
+            ${note('G', 4, 4)}
+          </measure>`,
+      }),
+    )
+
+    expect(played(result.score).map((one) => one.pitch)).toEqual([60, 62, 64, 65, 62, 64, 67])
+    expect(result.dropped).toEqual([])
+  })
+
+  it('leaves a dal segno alone where the file draws no sign to land on', () => {
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}${note('C', 4, 4)}</measure>
+          <measure number="2">${note('D', 4, 4)}<sound dalsegno="A"/></measure>`,
+      }),
+    )
+
+    // Not read as a da capo: the beginning is not what the sign named, and a
+    // piece silently doubled is worse than one that says what it skipped.
+    expect(played(result.score).map((one) => one.pitch)).toEqual([60, 62])
+    expect(result.dropped).toContainEqual(
+      'the dal segno direction, which a reader follows and this import does not',
+    )
+  })
+
+  it('does not take the repeats again on the way back from a da capo', () => {
+    // 1 2 with a repeat, 3 with the D.C.: 1 2 1 2 3, then 1 2 3 and not the
+    // repeat a second time. An engraver writing D.C. means senza repetizione.
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}
+            <barline location="left"><repeat direction="forward"/></barline>
+            ${note('C', 4, 4)}
+          </measure>
+          <measure number="2">${note('D', 4, 4)}
+            <barline location="right"><repeat direction="backward"/></barline>
+          </measure>
+          <measure number="3">${note('E', 4, 4)}<sound dacapo="yes"/></measure>`,
+      }),
+    )
+
+    expect(played(result.score).map((one) => one.pitch)).toEqual([60, 62, 60, 62, 64, 60, 62, 64])
+  })
+
+  it('takes a da capo once, so a piece that jumps back ends rather than loops', () => {
+    const result = imported(
+      document({
+        measures: `<measure number="1">${QUARTERS}${note('C', 4, 4)}</measure>
+          <measure number="2">${note('D', 4, 4)}<sound dacapo="yes"/></measure>`,
+      }),
+    )
+
+    expect(played(result.score).map((one) => one.pitch)).toEqual([60, 62, 60, 62])
+  })
+
   it('reads a timewise document as the same score a partwise one is', () => {
     const partwise = score(
       document({
@@ -494,7 +603,6 @@ describe('importMusicXml', () => {
           ${note('C', 4, 1, { inside: '<lyric><text>la</text></lyric><notations><ornaments><trill-mark/></ornaments><slur type="start"/><articulations><spiccato/></articulations></notations>' })}
           <direction><direction-type><words>rit.</words></direction-type></direction>
           <direction><direction-type><dynamics><sf/></dynamics></direction-type></direction>
-          <sound dacapo="yes"/>
         </measure>`,
       }),
     )
@@ -508,7 +616,6 @@ describe('importMusicXml', () => {
       '1 slur; phrasing is not stored per note',
       '1 articulation other than staccato, tenuto, accent and marcato',
       '1 dynamic mark such as sf or fp, which name an event rather than a level',
-      'the da capo direction, which a reader follows and this import does not',
     ])
   })
 
