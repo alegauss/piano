@@ -36,8 +36,15 @@ export function libraryIdOfFile(name: string): string | null {
   return suffix === undefined ? null : name.slice(0, -suffix.length)
 }
 
-/** Long enough for a title, short enough to stay a file name everywhere. */
-const MAX_NAME = 64
+/**
+ * Long enough for a title, short enough to stay a file name everywhere.
+ *
+ * Exported because a caller making a name out of another one — a second piece
+ * filed beside one whose id is already taken — has to leave room for what it
+ * adds, or the truncation takes its suffix off and hands back the name it was
+ * trying to avoid.
+ */
+export const MAX_LIBRARY_NAME = 64
 
 /** The names Windows reserves for devices, which no file may take. */
 const WINDOWS_DEVICES = /^(con|prn|aux|nul|com\d|lpt\d)$/
@@ -52,7 +59,7 @@ export function safeName(name: string): string {
   const reduced = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .slice(0, MAX_NAME)
+    .slice(0, MAX_LIBRARY_NAME)
     .replace(/^-+/, '')
     .replace(/-+$/, '')
   if (reduced === '') {

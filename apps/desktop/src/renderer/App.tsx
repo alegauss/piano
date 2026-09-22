@@ -37,6 +37,7 @@ import {
 
 import { Transport, type LoopRange } from './audio'
 import { readBridge } from './bridge'
+import { LibraryClash, type Clash } from './components/LibraryClash'
 import { LibraryPanel } from './components/LibraryPanel'
 import { OpenControls } from './components/OpenControls'
 import { OpenReport, type Report } from './components/OpenReport'
@@ -191,6 +192,8 @@ export function App() {
   const loaded = useRef<(() => void)[]>([])
   /** What the last save said: where it went, and what the file could not keep. */
   const [notice, setNotice] = useState<string | null>(null)
+  /** The library already holds this piece's id; nothing is filed until that is answered. */
+  const [clash, setClash] = useState<Clash | null>(null)
 
   const timing = useMemo(() => timingOf(score), [score])
   const written = useMemo(() => notesOf(score), [score])
@@ -677,17 +680,27 @@ export function App() {
    * The whole score goes, not the version being played: an import's metadata
    * and a score's arrangements are what make it findable and playable later,
    * and they are exactly what Save as MIDI leaves behind.
+   *
+   * Main answers rather than writing where the id is already in use. Then the
+   * same call is made again carrying the answer to that, which is the one
+   * thing the page decides about where a piece goes.
    */
-  function addToLibrary(): void {
+  function addToLibrary(taken?: 'beside' | 'replace'): void {
     const bridge = readBridge()
     if (bridge === null) {
       return
     }
-    void bridge.saveToLibrary({ score }).then(
+    void bridge.saveToLibrary({ score, ...(taken === undefined ? {} : { taken }) }).then(
       (result) => {
+        if (result.kind === 'taken') {
+          setClash(result)
+          return
+        }
+        setClash(null)
         setNotice(describeFiling(result))
       },
       (cause: unknown) => {
+        setClash(null)
         setNotice(
           `Could not add it to the library: ${cause instanceof Error ? cause.message : String(cause)}`,
         )
@@ -816,7 +829,13 @@ export function App() {
                 not a piece anybody means to keep.
               */}
               {file === null ? null : (
-                <Button variant="ghost" size="sm" onClick={addToLibrary}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    addToLibrary()
+                  }}
+                >
                   <LibraryBig />
                   Add to library
                 </Button>
@@ -833,6 +852,14 @@ export function App() {
           )}
         </header>
       )}
+
+      <LibraryClash
+        clash={clash}
+        onChoose={addToLibrary}
+        onClose={() => {
+          setClash(null)
+        }}
+      />
 
       <OpenReport
         report={report}

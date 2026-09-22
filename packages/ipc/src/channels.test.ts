@@ -191,12 +191,36 @@ describe('library:save', () => {
     expect(request.safeParse(null).success).toBe(false)
   })
 
+  it('carries what to do about a taken id, and only the two answers there are', () => {
+    const { request } = librarySave
+    expect(request.safeParse({ score: {}, taken: 'beside' }).success).toBe(true)
+    expect(request.safeParse({ score: {}, taken: 'replace' }).success).toBe(true)
+    expect(request.safeParse({ score: {}, taken: 'merge' }).success).toBe(false)
+  })
+
   it('answers filed with the id it went in under, or refused with why', () => {
     const { response } = librarySave
     expect(response.safeParse({ kind: 'filed', id: 'aria', title: 'Aria' }).success).toBe(true)
     expect(response.safeParse({ kind: 'refused', message: 'no' }).success).toBe(true)
     // The id is what opens it again, so it is never left out.
     expect(response.safeParse({ kind: 'filed', title: 'Aria' }).success).toBe(false)
+  })
+
+  it('answers a taken id with the piece that holds it, so the choice is informed', () => {
+    const { response } = librarySave
+    expect(
+      response.safeParse({
+        kind: 'taken',
+        id: 'aria',
+        held: { title: 'Aria', composer: 'Somebody', seconds: 134 },
+      }).success,
+    ).toBe(true)
+    // A composer is the one part a piece may not have.
+    expect(
+      response.safeParse({ kind: 'taken', id: 'aria', held: { title: 'Aria', seconds: 0 } })
+        .success,
+    ).toBe(true)
+    expect(response.safeParse({ kind: 'taken', id: 'aria' }).success).toBe(false)
   })
 })
 

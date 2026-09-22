@@ -170,6 +170,8 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
   const kept: unknown[] = []
   /** Every score the window asked to be put in the library. */
   const filed: unknown[] = []
+  /** What is in the library, by the id it is filed under. */
+  const library = new Map<string, { readonly title: string; readonly composer?: string }>()
   /** The score file the window has open, as main would hold it. */
   let held: Score | null = null
   const bridge: PianoBridge = {
@@ -199,10 +201,23 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
       }
     },
     libraryScores: () => Promise.resolve([]),
-    saveToLibrary: ({ score }) => {
+    // A library of titles by id, which is enough for the one thing the window
+    // decides about filing: what to do when the id is already somebody's.
+    saveToLibrary: ({ score, taken }) => {
+      const metadata = (score as Score | undefined)?.metadata
+      const title = metadata?.title ?? 'that'
+      const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      const there = library.get(id)
+      if (there !== undefined && taken === undefined) {
+        return Promise.resolve({ kind: 'taken', id, held: { ...there, seconds: 95 } })
+      }
+      const under = taken === 'beside' ? `${id}-2` : id
       filed.push(score)
-      const title = (score as Score | undefined)?.metadata.title ?? 'that'
-      return Promise.resolve({ kind: 'filed', id: 'aria', title })
+      library.set(under, {
+        title,
+        ...(metadata?.composer === undefined ? {} : { composer: metadata.composer }),
+      })
+      return Promise.resolve({ kind: 'filed', id: under, title })
     },
     onLibraryChanged: () => () => {},
     readSettings: () => Promise.resolve({ settings: DEFAULT_SETTINGS, notice: null, fresh: false }),
@@ -334,6 +349,41 @@ describe('putting the open piece in the library', () => {
 
     expect(main.filed).toEqual([aria])
     expect(screen.getByText(/Added Aria to the library, as aria\./)).toBeTruthy()
+  })
+
+  it('asks before replacing a piece already filed under that id, and files beside it', async () => {
+    const main = fakeMain()
+    render(<App />)
+    await main.push({ kind: 'opened', name: 'aria.mid', score: aria, notices: [] })
+    await act(async () => {
+      addToLibrary()?.click()
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    })
+
+    // A different piece a MIDI file happens to call the same thing.
+    await main.push({
+      kind: 'opened',
+      name: 'aria-2.mid',
+      score: { ...aria, metadata: { title: 'Aria', composer: 'Somebody else' } },
+      notices: [],
+    })
+    await act(async () => {
+      addToLibrary()?.click()
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    })
+
+    // Nothing was filed: what is there is described, and the choice is open.
+    expect(main.filed).toHaveLength(1)
+    expect(screen.getByText('The library already has a aria')).toBeTruthy()
+    expect(screen.getByText(/Aria · Somebody · 1:35/)).toBeTruthy()
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'File this one beside it', hidden: true }).click()
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    })
+
+    expect(main.filed).toHaveLength(2)
+    expect(screen.getByText(/Added Aria to the library, as aria-2\./)).toBeTruthy()
   })
 })
 

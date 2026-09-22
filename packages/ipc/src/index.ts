@@ -78,6 +78,7 @@ export {
   libraryFileName,
   libraryFileNames,
   libraryIdOfFile,
+  MAX_LIBRARY_NAME,
   safeName,
   SCORE_SUFFIX,
   SCORE_SUFFIXES,

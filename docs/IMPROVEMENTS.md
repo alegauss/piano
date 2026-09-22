@@ -32,30 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI95 Two pieces, one name
-
-`libraryId` reduces a score's id, or its title where it has none, to a safe name:
-`Prelude in C.mid` and a quite different `prelude-in-c.musicxml` both become
-`prelude-in-c`. `keep` then writes that file unconditionally. For `save_score` that is
-deliberate — a model correcting a piece it just wrote wants the same id overwritten, and
-PI52 recorded that the index is a cache and the files are the truth.
-
-An import is not that. A MIDI file's title is whatever its track name or its file name
-says, which is often `Untitled` or `piano`. Two unrelated downloads collide, the second
-silently replaces the first, and the only trace is a list one row shorter than it was.
-
-So the write from the window asks first: look for the id before filing, and where
-something is already there, say what it is — title, composer, how long — and offer
-either to file the new piece beside it under a name that is free, or to replace the old
-one deliberately. Neither is the default, because both lose something when guessed
-wrong.
-
-This is the window's rule, not the package's. `library.save` keeps overwriting, because
-that is what a model saving a correction needs. What is added is a way to ask whether an
-id is taken, which the window uses and the MCP server need not.
-
-Needs PI94, which is the write this constrains.
-
 ### §PI96 What an import cannot know
 
 `importMidi` builds metadata out of a title and, where the file says so, a key. Nothing
@@ -92,10 +68,12 @@ anybody does with a folder of downloads. That it works for one extension out of 
 the part nobody can guess from the outside.
 
 Two answers are possible and the cheaper one may be right. Either the listing names what
-it is ignoring — a line under the list saying three files here are not scores, and what
-to do about them — or the folder becomes an inbox: a `.mid`, `.musicxml` or `.mxl` found
-there is imported through the same `openScoreFile` path the dialog uses, written as a
-`.piano` beside it, the original left alone.
+it is ignoring — a line under the list saying three files here are not scores — or the
+folder becomes an inbox: a `.mid`, `.musicxml` or `.mxl` found there is imported through
+the same `openScoreFile` path the dialog uses, written as a `.piano` beside it.
+
+A `.piano` the format refuses is ignored the same way: `library.held` answers nothing
+for one, so PI95's ask is skipped and filing overwrites it.
 
 The second is what people expect and the one that has to be careful. An import that
 fails must not be retried on every listing, and a file still being copied must not be

@@ -108,6 +108,55 @@ describe('keeping a score', () => {
   })
 })
 
+describe('asking whether an id is taken', () => {
+  it('describes the piece that is there, and answers nothing for one that is not', async () => {
+    const library = createLibrary(root, memoryFiles())
+    await library.save(named('bwv-846', 'Prelude', { composer: 'Bach' }))
+
+    const held = await library.held('bwv-846')
+    expect(held?.metadata.title).toBe('Prelude')
+    expect(held?.metadata.composer).toBe('Bach')
+    expect(held?.seconds).toBeGreaterThanOrEqual(0)
+    expect(await library.held('nobody-saved-this')).toBeNull()
+  })
+
+  it('finds a score still under the suffix it was written with before', async () => {
+    const files = memoryFiles({
+      [`${root}/bwv-846${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('bwv-846', 'Prelude')),
+    })
+    expect((await createLibrary(root, files).held('bwv-846'))?.metadata.title).toBe('Prelude')
+  })
+
+  it('answers nothing for a file the format refuses, as the listing leaves it out', async () => {
+    const files = memoryFiles({ [`${root}/broken${SCORE_SUFFIX}`]: '{ not json' })
+    expect(await createLibrary(root, files).held('broken')).toBeNull()
+  })
+
+  it('offers the id itself where it is free, and numbers it where it is not', async () => {
+    const library = createLibrary(root, memoryFiles())
+    expect(await library.free('prelude')).toBe('prelude')
+
+    await library.save(named('prelude', 'Prelude'))
+    expect(await library.free('prelude')).toBe('prelude-2')
+
+    await library.save(named('prelude-2', 'Prelude again'))
+    expect(await library.free('prelude')).toBe('prelude-3')
+  })
+
+  it('keeps room for the number in an id already as long as a name may be', async () => {
+    // Cut to length after the number is added, the number would be the part
+    // that went, and the answer would be the taken id over again.
+    const long = 'a'.repeat(64)
+    const library = createLibrary(root, memoryFiles())
+    await library.save(named(long, 'Long'))
+
+    const free = await library.free(long)
+    expect(free).not.toBe(safeName(long))
+    expect(free.endsWith('-2')).toBe(true)
+    expect(free.length).toBeLessThanOrEqual(64)
+  })
+})
+
 describe('on a real disk, against names chosen to escape', () => {
   it('writes every score inside the library and nothing anywhere else', async () => {
     const parent = await mkdtemp(join(tmpdir(), 'piano-escape-'))

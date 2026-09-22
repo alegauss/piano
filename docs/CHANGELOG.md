@@ -202,6 +202,7 @@
 - ✅ **PI89** **A .musicxml or .mxl double-clicked in the file manager opens something else, the installer claiming neither** — A .musicxml or .mxl now offers the piano under Open With on Windows, as an Alternate claim on macOS and a MIME type on Linux, taking neither from a notation editor.
 - ✅ **PI92** **The installed-app check hands over a .piano only, so the MIDI and MusicXML it registers are never opened end to end** — The installed app is now started with a .piano, a .mid, a .musicxml and a .mxl, and has to say it opened each one.
 - ✅ **PI94** **Nothing in the window puts a score into the library: an imported MIDI or MusicXML piece is gone when it closes** — An Add to library button files the open score through the library package, so an imported MIDI or MusicXML piece is listed and playable next launch.
+- ✅ **PI95** **An import filed under a title the library already holds overwrites it, with nothing asked and nothing said** — Filing a piece whose id is taken says what is there and offers to number the new one or replace the old, so two pieces with one title both survive.
 
 ## Block H — Sheet music view
 

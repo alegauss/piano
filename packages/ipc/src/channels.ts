@@ -241,18 +241,43 @@ export const libraryList = {
  * why a model can be trusted with the same write. Main validates it again,
  * since it comes from the renderer, and files it through the one package the
  * MCP server's save also goes through.
+ *
+ * Where that id is taken the answer is `taken` and nothing is written: an
+ * import's id is whatever a track name happened to say, and two downloads
+ * called Untitled would otherwise replace one another in silence. The window
+ * asks, and sends the same score back with the choice that was made.
  */
 export const librarySave = {
   channel: CHANNEL_NAMES.librarySave,
   // Strict, so a request that tries to say where the piece goes is refused
   // rather than quietly trimmed: the page has no say in the path.
-  request: z.object({ score: z.unknown() }).strict(),
+  request: z
+    .object({
+      score: z.unknown(),
+      /**
+       * What to do about an id already in use. Absent is the first ask: main
+       * answers `taken` rather than choosing, because both choices lose
+       * something when guessed wrong.
+       */
+      taken: z.enum(['beside', 'replace']).optional(),
+    })
+    .strict(),
   response: z.discriminatedUnion('kind', [
     z.object({
       kind: z.literal('filed'),
       /** What it is in the library under, which is what opens it again. */
       id: z.string(),
       title: z.string(),
+    }),
+    z.object({
+      kind: z.literal('taken'),
+      id: z.string(),
+      /** What is filed there now, so the choice is made against a piece and not an id. */
+      held: z.object({
+        title: z.string(),
+        composer: z.string().optional(),
+        seconds: z.number().nonnegative(),
+      }),
     }),
     z.object({ kind: z.literal('refused'), message: z.string() }),
   ]),

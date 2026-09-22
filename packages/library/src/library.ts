@@ -2,6 +2,7 @@ import {
   libraryFileName,
   libraryFileNames,
   libraryIdOfFile,
+  MAX_LIBRARY_NAME,
   safeName,
   SCORE_SUFFIX,
 } from '@piano/ipc'
@@ -72,6 +73,17 @@ export type Library = {
    * a library must never hold is a file the app would refuse to open.
    */
   readonly save: (score: unknown) => Promise<Saved>
+  /**
+   * What is filed under an id already, or null where nothing is.
+   *
+   * Asked by a caller that must not overwrite blindly — the window filing an
+   * import, whose id is whatever a track name happened to say — and ignored by
+   * one saving a correction to a piece it just wrote. It reads one file rather
+   * than listing, so asking before every save costs a stat and a parse.
+   */
+  readonly held: (id: string) => Promise<LibraryEntry | null>
+  /** The nearest id to this one that nothing holds: the id itself, or it numbered. */
+  readonly free: (id: string) => Promise<string>
   readonly read: (id: string) => Promise<Score>
   readonly list: (order?: Order) => Promise<LibraryEntry[]>
   readonly search: (filter: LibraryFilter, order?: Order) => Promise<LibraryEntry[]>
@@ -267,6 +279,50 @@ export function createLibrary(root: string, files: Files): Library {
       const id = libraryId(parsed.score)
       const file = await keep(id, parsed.score)
       return { id, file, metadata: parsed.score.metadata, score: parsed.score }
+    },
+    held: async (id) => {
+      const path = await foundFor(id)
+      if (path === null) {
+        return null
+      }
+      const found = await files.stat(path)
+      let score: Score
+      try {
+        score = await readScore(path)
+      } catch {
+        // A file the format refuses is not a piece: the listing leaves it out
+        // for the same reason, and there is nothing to describe to somebody
+        // being asked whether to replace it.
+        return null
+      }
+      return {
+        id,
+        file: path,
+        metadata: score.metadata,
+        seconds: durationOf(score),
+        added: found?.modified ?? 0,
+      }
+    },
+    /**
+     * Numbered from two, as a person names a second copy of anything. The id
+     * stays recognisable, which matters because it is what a list row, a
+     * sentence in chat and the file on disk all call the piece.
+     */
+    free: async (id) => {
+      const base = safeName(id)
+      if ((await foundFor(base)) === null) {
+        return base
+      }
+      for (let next = 2; next < 1000; next += 1) {
+        const tail = `-${String(next)}`
+        // Room is made for the number before the name is cut to length, or the
+        // cut would take the number off and hand back the taken name again.
+        const candidate = safeName(`${base.slice(0, MAX_LIBRARY_NAME - tail.length)}${tail}`)
+        if ((await foundFor(candidate)) === null) {
+          return candidate
+        }
+      }
+      throw new Error(`the library already holds a thousand pieces called ${base}`)
     },
     read: async (id) => readScore((await foundFor(id)) ?? pathFor(id)),
     seed: async (scores) => {

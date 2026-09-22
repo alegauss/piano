@@ -464,7 +464,7 @@ if (firstInstance) {
           (await library.search(filter, order)).map(libraryItem),
         // The score is the window's; where it goes is the library's own answer
         // from the score's metadata, which is why no path crosses.
-        fileInLibrary: (request) => fileInLibrary(request.score, library),
+        fileInLibrary: (request) => fileInLibrary(request, library),
         settings,
         history,
         saveHistory: async (window) =>
