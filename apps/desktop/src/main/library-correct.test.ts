@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest'
 import { correctInLibrary, type Correcting, type OpenScore } from './library-correct'
 
 /**
- * Correcting a filed piece, with the disk in a map: what is written, where it
- * ends up when the title moves it, what is asked when that name is taken, and
- * what a window showing the piece is told.
+ * Correcting a filed piece, with the disk in a map. Where the piece ends up is
+ * the library's question and settled in its own suite; what is settled here is
+ * what crosses the bridge, and what a window showing the piece is told.
  */
 
 const aria: Score = {
@@ -90,61 +90,8 @@ describe('correcting what a filed piece says about itself', () => {
     expect(result).toEqual({ kind: 'refused', message: 'nothing is filed as gone any more' })
   })
 
-  it('answers a write that failed rather than rejecting, so the window can say why', async () => {
-    const broken: Correcting = {
-      held: () => Promise.reject(new Error('the disk is full')),
-      free: () => Promise.reject(new Error('the disk is full')),
-      correct: () => Promise.reject(new Error('the disk is full')),
-    }
-
-    const result = await correctInLibrary(
-      { id: 'aria', metadata: { title: 'Aria' } },
-      broken,
-      closed(),
-    )
-
-    expect(result).toEqual({
-      kind: 'refused',
-      message: 'the library could not be written: the disk is full',
-    })
-  })
-})
-
-describe('a piece that is retitled', () => {
-  it('moves to the name its new title gives it, and the old file goes', async () => {
-    const { files, library } = await withAria()
-
-    const result = await correctInLibrary(
-      { id: 'track-1', metadata: { title: 'Prelude in C' } },
-      library,
-      closed(),
-    )
-
-    expect(result).toMatchObject({ kind: 'corrected', id: 'prelude-in-c' })
-    expect(written(files, 'prelude-in-c.piano')?.metadata.title).toBe('Prelude in C')
-    expect(files.held.has('/library/track-1.piano')).toBe(false)
-  })
-
-  it('stays where it is when the score carries an id of its own', async () => {
-    // The id is the stable handle records are kept against; a title is not.
-    const { files, library } = await withAria({
-      ...aria,
-      metadata: { ...aria.metadata, id: 'bwv-846' },
-    })
-
-    const result = await correctInLibrary(
-      { id: 'bwv-846', metadata: { title: 'Prelude in C' } },
-      library,
-      closed(),
-    )
-
-    expect(result).toMatchObject({ kind: 'corrected', id: 'bwv-846' })
-    expect(written(files, 'bwv-846.piano')?.metadata.title).toBe('Prelude in C')
-    expect(files.held.has('/library/prelude-in-c.piano')).toBe(false)
-  })
-
-  it('asks before taking a name something else holds, and writes nothing', async () => {
-    const { files, library } = await withAria()
+  it('carries the library’s question across as the one the filing form asks', async () => {
+    const { library } = await withAria()
     await library.save({
       formatVersion: 1,
       metadata: { title: 'Prelude in C', composer: 'Bach', durationSeconds: 95 },
@@ -162,46 +109,30 @@ describe('a piece that is retitled', () => {
       id: 'prelude-in-c',
       held: { title: 'Prelude in C', composer: 'Bach', seconds: 95 },
     })
-    expect(written(files, 'prelude-in-c.piano')?.metadata.composer).toBe('Bach')
-    expect(files.held.has('/library/track-1.piano')).toBe(true)
   })
 
-  it('files it beside the other, under an id it then carries as its own', async () => {
-    const { files, library } = await withAria()
-    await library.save({ ...aria, metadata: { title: 'Prelude in C' } })
+  it('answers a write that failed rather than rejecting, so the window can say why', async () => {
+    const broken: Correcting = {
+      held: () => Promise.reject(new Error('the disk is full')),
+      correct: () => Promise.reject(new Error('the disk is full')),
+    }
 
     const result = await correctInLibrary(
-      { id: 'track-1', metadata: { title: 'Prelude in C' }, taken: 'beside' },
-      library,
+      { id: 'aria', metadata: { title: 'Aria' } },
+      broken,
       closed(),
     )
 
-    expect(result).toMatchObject({ kind: 'corrected', id: 'prelude-in-c-2' })
-    // Written into the score, so file and metadata agree and nothing moves it
-    // again the next time anybody touches it.
-    expect(written(files, 'prelude-in-c-2.piano')?.metadata.id).toBe('prelude-in-c-2')
-    expect(files.held.has('/library/track-1.piano')).toBe(false)
-  })
-
-  it('replaces what is there when that is what was asked for', async () => {
-    const { files, library } = await withAria()
-    await library.save({ ...aria, metadata: { title: 'Prelude in C', composer: 'Somebody else' } })
-
-    const result = await correctInLibrary(
-      { id: 'track-1', metadata: { title: 'Prelude in C' }, taken: 'replace' },
-      library,
-      closed(),
-    )
-
-    expect(result).toMatchObject({ kind: 'corrected', id: 'prelude-in-c' })
-    expect(written(files, 'prelude-in-c.piano')?.metadata.composer).toBeUndefined()
-    expect(files.held.has('/library/track-1.piano')).toBe(false)
+    expect(result).toEqual({
+      kind: 'refused',
+      message: 'the library could not be written: the disk is full',
+    })
   })
 })
 
 describe('the file the window has open', () => {
   it('follows the piece when it moves, so a keep does not write to a gone name', async () => {
-    const { library } = await withAria()
+    const { library } = await withAria({ ...aria, metadata: { title: 'Track 1' } })
     const open = showing('/library/track-1.piano')
 
     const result = await correctInLibrary(
@@ -210,7 +141,7 @@ describe('the file the window has open', () => {
       open,
     )
 
-    expect(result).toMatchObject({ kind: 'corrected', open: true })
+    expect(result).toMatchObject({ kind: 'corrected', id: 'prelude-in-c', open: true })
     expect(open.at()).toBe('/library/prelude-in-c.piano')
   })
 

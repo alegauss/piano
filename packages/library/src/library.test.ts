@@ -7,7 +7,7 @@ import { VALID_FIXTURES } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { memoryFiles, nodeFiles } from './files'
-import { createLibrary, durationOf, INDEX_FILE, libraryId } from './library'
+import { createLibrary, durationOf, INDEX_FILE, libraryId, type Corrected } from './library'
 
 /**
  * The library with its filesystem handed to it, which is how a test can ask
@@ -122,94 +122,48 @@ describe('correcting what a piece says about itself', () => {
   const written = (files: ReturnType<typeof memoryFiles>, id: string): Record<string, unknown> =>
     JSON.parse(files.held.get(`${root}/${id}${SCORE_SUFFIX}`) ?? '') as Record<string, unknown>
 
+  /** The answer, where the test is about a correction that landed. */
+  const landed = (corrected: Corrected) => {
+    if (corrected.kind !== 'corrected') {
+      throw new Error(`the correction answered ${corrected.kind}`)
+    }
+    return corrected
+  }
+
   it('replaces the five fields it is given and leaves the notes alone', async () => {
     const { files, library } = await filed()
     const before = written(files, 'untitled')
 
-    const corrected = await library.correct('untitled', {
-      title: 'Prelude in C',
-      composer: 'Bach',
-      level: 'intermediate',
-      difficulty: 4,
-      tags: ['baroque', 'study'],
-    })
+    const corrected = landed(
+      await library.correct('untitled', {
+        title: 'Untitled',
+        composer: 'Bach',
+        level: 'intermediate',
+        difficulty: 4,
+        tags: ['baroque', 'study'],
+      }),
+    )
 
-    expect(corrected?.score.metadata).toMatchObject({
-      title: 'Prelude in C',
+    expect(corrected.score.metadata).toMatchObject({
       composer: 'Bach',
       level: 'intermediate',
       difficulty: 4,
       tags: ['baroque', 'study'],
     })
-    expect(corrected?.score.notes).toEqual(before['notes'])
+    expect(corrected.score.notes).toEqual(before['notes'])
   })
 
   it('clears a field it is not given, which is how a guessed composer is taken back', async () => {
     const { library } = await filed()
-    const corrected = await library.correct('untitled', { title: 'Untitled' })
-    expect(corrected?.score.metadata.composer).toBeUndefined()
-    expect(corrected?.score.metadata.level).toBeUndefined()
-    expect(corrected?.score.metadata.tags).toBeUndefined()
-  })
-
-  it('writes back where it is unless the caller says otherwise', async () => {
-    const { files, library } = await filed()
-    const corrected = await library.correct('untitled', { title: 'Prelude in C' })
-
-    expect(corrected?.id).toBe('untitled')
-    expect(corrected?.file).toBe(`${root}/untitled${SCORE_SUFFIX}`)
-    expect(files.held.has(`${root}/prelude-in-c${SCORE_SUFFIX}`)).toBe(false)
-    expect(written(files, 'untitled')['metadata']).toMatchObject({ title: 'Prelude in C' })
-  })
-
-  it('moves it where the caller says, and the old name goes', async () => {
-    const { files, library } = await filed()
-
-    const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c')
-
-    expect(corrected?.id).toBe('prelude-in-c')
-    expect(corrected?.file).toBe(`${root}/prelude-in-c${SCORE_SUFFIX}`)
-    expect(files.held.has(`${root}/untitled${SCORE_SUFFIX}`)).toBe(false)
-    // Moved, not deleted: a rename loses nothing, so it never reaches a bin.
-    expect(files.discarded).toEqual([])
-  })
-
-  it('gives a piece with no id of its own the one it now lives under', async () => {
-    const files = memoryFiles({
-      [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify({
-        ...(minimal as Record<string, unknown>),
-        metadata: { title: 'Untitled' },
-      }),
-    })
-    const library = createLibrary(root, files)
-
-    const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c')
-
-    // Most pieces arrive without one, and without one every practice record
-    // kept against the piece is filed under whatever it happens to be called.
-    expect(corrected?.score.metadata.id).toBe('prelude-in-c')
-  })
-
-  it('writes the id in where the piece is going somewhere its own name would not', async () => {
-    const { library } = await filed()
-    const corrected = await library.correct('untitled', { title: 'Prelude in C' }, 'prelude-in-c-2')
-    expect(corrected?.score.metadata.id).toBe('prelude-in-c-2')
-  })
-
-  it('keeps an id the score already carried, which is what records are kept against', async () => {
-    const files = memoryFiles({
-      [`${root}/bwv-846${SCORE_SUFFIX}`]: JSON.stringify(named('bwv-846', 'Untitled')),
-    })
-    const library = createLibrary(root, files)
-
-    const corrected = await library.correct('bwv-846', { title: 'Prelude in C' })
-
-    expect(corrected?.score.metadata.id).toBe('bwv-846')
+    const corrected = landed(await library.correct('untitled', { title: 'Untitled' }))
+    expect(corrected.score.metadata.composer).toBeUndefined()
+    expect(corrected.score.metadata.level).toBeUndefined()
+    expect(corrected.score.metadata.tags).toBeUndefined()
   })
 
   it('says nothing is there for an id nothing is filed under', async () => {
     const { files, library } = await filed()
-    expect(await library.correct('gone', { title: 'Whatever' })).toBeNull()
+    expect(await library.correct('gone', { title: 'Whatever' })).toEqual({ kind: 'missing' })
     expect(files.held.has(`${root}/gone${SCORE_SUFFIX}`)).toBe(false)
   })
 
@@ -226,10 +180,105 @@ describe('correcting what a piece says about itself', () => {
     })
     const library = createLibrary(root, files)
 
-    const corrected = await library.correct('old', { title: 'Old, corrected' })
+    const corrected = landed(await library.correct('old', { title: 'Old' }))
 
-    expect(corrected?.file).toBe(`${root}/old${SCORE_SUFFIX}`)
+    expect(corrected.file).toBe(`${root}/old${SCORE_SUFFIX}`)
     expect(files.held.has(`${root}/old${LEGACY_SCORE_SUFFIX}`)).toBe(false)
+  })
+
+  describe('where the corrected piece ends up', () => {
+    /** A piece with no id of its own, which is how most of them arrive. */
+    const unnamed = (title: string) => ({
+      ...(minimal as Record<string, unknown>),
+      metadata: { title },
+    })
+
+    it('moves to the name its new title gives it, and the old name goes', async () => {
+      const files = memoryFiles({
+        [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify(unnamed('Untitled')),
+      })
+      const library = createLibrary(root, files)
+
+      const corrected = landed(await library.correct('untitled', { title: 'Prelude in C' }))
+
+      expect(corrected.id).toBe('prelude-in-c')
+      expect(corrected.file).toBe(`${root}/prelude-in-c${SCORE_SUFFIX}`)
+      expect(files.held.has(`${root}/untitled${SCORE_SUFFIX}`)).toBe(false)
+      // Moved, not deleted: a rename loses nothing, so it never reaches a bin.
+      expect(files.discarded).toEqual([])
+    })
+
+    it('gives the piece the id it now lives under', async () => {
+      const files = memoryFiles({
+        [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify(unnamed('Untitled')),
+      })
+      const library = createLibrary(root, files)
+
+      const corrected = landed(await library.correct('untitled', { title: 'Prelude in C' }))
+
+      // Most pieces arrive without one, and without one every practice record
+      // kept against the piece is filed under whatever it happens to be called.
+      expect(corrected.score.metadata.id).toBe('prelude-in-c')
+    })
+
+    it('stays put where the score carries an id, which is what records are kept against', async () => {
+      const { files, library } = await filed()
+
+      const corrected = landed(await library.correct('untitled', { title: 'Prelude in C' }))
+
+      expect(corrected.id).toBe('untitled')
+      expect(files.held.has(`${root}/prelude-in-c${SCORE_SUFFIX}`)).toBe(false)
+      expect(written(files, 'untitled')['metadata']).toMatchObject({ title: 'Prelude in C' })
+    })
+
+    it('asks before taking a name something else holds, and writes nothing', async () => {
+      const files = memoryFiles({
+        [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify(unnamed('Untitled')),
+      })
+      const library = createLibrary(root, files)
+      await library.save(named('prelude-in-c', 'Prelude in C', { composer: 'Bach' }))
+
+      const answer = await library.correct('untitled', { title: 'Prelude in C' })
+
+      expect(answer.kind).toBe('taken')
+      expect(answer.kind === 'taken' && answer.id).toBe('prelude-in-c')
+      expect(answer.kind === 'taken' && answer.held.metadata.composer).toBe('Bach')
+      expect(written(files, 'untitled')['metadata']).toMatchObject({ title: 'Untitled' })
+    })
+
+    it('files it beside the other, under a numbered id it then carries', async () => {
+      const files = memoryFiles({
+        [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify(unnamed('Untitled')),
+      })
+      const library = createLibrary(root, files)
+      await library.save(named('prelude-in-c', 'Prelude in C'))
+
+      const corrected = landed(
+        await library.correct('untitled', { title: 'Prelude in C' }, 'beside'),
+      )
+
+      expect(corrected.id).toBe('prelude-in-c-2')
+      // Written into the score, so file and metadata agree from then on.
+      expect(corrected.score.metadata.id).toBe('prelude-in-c-2')
+      expect(files.held.has(`${root}/untitled${SCORE_SUFFIX}`)).toBe(false)
+    })
+
+    it('replaces what is there when that is what was asked for', async () => {
+      const files = memoryFiles({
+        [`${root}/untitled${SCORE_SUFFIX}`]: JSON.stringify(unnamed('Untitled')),
+      })
+      const library = createLibrary(root, files)
+      await library.save(named('prelude-in-c', 'Prelude in C', { composer: 'Somebody else' }))
+
+      const corrected = landed(
+        await library.correct('untitled', { title: 'Prelude in C' }, 'replace'),
+      )
+
+      expect(corrected.id).toBe('prelude-in-c')
+      expect(written(files, 'prelude-in-c')['metadata']).toMatchObject({ title: 'Prelude in C' })
+      expect(corrected.score.metadata.composer).toBeUndefined()
+      expect(files.held.has(`${root}/untitled${SCORE_SUFFIX}`)).toBe(false)
+    })
   })
 })
 

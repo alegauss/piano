@@ -6,6 +6,7 @@ export {
   libraryId,
   libraryIdOf,
   SEEDED_FILE,
+  type Corrected,
   type Correction,
   type Library,
   type LibraryEntry,

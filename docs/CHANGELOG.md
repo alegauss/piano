@@ -211,6 +211,7 @@
 - ✅ **PI101** **Nothing in the app removes a score: a piece filed by mistake leaves the library only through the file manager** — A row offers to delete, asks once naming the piece by title, composer and length, and sends the file to the system's bin, so a wrong click can be put back from there.
 - ✅ **PI102** **A retitled piece keeps the file name and id it was filed under, so the panel, the folder and chat disagree** — Retitling a piece moves it to the name that title gives, asks about a name already taken the way filing does, and says what it is filed as now.
 - ✅ **PI103** **Practice history is keyed by a score's id or, where it has none, its title: renaming a piece starts its record over** — A correction gives a piece the id it is filed under, its records move to that key, and deleting says the attempts recorded against it are kept.
+- ✅ **PI104** **Claude Code can write a score into the library but never remove one, nor correct what one says without rewriting it** — correct_score changes what a score says about itself and delete_score takes one out, both through the library module the window writes with.
 
 ## Block H — Sheet music view
 

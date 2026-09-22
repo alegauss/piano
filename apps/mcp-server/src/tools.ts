@@ -1,4 +1,4 @@
-import type { Library, LibraryEntry } from '@piano/library'
+import type { Correction, Library, LibraryEntry } from '@piano/library'
 import {
   describeScore,
   formatProblems,
@@ -6,6 +6,8 @@ import {
   LEVELS,
   parseScore,
   scoreWarnings,
+  type Level,
+  type ScoreMetadata,
   type ScoreWarning,
 } from '@piano/score-format'
 import { z } from 'zod'
@@ -141,6 +143,45 @@ function warned(warnings: readonly ScoreWarning[]): string {
   )
 }
 
+/** A filed piece in one line, for saying which one a sentence is about. */
+function describeEntry(entry: LibraryEntry): string {
+  const composer = entry.metadata.composer === undefined ? '' : ` — ${entry.metadata.composer}`
+  return `"${entry.metadata.title}"${composer} (${clock(entry.seconds)})`
+}
+
+/**
+ * What a correction leaves the five fields saying.
+ *
+ * The library replaces all five, because a form fills all five in; a model
+ * names the ones it means, so what it leaves out is filled from what is there
+ * and only an explicit null clears one. Two calls, one rule underneath: the
+ * fields that reach the library are the fields the window would have sent.
+ */
+function correctionOf(
+  held: ScoreMetadata,
+  fields: {
+    readonly title?: string
+    readonly composer?: string | null
+    readonly level?: Level | null
+    readonly difficulty?: number | null
+    readonly tags?: readonly string[] | null
+  },
+): Correction {
+  const kept = <T>(named: T | null | undefined, was: T | undefined): T | undefined =>
+    named === undefined ? was : (named ?? undefined)
+  const composer = kept(fields.composer, held.composer)
+  const level = kept(fields.level, held.level)
+  const difficulty = kept(fields.difficulty, held.difficulty)
+  const tags = kept(fields.tags, held.tags)
+  return {
+    title: fields.title ?? held.title,
+    ...(composer === undefined ? {} : { composer }),
+    ...(level === undefined ? {} : { level }),
+    ...(difficulty === undefined ? {} : { difficulty }),
+    ...(tags === undefined ? {} : { tags }),
+  }
+}
+
 /** What a transport answer looks like whichever command produced it. */
 function fromLink(result: { ok: boolean; text: string; data?: unknown }): ToolResult {
   return { ok: result.ok, text: result.text, data: result.data }
@@ -216,6 +257,95 @@ export function toolsFor(library: Library, link: Link): Tool[] {
           return { ok: true, text: describeScore(score), data: score }
         } catch {
           return { ok: false, text: `No score in the library is called "${id}".` }
+        }
+      },
+    }),
+
+    tool({
+      name: 'correct_score',
+      title: 'Correct what a score says about itself',
+      description:
+        'Change what a library score says about itself — its title, composer, level, ' +
+        'difficulty or tags — without touching its notes. Name only the fields to change; ' +
+        'the rest stay as they are, and null clears one. Retitling a score that has no id ' +
+        'of its own moves it to the id its new title gives, and the answer says which id ' +
+        'it is addressed by from now on. If that id is already another score’s, nothing ' +
+        'is written and the answer says what holds it: call again with taken to file this ' +
+        'one beside it or to replace what is there.',
+      shape: {
+        id: z.string().min(1).describe('The id the score is filed under now.'),
+        title: z.string().min(1).optional().describe('What the piece is called.'),
+        composer: z.string().min(1).nullable().optional().describe('Null removes the composer.'),
+        level: levels.nullable().optional(),
+        difficulty: z
+          .number()
+          .min(1)
+          .max(10)
+          .nullable()
+          .optional()
+          .describe('One to ten, which orders the library inside a level.'),
+        tags: z.array(z.string().min(1)).nullable().optional(),
+        taken: z
+          .enum(['beside', 'replace'])
+          .optional()
+          .describe(
+            'Only after an answer saying the new id is taken: beside files this one under ' +
+              'a numbered id, replace overwrites the score that holds it.',
+          ),
+      },
+      run: async ({ id, taken, ...fields }) => {
+        try {
+          const held = await library.held(id)
+          if (held === null) {
+            return { ok: false, text: `No score in the library is called "${id}".` }
+          }
+          const result = await library.correct(id, correctionOf(held.metadata, fields), taken)
+          if (result.kind === 'missing') {
+            return { ok: false, text: `No score in the library is called "${id}".` }
+          }
+          if (result.kind === 'taken') {
+            return {
+              ok: false,
+              text:
+                `"${result.id}" is already ${describeEntry(result.held)}. Call correct_score ` +
+                `again with taken: "beside" to file this one under a numbered id, or ` +
+                `taken: "replace" to overwrite that one.`,
+              data: { taken: result.id },
+            }
+          }
+          const moved = result.id === id ? '' : ` It is addressed as "${result.id}" from now on.`
+          return {
+            ok: true,
+            text: `Corrected "${result.id}": ${describeScore(result.score)}${moved}`,
+            data: { id: result.id, metadata: result.metadata },
+          }
+        } catch (cause: unknown) {
+          return { ok: false, text: cause instanceof Error ? cause.message : String(cause) }
+        }
+      },
+    }),
+
+    tool({
+      name: 'delete_score',
+      title: 'Delete a score from the library',
+      description:
+        'Take a score out of the local library, by the id it is filed under. The file is ' +
+        'removed from disk — the app’s own delete puts it in the system’s bin, this one ' +
+        'does not — so ask before deleting anything you did not just write. Practice ' +
+        'records are left alone. An id nothing is filed under is refused rather than ' +
+        'silently accepted.',
+      shape: { id: z.string().min(1).describe('The id the score is filed under.') },
+      run: async ({ id }) => {
+        try {
+          const held = await library.held(id)
+          const gone = await library.remove(id)
+          if (!gone) {
+            return { ok: false, text: `No score in the library is called "${id}".` }
+          }
+          const what = held === null ? id : describeEntry(held)
+          return { ok: true, text: `Deleted "${id}": ${what}`, data: { id } }
+        } catch (cause: unknown) {
+          return { ok: false, text: cause instanceof Error ? cause.message : String(cause) }
         }
       },
     }),

@@ -14,9 +14,9 @@
 
 ## Block G — Score library and distribution
 
-- 📋 **PI104** (deps: PI100 ✅, PI101 ✅) **Claude Code can write a score into the library but never remove one, nor correct what one says without rewriting it** — delete_score and a metadata update go through the library package the window edits with, so chat and panel keep one set of rules. → §PI104
 - 📋 **PI105** (deps: PI100 ✅, PI101 ✅) **Tidying a library that grew by the batch means opening, confirming and closing one row at a time** — Rows can be picked in the panel and then deleted or tagged together, with one question asked of the whole selection. → §PI105
 - 📋 **PI106** (deps: PI102 ✅) **Open recent names a piece by the title it had when it was opened, so a corrected one is listed under its old name** — The list is written from what the file says now, so correcting a piece changes what every way into it calls it. → §PI106
+- 📋 **PI107** (deps: —) **Deleting or retitling from chat skips the bin and leaves the practice records behind, where the panel does neither** — A model's delete is as recoverable as a person's, and a piece it retitles keeps the practice kept against it. → §PI107
 
 ## Block H — Sheet music view
 

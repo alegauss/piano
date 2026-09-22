@@ -82,6 +82,20 @@ export type Correction = {
   readonly tags?: readonly string[]
 }
 
+/**
+ * What became of a correction.
+ *
+ * The three answers and not an exception between them, because the middle one
+ * is a question and not a failure: the name a new title asks for may be
+ * somebody else's, and both ways out of that lose something when guessed. The
+ * caller asks whoever is there — a person in a form, a model in a sentence —
+ * and calls again saying which.
+ */
+export type Corrected =
+  | ({ readonly kind: 'corrected' } & Saved)
+  | { readonly kind: 'taken'; readonly id: string; readonly held: LibraryEntry }
+  | { readonly kind: 'missing' }
+
 /** Easiest first, which is where somebody starting looks; or newest first, where a piece just written is. */
 export type Order = 'easiest' | 'newest'
 
@@ -106,18 +120,25 @@ export type Library = {
   /**
    * Correct what a filed piece says about itself, leaving its notes alone.
    *
-   * `under` is where it ends up, which is the id it is already filed as
-   * unless the caller says otherwise; the file moves and the old name goes,
-   * because a score in two places is a score somebody will edit the wrong
-   * copy of. It is written into the score as its id, so the file and what it
-   * says about itself agree from then on — and so the piece has the stable
-   * handle practice records are kept against, which most pieces reach the
-   * library without.
+   * Where it ends up is worked out here and not by the caller, because there
+   * are two callers — a window and a model — and a rule kept in two places is
+   * a rule that is soon two rules. A piece is addressed by the id its own
+   * metadata gives it, so one that has an id keeps it however it is retitled,
+   * and one that has none is addressed by its title: retitling that is a
+   * move, the old name goes, and the new one is written into the score so
+   * the file and what it says about itself agree from then on. That id is
+   * also the stable handle practice records are kept against, which most
+   * pieces reach the library without.
    *
-   * Null where nothing is filed under `id`, which is the answer for a row
-   * somebody deleted while the form was open.
+   * `taken` answers the one question this cannot decide: the name a new title
+   * asks for is somebody else's, and the answer is to file it beside theirs
+   * under a numbered id, or to replace what is there.
    */
-  readonly correct: (id: string, correction: Correction, under?: string) => Promise<Saved | null>
+  readonly correct: (
+    id: string,
+    correction: Correction,
+    taken?: 'beside' | 'replace',
+  ) => Promise<Corrected>
   /**
    * Take a piece out of the library, on somebody's say-so.
    *
@@ -327,7 +348,10 @@ export function createLibrary(root: string, files: Files): Library {
         : compareForLibrary(one.metadata, other.metadata),
     )
 
-  return {
+  // Named so that `correct` can ask the same two questions a caller would —
+  // what holds this name, and which name is free — rather than a second copy
+  // of each living inside it.
+  const api: Library = {
     root,
     save: async (score) => {
       const parsed = parseScore(score)
@@ -382,12 +406,25 @@ export function createLibrary(root: string, files: Files): Library {
       }
       throw new Error(`the library already holds a thousand pieces called ${base}`)
     },
-    correct: async (id, correction, under = id) => {
+    correct: async (id, correction, taken) => {
       const path = await foundFor(id)
       if (path === null) {
-        return null
+        return { kind: 'missing' }
       }
       const held = await readScore(path)
+      // What the corrected piece asks to be filed under: its own id where it
+      // has one, and otherwise the name its new title gives it.
+      const wanted = libraryIdOf({ ...held.metadata, ...correction })
+      let under = id
+      if (wanted !== id) {
+        const clash = taken === 'replace' ? null : await api.held(wanted)
+        if (clash !== null && taken === undefined) {
+          return { kind: 'taken', id: wanted, held: clash }
+        }
+        // Beside an id nothing holds is the id itself, so the choice costs
+        // nothing where the clash was answered by deleting the other piece.
+        under = taken === 'beside' ? await api.free(wanted) : wanted
+      }
       // Spread the correction over what is left of the metadata rather than
       // over the metadata itself: the five fields it owns go even where it
       // says nothing about them, and the rest of the score is untouched.
@@ -424,7 +461,13 @@ export function createLibrary(root: string, files: Files): Library {
           await files.remove(`${root}/${name}`)
         }
       }
-      return { id: under, file, metadata: parsed.score.metadata, score: parsed.score }
+      return {
+        kind: 'corrected',
+        id: under,
+        file,
+        metadata: parsed.score.metadata,
+        score: parsed.score,
+      }
     },
     remove: async (id) => {
       let held = false
@@ -476,4 +519,5 @@ export function createLibrary(root: string, files: Files): Library {
         order,
       ),
   }
+  return api
 }

@@ -32,29 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI104 The same two verbs from chat
-
-The project's first premise is that Claude Code is a first-class way to use the app:
-save_score writes a piece, list_scores and search_scores find one, play and practise
-drive the window. The library's other two verbs are missing. A model cannot remove a
-piece it has just written badly, and it cannot correct what one says without re-saving
-the whole score — read it, edit the JSON, write it back: three calls that can half-fail,
-in place of one that cannot, and every one of them a chance to lose a bar while fixing a
-level.
-
-delete_score takes an id and nothing else, which is the rule this package already
-enforces everywhere: no tool call names a path, and an id is reduced to a name under one
-root before it is a file name at all. The update takes an id and the fields to change,
-validates the result against the same schema the app opens by, and leaves the notes
-alone.
-
-Both belong after the window's own edit and delete rather than before. What to do about
-a taken id, about a piece being renamed, and about practice history is decided there,
-and a tool that answered any of it differently would be a second set of rules to keep in
-step. The MCP server and the app read and write through one library module, but not one
-filesystem: the window's library was handed a discard that is the system's bin, and the
-server's was not.
-
 ### §PI105 Tidying more than one piece
 
 Everything the panel does is one row at a time, which is right for opening a piece and
@@ -95,5 +72,27 @@ Both halves are wrong now. PI102 made a retitle move the file, so an entry can n
 path that is not there and an open from the menu fails outright; the title was already
 stale without any renaming. Main is told where a moved file went, through the port that
 follows the open score, and this list wants the same write from the same place.
+
+### §PI107 The two verbs chat cannot reach alone
+
+delete_score and correct_score go through the one library module the window writes with,
+so the rules about ids, moves and clashes are the same rules. Two things are not in that
+module, and both are the window's. The system's bin is one: main hands its library a
+discard that is shell.trashItem, and the server, being plain Node with no bin to reach,
+unlinks. The practice history is the other: a correction gives a piece an id and may
+move it, and the window follows its records to the new key, while the server cannot.
+
+So a model deleting a score destroys it, where deleting the same score in the panel does
+not, and a model retitling one loses the practice a person's retitle keeps. Neither is
+said anywhere a person would see it; delete_score's description admits the first, which
+is a warning and not an answer.
+
+Both reach the same way. When a window is listening the link already carries commands to
+it, and the window holds the bin and the history; a verb sent there is answered with one
+set of rules and no second bin invented. When none is, the honest answer differs per
+verb: a delete that cannot be undone should say so before it happens, and a correction
+should leave a note main applies when the window next reads the history. Decide that
+split here rather than per tool, or the two verbs drift apart the way the two libraries
+just did.
 
 ## Block H — Sheet music view

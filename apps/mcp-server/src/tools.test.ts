@@ -42,6 +42,8 @@ describe('the surface itself', () => {
     const { tools } = setup()
     expect(tools.map((one) => one.name).sort()).toEqual(
       [
+        'correct_score',
+        'delete_score',
         'list_scores',
         'piano_state',
         'play',
@@ -138,6 +140,137 @@ describe('the score tools', () => {
     const missing = await by('read_score').run({ id: 'not-here' })
     expect(missing.ok).toBe(false)
     expect(missing.text).toContain('not-here')
+  })
+
+  it('corrects the fields it is given and leaves the rest as they were', async () => {
+    const { by } = setup()
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { id: 'aria', title: 'Aria', composer: 'Bach', tags: ['baroque'] },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    const answer = await by('correct_score').run({ id: 'aria', level: 'beginner' })
+
+    expect(answer.ok).toBe(true)
+    const read = await by('read_score').run({ id: 'aria' })
+    expect((read.data as { metadata: Record<string, unknown> }).metadata).toMatchObject({
+      title: 'Aria',
+      composer: 'Bach',
+      tags: ['baroque'],
+      level: 'beginner',
+    })
+  })
+
+  it('clears a field named as null, which is how a guessed composer is taken back', async () => {
+    const { by } = setup()
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { id: 'aria', title: 'Aria', composer: 'Track 1' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    await by('correct_score').run({ id: 'aria', composer: null })
+
+    const read = await by('read_score').run({ id: 'aria' })
+    expect((read.data as { metadata: Record<string, unknown> }).metadata.composer).toBeUndefined()
+  })
+
+  it('leaves the notes alone, which is the whole point of not re-saving the score', async () => {
+    const { by } = setup()
+    const notes = [{ pitch: 72, start: 0, duration: 480, velocity: 80 }]
+    await by('save_score').run({
+      score: { formatVersion: 1, metadata: { id: 'aria', title: 'Aria' }, notes },
+    })
+
+    await by('correct_score').run({ id: 'aria', title: 'Aria in C' })
+
+    const read = await by('read_score').run({ id: 'aria' })
+    expect((read.data as { notes: unknown }).notes).toEqual(notes)
+  })
+
+  it('says which id a retitled piece is addressed by from now on', async () => {
+    const { by } = setup()
+    // No id of its own, so it is addressed by its title and a retitle moves it.
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { title: 'Untitled' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    const answer = await by('correct_score').run({ id: 'untitled', title: 'Prelude in C' })
+
+    expect(answer.ok).toBe(true)
+    expect(answer.text).toContain('prelude-in-c')
+    expect((await by('read_score').run({ id: 'untitled' })).ok).toBe(false)
+    expect((await by('read_score').run({ id: 'prelude-in-c' })).ok).toBe(true)
+  })
+
+  it('asks the same question the window asks when that id is taken, and writes nothing', async () => {
+    const { by } = setup()
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { title: 'Untitled' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { title: 'Prelude in C', composer: 'Bach' },
+        notes: [{ pitch: 60, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    const asked = await by('correct_score').run({ id: 'untitled', title: 'Prelude in C' })
+
+    expect(asked.ok).toBe(false)
+    expect(asked.text).toContain('Bach')
+    expect(asked.text).toContain('beside')
+    expect((await by('read_score').run({ id: 'untitled' })).ok).toBe(true)
+
+    const beside = await by('correct_score').run({
+      id: 'untitled',
+      title: 'Prelude in C',
+      taken: 'beside',
+    })
+    expect(beside.ok).toBe(true)
+    expect((await by('read_score').run({ id: 'prelude-in-c-2' })).ok).toBe(true)
+  })
+
+  it('refuses to correct a score that is not there, rather than writing a new one', async () => {
+    const { by } = setup()
+    const answer = await by('correct_score').run({ id: 'not-here', title: 'Whatever' })
+    expect(answer.ok).toBe(false)
+    expect(answer.text).toContain('not-here')
+    expect((await by('list_scores').run({})).text).toContain('empty')
+  })
+
+  it('deletes a score by its id, and names what went', async () => {
+    const { by } = setup()
+    await by('save_score').run({ score: minimal })
+    const id = ((await by('save_score').run({ score: minimal })).data as { id: string }).id
+
+    const answer = await by('delete_score').run({ id })
+
+    expect(answer.ok).toBe(true)
+    expect(answer.text).toContain(id)
+    expect((await by('read_score').run({ id })).ok).toBe(false)
+    expect((await by('list_scores').run({})).text).toContain('empty')
+  })
+
+  it('refuses to delete an id nothing is filed under rather than saying nothing', async () => {
+    const { by } = setup()
+    const answer = await by('delete_score').run({ id: 'not-here' })
+    expect(answer.ok).toBe(false)
+    expect(answer.text).toContain('not-here')
   })
 
   it('says the library is empty rather than answering with nothing', async () => {
