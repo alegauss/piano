@@ -1,5 +1,6 @@
 import {
   KEEP_RECORDS,
+  practiceKey,
   readHistory,
   storedHistory,
   type HistorySaveResult,
@@ -109,15 +110,12 @@ export type Suggestion = {
 }
 
 /**
- * What a piece is known by.
- *
- * Its own id where it has one. Where it does not, what it is called, which
- * survives being re-saved and does not survive being renamed — said here
- * rather than hidden, since it is the reason the id exists.
+ * What a piece is known by: its own id where it has one, and what it is
+ * called where it does not. The rule is the contract's, because a correction
+ * made from chat with no window open has to work out the same answer.
  */
 export function scoreKey(score: Score): string {
-  const id = score.metadata.id
-  return id !== undefined && id.trim() !== '' ? id : `title:${score.metadata.title}`
+  return practiceKey(score.metadata)
 }
 
 /** The notes as they stand, for telling a corrected score from the one that was practised. */

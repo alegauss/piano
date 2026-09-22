@@ -14,7 +14,6 @@
 
 ## Block G — Score library and distribution
 
-- ⏳ **PI107** (deps: —) **Deleting or retitling from chat skips the bin and leaves the practice records behind, where the panel does neither** — With no window there is no bin and no way to move the records: a delete that cannot be undone says so first, and a correction leaves a note the app applies. → §PI107
 - 📋 **PI108** (deps: —) **Open recent still offers a deleted piece, and the system's own list still offers one at the path it has moved from** — Every door into a piece is dropped or put right when it goes or moves, rather than failing when somebody takes it. → §PI108
 
 ## Block H — Sheet music view
@@ -65,18 +64,6 @@
 - **CI signs without a certificate in the repository** The signing material reaches the
   runner through secrets or a signing service, and nothing secret is committed, which is
   what makes this safe to automate at all.
-
-## Done when — PI107
-
-- **A delete that cannot go to the bin says so before it happens** With no window
-  listening there is no bin to reach, so delete_score answers with what it is about to
-  do instead of doing it, and takes a second call saying to go ahead — the pattern
-  correct_score already uses for a name something else holds.
-- **Records follow a piece corrected while the app was closed** A correction made with
-  no window leaves a note of the key it moved from and the one it moved to; the window
-  applies it when it next reads the history, and a note it has applied is gone. Checked
-  by correcting with no window, opening the app, and finding the records under the new
-  key.
 
 ## Non-goals
 

@@ -128,3 +128,57 @@ describe('the practice history between launches', () => {
     expect(storedHistory(await store.held())['version']).toBe(HISTORY_VERSION)
   })
 })
+
+describe('what a correction made while the app was closed left to finish', () => {
+  /** The notes as the other side leaves them, and whether they were collected. */
+  function notes(moves: { was: string; now: string }[]) {
+    let left = moves
+    return {
+      pending: () => Promise.resolve(left),
+      done: () => {
+        left = []
+        return Promise.resolve()
+      },
+      left: () => left,
+    }
+  }
+
+  it('moves the records to the key the correction gave the piece', async () => {
+    await createHistoryStore(file).write([record({ score: 'title:Untitled' }), record()])
+    const left = notes([{ was: 'title:Untitled', now: 'prelude-in-c' }])
+
+    const read = await createHistoryStore(file, left).read()
+
+    expect(read.records.map((one) => one.score)).toEqual(['prelude-in-c', 'sonata'])
+    // Written back, so the next launch does not need the note.
+    expect((await createHistoryStore(file).read()).records[0]?.score).toBe('prelude-in-c')
+  })
+
+  it('collects the note once, so nothing is moved back and forth', async () => {
+    await createHistoryStore(file).write([record({ score: 'title:Untitled' })])
+    const left = notes([{ was: 'title:Untitled', now: 'prelude-in-c' }])
+
+    await createHistoryStore(file, left).read()
+
+    expect(left.left()).toEqual([])
+  })
+
+  it('spends a note that moved nothing, since the piece may have gone since', async () => {
+    await createHistoryStore(file).write([record()])
+    const left = notes([{ was: 'title:Never practised', now: 'whatever' }])
+
+    const read = await createHistoryStore(file, left).read()
+
+    expect(read.records.map((one) => one.score)).toEqual(['sonata'])
+    expect(left.left()).toEqual([])
+  })
+
+  it('leaves the history alone when nothing was left, which is every ordinary launch', async () => {
+    await createHistoryStore(file).write([record()])
+    const before = await readFile(file, 'utf8')
+
+    await createHistoryStore(file, notes([])).read()
+
+    expect(await readFile(file, 'utf8')).toBe(before)
+  })
+})

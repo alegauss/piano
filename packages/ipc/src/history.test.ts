@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   HISTORY_VERSION,
   KEEP_RECORDS,
+  practiceKey,
   practiceRecordSchema,
   readHistory,
+  renamedRecords,
   storedHistory,
   type PracticeRecord,
 } from './history'
@@ -81,5 +83,46 @@ describe('reading the practice history', () => {
     })
     expect(parsed.success).toBe(true)
     expect(parsed.data).not.toHaveProperty('notes')
+  })
+})
+
+describe('what a piece’s records are filed under', () => {
+  it('is its own id where it has one, and what it is called where it has none', () => {
+    expect(practiceKey({ id: 'bwv-846', title: 'Prelude' })).toBe('bwv-846')
+    expect(practiceKey({ title: 'Prelude' })).toBe('title:Prelude')
+    expect(practiceKey({ id: '  ', title: 'Prelude' })).toBe('title:Prelude')
+  })
+})
+
+describe('moving records to the key a correction gave a piece', () => {
+  it('rewrites the ones under the old key and leaves the rest', () => {
+    const records = [
+      record({ score: 'title:Untitled' }),
+      record({ score: 'sonata' }),
+      record({ score: 'title:Untitled' }),
+    ]
+
+    const moved = renamedRecords(records, [{ was: 'title:Untitled', now: 'prelude-in-c' }])
+
+    expect(moved.map((one) => one.score)).toEqual(['prelude-in-c', 'sonata', 'prelude-in-c'])
+  })
+
+  it('answers the very same records where nothing was under the old key', () => {
+    const records = [record({ score: 'sonata' })]
+    expect(renamedRecords(records, [{ was: 'title:Untitled', now: 'one' }])).toBe(records)
+    expect(renamedRecords(records, [])).toBe(records)
+    // A move to the key they are already under is not a move.
+    expect(renamedRecords(records, [{ was: 'sonata', now: 'sonata' }])).toBe(records)
+  })
+
+  it('applies every move in one pass, so two pieces are sorted out together', () => {
+    const records = [record({ score: 'title:One' }), record({ score: 'title:Two' })]
+
+    const moved = renamedRecords(records, [
+      { was: 'title:One', now: 'one' },
+      { was: 'title:Two', now: 'two' },
+    ])
+
+    expect(moved.map((each) => each.score)).toEqual(['one', 'two'])
   })
 })

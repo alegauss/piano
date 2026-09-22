@@ -1,4 +1,4 @@
-import type { LibraryCorrection } from '@piano/ipc'
+import { practiceKey, type LibraryCorrection } from '@piano/ipc'
 import type { Library, LibraryEntry } from '@piano/library'
 import {
   describeScore,
@@ -14,6 +14,7 @@ import {
 import { z } from 'zod'
 
 import type { Link, PassageAsk } from './link'
+import { noRenames, type Renames } from './renames'
 
 /**
  * The tools Claude Code actually needs, and nothing else.
@@ -188,7 +189,7 @@ function fromLink(result: { ok: boolean; text: string; data?: unknown }): ToolRe
   return { ok: result.ok, text: result.text, data: result.data }
 }
 
-export function toolsFor(library: Library, link: Link): Tool[] {
+export function toolsFor(library: Library, link: Link, renames: Renames = noRenames()): Tool[] {
   return [
     tool({
       name: 'validate_score',
@@ -272,8 +273,8 @@ export function toolsFor(library: Library, link: Link): Tool[] {
         'of its own moves it to the id its new title gives, and the answer says which id ' +
         'it is addressed by from now on. If that id is already another score’s, nothing ' +
         'is written and the answer says what holds it: call again with taken to file this ' +
-        'one beside it or to replace what is there. With the app open the practice records ' +
-        'kept against the old name follow the piece; with no window open they stay behind.',
+        'one beside it or to replace what is there. The practice records kept against the ' +
+        'old name follow the piece, whether the app is open or picks it up next launch.',
       shape: {
         id: z.string().min(1).describe('The id the score is filed under now.'),
         title: z.string().min(1).optional().describe('What the piece is called.'),
@@ -329,6 +330,13 @@ export function toolsFor(library: Library, link: Link): Tool[] {
               data: { taken: result.id },
             }
           }
+          // The records kept against what it used to be called are the app's,
+          // and the app is not here: a note is left where the two meet, and
+          // the window applies it the next time it reads the history.
+          await renames.moved({
+            was: practiceKey(held.metadata),
+            now: practiceKey(result.score.metadata),
+          })
           const moved = result.id === id ? '' : ` It is addressed as "${result.id}" from now on.`
           return {
             ok: true,
@@ -346,18 +354,40 @@ export function toolsFor(library: Library, link: Link): Tool[] {
       title: 'Delete a score from the library',
       description:
         'Take a score out of the local library, by the id it is filed under. With the app ' +
-        'open the file goes to the system’s bin and can be put back; with no window open ' +
-        'it is removed from disk and cannot be, so ask first before deleting anything you ' +
-        'did not just write. Practice records are left alone either way. An id nothing is ' +
-        'filed under is refused rather than silently accepted.',
-      shape: { id: z.string().min(1).describe('The id the score is filed under.') },
-      run: async ({ id }) => {
+        'open the file goes to the system’s bin and can be put back. With no window open ' +
+        'nothing is deleted on the first call: the answer says the file cannot go to the ' +
+        'bin, and deleting it for good takes a second call with anyway. Practice records ' +
+        'are left alone either way. An id nothing is filed under is refused rather than ' +
+        'silently accepted.',
+      shape: {
+        id: z.string().min(1).describe('The id the score is filed under.'),
+        anyway: z
+          .boolean()
+          .optional()
+          .describe(
+            'Only after an answer saying there is no window open and the file cannot go ' +
+              'to the bin: true deletes it for good.',
+          ),
+      },
+      run: async ({ id, anyway }) => {
         try {
           const held = await library.held(id)
           // The bin belongs to the system and only the app reaches it, so a
           // window that is there does the deleting and the file can come back.
           if (await link.listening()) {
             return fromLink(await link.send({ kind: 'remove', score: id }))
+          }
+          if (held !== null && anyway !== true) {
+            // Nothing is written on the first ask: with no window there is no
+            // bin, and a delete nobody can undo is one worth asking about.
+            return {
+              ok: false,
+              text:
+                `Nothing was deleted. The Piano app is not open, so ${describeEntry(held)} ` +
+                `cannot go to the system's bin and deleting it now cannot be undone. Open ` +
+                `the app and ask again, or call delete_score with anyway: true.`,
+              data: { id, recoverable: false },
+            }
           }
           const gone = await library.remove(id)
           if (!gone) {

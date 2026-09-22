@@ -1,8 +1,9 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-import { readHistory, storedHistory, type PracticeRecord } from '@piano/ipc'
+import { readHistory, renamedRecords, storedHistory, type PracticeRecord } from '@piano/ipc'
 
+import { noRenames, type Renames } from './renames'
 import { replace } from './replace'
 
 /**
@@ -52,6 +53,14 @@ function noticeOf(dropped: number, unreadable: boolean, newer: boolean): string 
   return lines.length === 0 ? null : lines.join(' ')
 }
 
+/** Write the history whole, beside the real file and then over it. */
+async function keep(file: string, records: readonly PracticeRecord[]): Promise<void> {
+  await mkdir(dirname(file), { recursive: true })
+  const partial = `${file}.partial`
+  await writeFile(partial, `${JSON.stringify(storedHistory(records), null, 2)}\n`, 'utf8')
+  await replace(partial, file)
+}
+
 async function load(file: string): Promise<HistoryLoaded> {
   let text: string
   try {
@@ -69,13 +78,36 @@ async function load(file: string): Promise<HistoryLoaded> {
   return { records, dropped, notice: noticeOf(dropped, false, newer), fresh: false }
 }
 
-export function createHistoryStore(file: string): HistoryStore {
+export function createHistoryStore(file: string, renames: Renames = noRenames()): HistoryStore {
   let loaded: Promise<HistoryLoaded> | null = null
   let held: readonly PracticeRecord[] | null = null
   let writing: Promise<unknown> = Promise.resolve()
 
+  /**
+   * The history as the file has it, with anything a correction made while the
+   * app was closed left to finish.
+   *
+   * Written back before the note is taken away, so a write that fails leaves
+   * the note to be collected next launch rather than losing the move; and the
+   * note is taken away even where it moved nothing, since the piece it was
+   * about may have been deleted since.
+   */
+  const first = async (): Promise<HistoryLoaded> => {
+    const found = await load(file)
+    const moves = await renames.pending()
+    if (moves.length === 0) {
+      return found
+    }
+    const records = renamedRecords(found.records, moves)
+    if (records !== found.records) {
+      await keep(file, records)
+    }
+    await renames.done()
+    return { ...found, records }
+  }
+
   const current = async (): Promise<readonly PracticeRecord[]> => {
-    loaded ??= load(file)
+    loaded ??= first()
     held ??= (await loaded).records
     return held
   }
@@ -100,15 +132,12 @@ export function createHistoryStore(file: string): HistoryStore {
     // What was found at launch, with every write since: a window that reloads
     // is told the history as it is, not as it was.
     read: async () => {
-      const first = await (loaded ??= load(file))
-      return { ...first, records: held ?? first.records }
+      const found = await (loaded ??= first())
+      return { ...found, records: held ?? found.records }
     },
     write: (records) =>
       change(async () => {
-        await mkdir(dirname(file), { recursive: true })
-        const partial = `${file}.partial`
-        await writeFile(partial, `${JSON.stringify(storedHistory(records), null, 2)}\n`, 'utf8')
-        await replace(partial, file)
+        await keep(file, records)
         return records
       }),
     clear: () =>

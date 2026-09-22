@@ -3,6 +3,7 @@ import { VALID_FIXTURES } from '@piano/score-format'
 import { describe, expect, it } from 'vitest'
 
 import { noWindow, type Command, type Link } from './link'
+import type { Renames } from './renames'
 import { toolsFor, type Tool } from './tools'
 
 /**
@@ -24,8 +25,8 @@ function listening(): Link & { readonly heard: Command[] } {
   }
 }
 
-function setup(link: Link = listening()) {
-  const tools = toolsFor(createLibrary('/library', memoryFiles()), link)
+function setup(link: Link = listening(), renames?: Renames) {
+  const tools = toolsFor(createLibrary('/library', memoryFiles()), link, renames)
   const by = (name: string): Tool => {
     const found = tools.find((one) => one.name === name)
     if (found === undefined) {
@@ -254,12 +255,18 @@ describe('the score tools', () => {
     expect((await by('list_scores').run({})).text).toContain('empty')
   })
 
-  it('deletes a score by its id, and names what went', async () => {
+  it('will not quietly delete for good with nobody there to put it back', async () => {
     const { by } = setup(noWindow())
     await by('save_score').run({ score: minimal })
     const id = ((await by('save_score').run({ score: minimal })).data as { id: string }).id
 
-    const answer = await by('delete_score').run({ id })
+    const asked = await by('delete_score').run({ id })
+
+    expect(asked.ok).toBe(false)
+    expect(asked.text).toContain('cannot be undone')
+    expect((await by('read_score').run({ id })).ok).toBe(true)
+
+    const answer = await by('delete_score').run({ id, anyway: true })
 
     expect(answer.ok).toBe(true)
     expect(answer.text).toContain(id)
@@ -272,6 +279,40 @@ describe('the score tools', () => {
     const answer = await by('delete_score').run({ id: 'not-here' })
     expect(answer.ok).toBe(false)
     expect(answer.text).toContain('not-here')
+  })
+
+  it('leaves the app a note when a correction moved the key its records are under', async () => {
+    const left: { was: string; now: string }[] = []
+    const { by } = setup(noWindow(), { moved: (move) => Promise.resolve(void left.push(move)) })
+    // No id of its own, so its records are under what it is called.
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { title: 'Untitled' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    await by('correct_score').run({ id: 'untitled', title: 'Prelude in C' })
+
+    expect(left).toEqual([{ was: 'title:Untitled', now: 'prelude-in-c' }])
+  })
+
+  it('leaves a note saying nothing moved where the piece already had an id', async () => {
+    const left: { was: string; now: string }[] = []
+    const { by } = setup(noWindow(), { moved: (move) => Promise.resolve(void left.push(move)) })
+    await by('save_score').run({
+      score: {
+        formatVersion: 1,
+        metadata: { id: 'bwv-846', title: 'Untitled' },
+        notes: [{ pitch: 72, start: 0, duration: 480, velocity: 80 }],
+      },
+    })
+
+    await by('correct_score').run({ id: 'bwv-846', title: 'Prelude in C' })
+
+    // The key is the id and the id did not change; the note writer drops it.
+    expect(left).toEqual([{ was: 'bwv-846', now: 'bwv-846' }])
   })
 
   it('has the window do the deleting where there is one, so the file can come back', async () => {

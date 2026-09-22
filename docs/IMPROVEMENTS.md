@@ -32,28 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI107 The two verbs chat cannot reach alone
-
-delete_score and correct_score go through the one library module the window writes with,
-so the rules about ids, moves and clashes are the same rules. Two things are not in that
-module, and both are the window's. The system's bin is one: main hands its library a
-discard that is shell.trashItem, and the server, being plain Node with no bin to reach,
-unlinks. The practice history is the other: a correction gives a piece an id and may
-move it, and the window follows its records to the new key, while the server cannot.
-
-So a model deleting a score destroys it, where deleting the same score in the panel does
-not, and a model retitling one loses the practice a person's retitle keeps. Neither is
-said anywhere a person would see it; delete_score's description admits the first, which
-is a warning and not an answer.
-
-Both reach the same way. When a window is listening the link already carries commands to
-it, and the window holds the bin and the history; a verb sent there is answered with one
-set of rules and no second bin invented. When none is, the honest answer differs per
-verb: a delete that cannot be undone should say so before it happens, and a correction
-should leave a note main applies when the window next reads the history. Decide that
-split here rather than per tool, or the two verbs drift apart the way the two libraries
-just did.
-
 ### §PI108 The doors a correction does not reach
 
 A correction now reaches the app's own recent list, and neither of the other two ways an

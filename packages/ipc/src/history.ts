@@ -111,3 +111,64 @@ export function readHistory(raw: unknown): HistoryRead {
 export function storedHistory(records: readonly PracticeRecord[]): Record<string, unknown> {
   return { version: HISTORY_VERSION, records: records.slice(-KEEP_RECORDS) }
 }
+
+/**
+ * What a piece's records are filed under.
+ *
+ * Its own id where it has one. Where it does not, what it is called — which
+ * survives being re-saved and does not survive being renamed, and is the
+ * reason the id exists. Declared here rather than in the window, because a
+ * correction made from chat has to work out the same answer.
+ */
+export function practiceKey(metadata: { readonly id?: string; readonly title: string }): string {
+  const id = metadata.id
+  return id !== undefined && id.trim() !== '' ? id : `title:${metadata.title}`
+}
+
+/**
+ * Where a correction made with no window open leaves what only the window can
+ * finish.
+ *
+ * A correction gives a piece a stable id and may move it, so the records kept
+ * against what it used to be called have to move with it. The window does
+ * that itself when it is open; when it is not, the two processes meet where
+ * they already meet — a small file under the person's home — and the app
+ * applies what it finds the next time it reads the history.
+ */
+export const RENAMES_FILE = ['.piano', 'renames.json'] as const
+
+export const renameSchema = z.object({
+  /** The key the records are under now. */
+  was: z.string().min(1).max(300),
+  /** The key they belong under from here on. */
+  now: z.string().min(1).max(300),
+})
+
+/** How many are kept: past this, the app was closed for longer than a note is worth. */
+export const KEEP_RENAMES = 200
+
+export const renamesSchema = z.object({
+  moves: z.array(renameSchema).max(KEEP_RENAMES),
+})
+
+export type Rename = z.infer<typeof renameSchema>
+
+/**
+ * The records with those moves applied, or the very same array where none of
+ * them touched anything — which is how a caller knows there is nothing to
+ * write back.
+ */
+export function renamedRecords(
+  records: readonly PracticeRecord[],
+  moves: readonly Rename[],
+): readonly PracticeRecord[] {
+  const to = new Map(
+    moves.filter((move) => move.was !== move.now).map((move) => [move.was, move.now]),
+  )
+  return records.some((record) => to.has(record.score))
+    ? records.map((record) => {
+        const now = to.get(record.score)
+        return now === undefined ? record : { ...record, score: now }
+      })
+    : records
+}

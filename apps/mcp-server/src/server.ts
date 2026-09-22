@@ -1,4 +1,4 @@
-import { LIBRARY_DIRECTORY, PRESENCE_DIRECTORY } from '@piano/ipc'
+import { LIBRARY_DIRECTORY, PRESENCE_DIRECTORY, RENAMES_FILE } from '@piano/ipc'
 import { createLibrary, nodeFiles, type Library } from '@piano/library'
 import { FORMAT_VERSION } from '@piano/score-format'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
@@ -11,6 +11,7 @@ import { join } from 'node:path'
 
 import { findApp, whereLooked, type Place } from './launch'
 import { createLink, noWindow, type Launched, type Link } from './link'
+import { fileRenames, type Renames } from './renames'
 import { toolsFor, type Tool } from './tools'
 import { PLUGIN_VERSION } from './version'
 
@@ -36,7 +37,16 @@ export function defaultLibraryRoot(): string {
  * throwing: a caller reading an exception learns that something went wrong,
  * where a caller reading a sentence learns what to do instead.
  */
-export function createServer(options: { library: Library; link?: Link }): McpServer {
+/** Where a correction leaves what only the app can finish, unless a caller says otherwise. */
+export function defaultRenamesFile(): string {
+  return join(homedir(), ...RENAMES_FILE)
+}
+
+export function createServer(options: {
+  library: Library
+  link?: Link
+  renames?: Renames
+}): McpServer {
   const server = new McpServer(
     { name: 'piano', version: PLUGIN_VERSION },
     {
@@ -46,7 +56,7 @@ export function createServer(options: { library: Library; link?: Link }): McpSer
         'library, then play or practise it in the open window.',
     },
   )
-  for (const one of toolsFor(options.library, options.link ?? noWindow())) {
+  for (const one of toolsFor(options.library, options.link ?? noWindow(), options.renames)) {
     register(server, one)
   }
   return server
@@ -141,7 +151,11 @@ export function nodeLink(directory: string = defaultPresenceDirectory()): Link {
 
 /** Start talking over stdin and stdout, which is how Claude Code starts one. */
 export async function start(root: string = defaultLibraryRoot()): Promise<McpServer> {
-  const server = createServer({ library: createLibrary(root, nodeFiles), link: nodeLink() })
+  const server = createServer({
+    library: createLibrary(root, nodeFiles),
+    link: nodeLink(),
+    renames: fileRenames(defaultRenamesFile()),
+  })
   await server.connect(new StdioServerTransport())
   return server
 }

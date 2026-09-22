@@ -8,6 +8,7 @@ import {
   needsWindow,
   PRESENCE_DIRECTORY,
   PUSH_NAMES,
+  RENAMES_FILE,
   type AppRecord,
   type LibraryLeft,
   type OpenResult,
@@ -42,6 +43,7 @@ import { menuTemplate } from './menu'
 import { createOpener } from './opener'
 import { createPackDownloader, packSourceUrl } from './pack-download'
 import { createRecent } from './recent'
+import { fileRenames } from './renames'
 import { packDirectory } from './sample-pack'
 import { createSettingsStore } from './settings-store'
 import { exportScore } from './score-export'
@@ -179,8 +181,16 @@ function sweepInbox(): void {
 /** What the app remembers between launches, in this profile. */
 const settings = createSettingsStore(join(app.getPath('userData'), 'settings.json'))
 
-/** Every attempt that has been graded, in this profile and nowhere else. */
-const history = createHistoryStore(join(app.getPath('userData'), 'practice-history.json'))
+/**
+ * Every attempt that has been graded, in this profile and nowhere else — with
+ * whatever a correction made while the app was closed left for it to finish.
+ * Claude Code can retitle a library piece with no window open, and the records
+ * kept against what it used to be called are this process's to move.
+ */
+const history = createHistoryStore(
+  join(app.getPath('userData'), 'practice-history.json'),
+  fileRenames(join(homedir(), ...RENAMES_FILE)),
+)
 
 /** The sample pack, fetched into wherever the app reads one from. */
 const pack = createPackDownloader({ base: packSourceUrl(), directory: packDirectory() })
