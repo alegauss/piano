@@ -273,7 +273,7 @@ export function TransportBar({
         </Hint>
         <Hint>
           <Button
-            variant={state.loop === null ? 'ghost' : 'secondary'}
+            variant={state.loop === null ? 'ghost' : 'selected'}
             size="icon"
             onClick={toggleLoop}
             aria-label="Loop (L)"
@@ -351,7 +351,7 @@ export function TransportBar({
           {onWaiting === undefined ? null : (
             <Hint>
               <Button
-                variant={waiting ? 'secondary' : 'ghost'}
+                variant={waiting ? 'selected' : 'ghost'}
                 size="icon"
                 aria-label="Wait for me"
                 aria-pressed={waiting}
@@ -396,7 +396,7 @@ export function TransportBar({
           {midi === undefined ? null : <MidiMonitor midi={midi} />}
           <Hint>
             <Button
-              variant={view === 'sheet' ? 'secondary' : 'ghost'}
+              variant={view === 'sheet' ? 'selected' : 'ghost'}
               size="icon"
               onClick={() => {
                 onView(view === 'sheet' ? 'roll' : 'sheet')
@@ -409,7 +409,7 @@ export function TransportBar({
           </Hint>
           <Hint>
             <Button
-              variant={effects ? 'secondary' : 'ghost'}
+              variant={effects ? 'selected' : 'ghost'}
               size="icon"
               onClick={() => {
                 onEffects(!effects)

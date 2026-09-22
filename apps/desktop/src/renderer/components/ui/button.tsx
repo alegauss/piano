@@ -17,6 +17,20 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'bg-accent text-accent-contrast hover:opacity-90',
+        /**
+         * The one that is chosen, in a row of options or a toggle that is on.
+         *
+         * It carries the accent rather than a surface, because the surfaces
+         * cannot say this in both themes: in the light one `surface-overlay`
+         * is white on a near-white panel, so a chosen option was telling
+         * itself apart from an unchosen one by the weight of its text alone,
+         * which nobody reads as "this is the one".
+         *
+         * The same treatment as `primary`, and deliberately: the accent is
+         * how this app says a thing is live, and what separates an action
+         * from a choice is where it sits, not what colour it is.
+         */
+        selected: 'bg-accent text-accent-contrast hover:opacity-90',
         secondary: 'bg-surface-overlay text-text-default hover:bg-surface-raised',
         outline:
           'border border-border-subtle bg-transparent text-text-default hover:bg-surface-overlay hover:text-text-strong',

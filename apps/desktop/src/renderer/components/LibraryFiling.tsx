@@ -118,7 +118,7 @@ export function LibraryFiling({
               {[null, ...LEVELS].map((one) => (
                 <Button
                   key={one ?? 'none'}
-                  variant={filing.level === one ? 'secondary' : 'ghost'}
+                  variant={filing.level === one ? 'selected' : 'ghost'}
                   size="sm"
                   aria-pressed={filing.level === one}
                   onClick={() => {

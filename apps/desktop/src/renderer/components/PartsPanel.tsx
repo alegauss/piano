@@ -154,7 +154,7 @@ function Row({
       {onSolo === undefined ? null : (
         <Hint>
           <Button
-            variant={soloed === true ? 'secondary' : 'ghost'}
+            variant={soloed === true ? 'selected' : 'ghost'}
             size="icon"
             className="size-7 text-xs"
             aria-label={`Solo ${name}`}

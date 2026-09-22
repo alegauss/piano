@@ -81,7 +81,7 @@ export function LevelPanel({
               <Button
                 key={one}
                 size="sm"
-                variant={one === level ? 'secondary' : 'ghost'}
+                variant={one === level ? 'selected' : 'ghost'}
                 aria-pressed={one === level}
                 onClick={() => {
                   onLevel(one)

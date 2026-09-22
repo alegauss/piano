@@ -361,7 +361,7 @@ export function LibraryPanel({
             {LEVELS.map((one) => (
               <Button
                 key={one.label}
-                variant={level === one.value ? 'secondary' : 'ghost'}
+                variant={level === one.value ? 'selected' : 'ghost'}
                 size="sm"
                 aria-pressed={level === one.value}
                 onClick={() => {
@@ -375,7 +375,7 @@ export function LibraryPanel({
               {(['newest', 'easiest'] as const).map((one) => (
                 <Button
                   key={one}
-                  variant={order === one ? 'secondary' : 'ghost'}
+                  variant={order === one ? 'selected' : 'ghost'}
                   size="sm"
                   aria-pressed={order === one}
                   onClick={() => {

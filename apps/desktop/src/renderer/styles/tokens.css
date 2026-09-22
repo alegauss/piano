@@ -111,7 +111,13 @@
   --border-subtle: oklch(0.89 0.006 260);
   --border-strong: oklch(0.78 0.01 260);
 
-  --accent: oklch(0.55 0.16 230);
+  /*
+   * A shade darker than it looks like it wants to be. This accent is a field
+   * with `accent-contrast` written on it — a primary button, a chosen option
+   * — and at 0.55 that pair measured 4.29, under the 4.5 this palette holds
+   * text to. The number is what button.browser.test.tsx settled on.
+   */
+  --accent: oklch(0.52 0.16 230);
   --accent-contrast: oklch(0.99 0.005 260);
 
   --danger: oklch(0.55 0.2 25);

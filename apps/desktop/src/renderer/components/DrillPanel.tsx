@@ -62,7 +62,7 @@ export function DrillPanel({
       <Hint>
         <PopoverTrigger asChild>
           <Button
-            variant={state.running ? 'secondary' : 'ghost'}
+            variant={state.running ? 'selected' : 'ghost'}
             size="icon"
             aria-label="Practice"
             aria-pressed={state.running}
@@ -203,7 +203,7 @@ function Choice({
           <Button
             key={option.value}
             size="sm"
-            variant={option.value === value ? 'secondary' : 'ghost'}
+            variant={option.value === value ? 'selected' : 'ghost'}
             aria-pressed={option.value === value}
             onClick={() => {
               onValue(option.value)

@@ -82,7 +82,7 @@ export function ReportPanel({
                 <Button
                   key={strictness}
                   size="sm"
-                  variant={strictness === state.strictness ? 'secondary' : 'ghost'}
+                  variant={strictness === state.strictness ? 'selected' : 'ghost'}
                   aria-pressed={strictness === state.strictness}
                   onClick={() => {
                     grader.setStrictness(strictness)

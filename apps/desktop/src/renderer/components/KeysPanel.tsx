@@ -40,7 +40,7 @@ export function KeysPanel({
       <Hint>
         <PopoverTrigger asChild>
           <Button
-            variant={state.playing ? 'secondary' : 'ghost'}
+            variant={state.playing ? 'selected' : 'ghost'}
             size="icon"
             aria-label="Play with the typing keyboard"
             aria-pressed={state.playing}
