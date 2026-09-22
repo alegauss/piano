@@ -108,6 +108,92 @@ describe('keeping a score', () => {
   })
 })
 
+describe('correcting what a piece says about itself', () => {
+  /** The piece as it was filed in a hurry: a title from a track name, nothing else. */
+  const filed = async () => {
+    const files = memoryFiles()
+    const library = createLibrary(root, files)
+    await library.save(
+      named('untitled', 'Untitled', { composer: 'Track 1', level: 'beginner', tags: ['midi'] }),
+    )
+    return { files, library }
+  }
+
+  const written = (files: ReturnType<typeof memoryFiles>, id: string): Record<string, unknown> =>
+    JSON.parse(files.held.get(`${root}/${id}${SCORE_SUFFIX}`) ?? '') as Record<string, unknown>
+
+  it('replaces the five fields it is given and leaves the notes alone', async () => {
+    const { files, library } = await filed()
+    const before = written(files, 'untitled')
+
+    const corrected = await library.correct('untitled', {
+      title: 'Prelude in C',
+      composer: 'Bach',
+      level: 'intermediate',
+      difficulty: 4,
+      tags: ['baroque', 'study'],
+    })
+
+    expect(corrected?.score.metadata).toMatchObject({
+      title: 'Prelude in C',
+      composer: 'Bach',
+      level: 'intermediate',
+      difficulty: 4,
+      tags: ['baroque', 'study'],
+    })
+    expect(corrected?.score.notes).toEqual(before['notes'])
+  })
+
+  it('clears a field it is not given, which is how a guessed composer is taken back', async () => {
+    const { library } = await filed()
+    const corrected = await library.correct('untitled', { title: 'Untitled' })
+    expect(corrected?.score.metadata.composer).toBeUndefined()
+    expect(corrected?.score.metadata.level).toBeUndefined()
+    expect(corrected?.score.metadata.tags).toBeUndefined()
+  })
+
+  it('writes back under the id it was filed as, whatever the new title says', async () => {
+    const { files, library } = await filed()
+    const corrected = await library.correct('untitled', { title: 'Prelude in C' })
+
+    expect(corrected?.id).toBe('untitled')
+    expect(corrected?.file).toBe(`${root}/untitled${SCORE_SUFFIX}`)
+    expect(files.held.has(`${root}/prelude-in-c${SCORE_SUFFIX}`)).toBe(false)
+    expect(written(files, 'untitled')['metadata']).toMatchObject({ title: 'Prelude in C' })
+  })
+
+  it('keeps the id the score carries, which is what records are kept against', async () => {
+    const { library } = await filed()
+    const corrected = await library.correct('untitled', { title: 'Prelude in C' })
+    expect(corrected?.score.metadata.id).toBe('untitled')
+  })
+
+  it('says nothing is there for an id nothing is filed under', async () => {
+    const { files, library } = await filed()
+    expect(await library.correct('gone', { title: 'Whatever' })).toBeNull()
+    expect(files.held.has(`${root}/gone${SCORE_SUFFIX}`)).toBe(false)
+  })
+
+  it('refuses a correction the format would not accept, and writes nothing', async () => {
+    const { files, library } = await filed()
+    const before = files.held.get(`${root}/untitled${SCORE_SUFFIX}`)
+    await expect(library.correct('untitled', { title: '' })).rejects.toThrow()
+    expect(files.held.get(`${root}/untitled${SCORE_SUFFIX}`)).toBe(before)
+  })
+
+  it('corrects one written under the suffix scores had before, moving it as a save does', async () => {
+    const files = memoryFiles({
+      [`${root}/old${LEGACY_SCORE_SUFFIX}`]: JSON.stringify(named('old', 'Old')),
+    })
+    const library = createLibrary(root, files)
+
+    const corrected = await library.correct('old', { title: 'Old, corrected' })
+
+    expect(corrected?.file).toBe(`${root}/old${SCORE_SUFFIX}`)
+    expect(files.held.has(`${root}/old${LEGACY_SCORE_SUFFIX}`)).toBe(false)
+  })
+})
+
 describe('asking whether an id is taken', () => {
   it('describes the piece that is there, and answers nothing for one that is not', async () => {
     const library = createLibrary(root, memoryFiles())

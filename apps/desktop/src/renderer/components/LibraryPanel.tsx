@@ -1,8 +1,10 @@
-import type { LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
-import { FolderOpen, Library as LibraryIcon, X } from 'lucide-react'
+import type { LibraryCorrectResult, LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
+import { FolderOpen, Library as LibraryIcon, Pencil, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { cn } from '../lib/cn'
+import { clock, filingOf, type Filing } from '../lib/library'
+import { LibraryFiling } from './LibraryFiling'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
 
@@ -24,6 +26,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  * than described, because somebody who has just found an empty library is not
  * going to go looking for a button in the header on the strength of a
  * sentence about one.
+ *
+ * A row is also where a piece is put right. Everything the filing form asks
+ * about is in the row already, so correcting one opens that same form filled
+ * in, and the list is asked for again once the write lands.
  */
 
 type Level = NonNullable<LibraryQuery['level']>
@@ -36,12 +42,6 @@ const LEVELS: readonly { readonly value: Level | null; readonly label: string }[
   { value: 'advanced', label: 'Advanced' },
 ]
 
-/** Minutes and seconds, as a list says how long something lasts. */
-export function clock(seconds: number): string {
-  const whole = Math.round(seconds)
-  return `${String(Math.floor(whole / 60))}:${String(whole % 60).padStart(2, '0')}`
-}
-
 export function LibraryPanel({
   search,
   changes,
@@ -49,6 +49,7 @@ export function LibraryPanel({
   onOpenFile,
   leftBehind,
   onOpenLeft,
+  onCorrect,
 }: {
   readonly search: (query: LibraryQuery) => Promise<LibraryItem[]>
   /** Told when the folder changes; returns the way to stop being told. */
@@ -60,6 +61,8 @@ export function LibraryPanel({
   readonly leftBehind: () => Promise<LibraryLeft[]>
   /** Open one of those by name, which only works for a file that reads. */
   readonly onOpenLeft: (name: string) => void
+  /** Write a row's corrected description back, answered with what became of it. */
+  readonly onCorrect: (id: string, filing: Filing) => Promise<LibraryCorrectResult>
 }) {
   const [showing, setShowing] = useState(false)
   const [text, setText] = useState('')
@@ -70,6 +73,9 @@ export function LibraryPanel({
   const [items, setItems] = useState<readonly LibraryItem[] | null>(null)
   const [left, setLeft] = useState<readonly LibraryLeft[]>([])
   const [revision, setRevision] = useState(0)
+  /** The row being put right, and why the last attempt at it was refused. */
+  const [correcting, setCorrecting] = useState<LibraryItem | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
 
   useEffect(() => {
     if (!showing) {
@@ -134,6 +140,31 @@ export function LibraryPanel({
   }, [showing, revision, leftBehind])
 
   const narrowed = text.trim() !== '' || level !== null || tag !== null || composer !== null
+
+  /**
+   * Write a corrected row back and ask for the list again, so the row says
+   * what was just saved. A refusal keeps the form open with the reason in it:
+   * the piece may have been deleted while the form was up, and the one place
+   * somebody can act on that is where they typed.
+   */
+  function correct(id: string, filing: Filing): void {
+    void onCorrect(id, filing).then(
+      (result) => {
+        if (result.kind === 'refused') {
+          setProblem(`That could not be saved: ${result.message}.`)
+          return
+        }
+        setCorrecting(null)
+        setProblem(null)
+        setRevision((was) => was + 1)
+      },
+      (cause: unknown) => {
+        setProblem(
+          `That could not be saved: ${cause instanceof Error ? cause.message : String(cause)}`,
+        )
+      },
+    )
+  }
 
   return (
     <Dialog open={showing} onOpenChange={setShowing}>
@@ -273,30 +304,51 @@ export function LibraryPanel({
                     </span>
                   </button>
                   {/*
-                   * Capped at half the row: a composer is a sentence in a
-                   * score written for this app, not a name, and chips that
-                   * refused to give ground left the title nothing to show.
+                   * Capped at half the row, the door to correct it included:
+                   * a composer is a sentence in a score written for this app,
+                   * not a name, and chips that refused to give ground left the
+                   * title nothing to show.
                    */}
-                  <span className="flex max-w-[50%] flex-wrap justify-end gap-1 text-xs">
-                    {item.composer === undefined ? null : (
-                      <FilterChip
-                        label={item.composer}
-                        what="composer"
-                        onPick={() => {
-                          setComposer(item.composer ?? null)
-                        }}
-                      />
-                    )}
-                    {item.tags.map((one) => (
-                      <FilterChip
-                        key={one}
-                        label={one}
-                        what="tag"
-                        onPick={() => {
-                          setTag(one)
-                        }}
-                      />
-                    ))}
+                  <span className="flex max-w-[50%] items-start gap-1">
+                    <span className="flex min-w-0 flex-wrap justify-end gap-1 text-xs">
+                      {item.composer === undefined ? null : (
+                        <FilterChip
+                          label={item.composer}
+                          what="composer"
+                          onPick={() => {
+                            setComposer(item.composer ?? null)
+                          }}
+                        />
+                      )}
+                      {item.tags.map((one) => (
+                        <FilterChip
+                          key={one}
+                          label={one}
+                          what="tag"
+                          onPick={() => {
+                            setTag(one)
+                          }}
+                        />
+                      ))}
+                    </span>
+                    {/*
+                     * At the end of the row and unlabelled: correcting a piece
+                     * is the rarer thing to want, and a word here would take
+                     * the room the chips are already fighting the title for.
+                     */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      aria-label={`Correct ${item.title}`}
+                      title={`Correct ${item.title}`}
+                      onClick={() => {
+                        setProblem(null)
+                        setCorrecting(item)
+                      }}
+                    >
+                      <Pencil />
+                    </Button>
                   </span>
                 </li>
               ))}
@@ -310,6 +362,22 @@ export function LibraryPanel({
             onOpen={(name) => {
               setShowing(false)
               onOpenLeft(name)
+            }}
+          />
+        )}
+
+        {correcting === null ? null : (
+          <LibraryFiling
+            start={filingOf(correcting)}
+            purpose="correcting"
+            clash={null}
+            problem={problem}
+            onFile={(filing) => {
+              correct(correcting.id, filing)
+            }}
+            onClose={() => {
+              setCorrecting(null)
+              setProblem(null)
             }}
           />
         )}

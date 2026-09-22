@@ -1,12 +1,14 @@
-import type { LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import type { LibraryCorrectResult, LibraryItem, LibraryLeft, LibraryQuery } from '@piano/ipc'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { clock, LibraryPanel } from './LibraryPanel'
+import type { Filing } from '../lib/library'
+import { LibraryPanel } from './LibraryPanel'
 
 /**
  * The library on screen, with main faked: what it asks for as somebody
- * narrows it, what a row says, and that picking one opens it.
+ * narrows it, what a row says, that picking one opens it, and that correcting
+ * one writes back what the form holds.
  */
 
 const items: LibraryItem[] = [
@@ -23,13 +25,24 @@ const items: LibraryItem[] = [
   { id: 'etude', title: 'Étude', level: 'advanced', tags: [], seconds: 125, added: 1 },
 ]
 
-function setup(found: LibraryItem[] = items, left: LibraryLeft[] = []) {
+function setup(
+  found: LibraryItem[] = items,
+  left: LibraryLeft[] = [],
+  answer: LibraryCorrectResult = {
+    kind: 'corrected',
+    id: 'ode-to-joy',
+    title: 'Ode to Joy',
+    score: null,
+  },
+) {
   const asked: LibraryQuery[] = []
   const opened: string[] = []
   /** How many times the other way in was taken: open a file, then file it. */
   let files = 0
   /** The names of files the folder would not take in, opened from the panel. */
   const openedLeft: string[] = []
+  /** Every correction the panel asked main to write. */
+  const corrected: { id: string; filing: Filing }[] = []
   let changed: (() => void) | null = null
   render(
     <LibraryPanel
@@ -53,6 +66,10 @@ function setup(found: LibraryItem[] = items, left: LibraryLeft[] = []) {
       onOpenLeft={(name) => {
         openedLeft.push(name)
       }}
+      onCorrect={(id, filing) => {
+        corrected.push({ id, filing })
+        return Promise.resolve(answer)
+      }}
     />,
   )
   return {
@@ -60,6 +77,7 @@ function setup(found: LibraryItem[] = items, left: LibraryLeft[] = []) {
     opened,
     files: () => files,
     openedLeft,
+    corrected,
     change: () => {
       act(() => {
         changed?.()
@@ -166,10 +184,81 @@ describe('the library on screen', () => {
     await screen.findByText('Ode to Joy')
     expect(screen.queryByLabelText('Files the library did not take in')).toBeNull()
   })
+})
 
-  it('writes a length as minutes and seconds', () => {
-    expect(clock(0)).toBe('0:00')
-    expect(clock(59.6)).toBe('1:00')
-    expect(clock(125)).toBe('2:05')
+describe('correcting a piece from its row', () => {
+  /** Open the panel and the form on the first row, which is where every test below starts. */
+  async function correcting(...args: Parameters<typeof setup>) {
+    const held = setup(...args)
+    fireEvent.click(screen.getByRole('button', { name: 'Library' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Correct Ode to Joy' }))
+    return held
+  }
+
+  it('opens the filing form with what the row already says', async () => {
+    await correcting()
+
+    expect(screen.getByLabelText('Title')).toHaveValue('Ode to Joy')
+    expect(screen.getByLabelText('Composer')).toHaveValue('Beethoven')
+    expect(screen.getByRole('button', { name: 'Beginner', pressed: true })).toBeInTheDocument()
+    expect(screen.getByLabelText('Difficulty')).toHaveValue('1')
+    expect(screen.getByLabelText('Tags')).toHaveValue('classical')
+  })
+
+  it('asks for difficulty, which filing has nobody to ask and nothing else can set', async () => {
+    await correcting()
+    fireEvent.change(screen.getByLabelText('Difficulty'), { target: { value: '5' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Difficulty')).toBeNull()
+    })
+  })
+
+  it('writes the corrected form back under the row’s id, and asks for the list again', async () => {
+    const { corrected, asked } = await correcting()
+    const before = asked.length
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Ode an die Freude' } })
+    fireEvent.change(screen.getByLabelText('Composer'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    await waitFor(() => {
+      expect(asked.length).toBeGreaterThan(before)
+    })
+    expect(corrected).toEqual([
+      {
+        id: 'ode-to-joy',
+        filing: {
+          title: 'Ode an die Freude',
+          composer: '',
+          level: 'beginner',
+          difficulty: '1',
+          tags: 'classical',
+        },
+      },
+    ])
+  })
+
+  it('never asks about a clash, since a correction does not move a piece', async () => {
+    await correcting()
+    expect(screen.queryByRole('button', { name: 'File this one beside it' })).toBeNull()
+    expect(screen.getByText(/keeps the name it is filed under/)).toBeInTheDocument()
+  })
+
+  it('keeps the form open with the reason when the write was refused', async () => {
+    const { asked } = await correcting(items, [], {
+      kind: 'refused',
+      message: 'nothing is filed as ode-to-joy any more',
+    })
+    const before = asked.length
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'That could not be saved: nothing is filed as ode-to-joy any more.',
+    )
+    expect(screen.getByLabelText('Title')).toHaveValue('Ode to Joy')
+    expect(asked.length).toBe(before)
   })
 })

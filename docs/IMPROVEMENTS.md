@@ -32,25 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI100 Correcting what a piece says about itself
-
-The library is built on metadata it gives nobody a way to write. LibraryFiling asks for
-a title, a composer, a level and tags once, as a file comes in, and after that the only
-writer is Claude Code through save_score. Everything the panel does reads those fields:
-the level buttons, the composer chip, the tag chips, the easiest-first order that sorts
-on difficulty. So a piece filed in a hurry — a MIDI file whose track name became its
-title, a level nobody picked — is a row the panel's own filters cannot find, and today
-the answer is to ask a model to rewrite the file.
-
-The form exists; what is missing is a way into it from a row, and a write back. Reuse
-LibraryFiling rather than build a second one: these are the same questions asked later,
-and two forms would drift apart the first time a field is added. Difficulty belongs here
-even though filing does not ask for it, because it is what orders the rows inside a
-level and nothing on screen can set it. The write goes through the same library save the
-window already uses, so validation stays in one place, and a piece open in the window is
-re-read after it rather than left showing what was corrected. Editing what a piece says
-about itself is not editing its notes: the staff notation editor stays a non-goal.
-
 ### §PI101 Taking a piece out of the library
 
 A library that only grows is a library that fills with mistakes: the import that came in
@@ -155,5 +136,26 @@ the folder while it is open, so a selection has to survive a refresh that leaves
 rows alone and be dropped by one that does not. What this is not is a file manager: no
 folders, no moving, no renaming in bulk — a rename asks a clash question that only makes
 sense about one piece.
+
+### §PI106 Open recent, after a piece is put right
+
+The recent list is a cache of titles nothing refreshes. An open writes one entry — the
+path, the file name and the title the score had at that moment — and from then on the
+menu and the Open recent list read the entry and never the file. That was harmless while
+a title could only be set as a piece was filed. Correcting one is a second writer, so a
+piece put right from the library panel is offered under the name somebody has just taken
+back, until they open it again and the entry is rewritten by accident.
+
+The entry is keyed by path and a correction never moves the file, so the fix is a write
+and not a migration: after a correction main rewrites the entry naming that file, where
+there is one. Main is the side that can do it — it holds the list, and the correction
+already goes through it, so nothing new crosses the bridge. A correction landing on a
+piece no entry names changes nothing, which is the ordinary case.
+
+Worth doing after the file can move rather than before. A rename makes the path stale
+too, and the answer is the same write from the same place: whatever PI102 decides about
+what a piece is called now has to reach this list, and deciding it twice is how the two
+answers end up different. So this is the title half, already wrong without any renaming
+at all.
 
 ## Block H — Sheet music view

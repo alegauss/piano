@@ -207,6 +207,7 @@
 - ✅ **PI97** **A MIDI or MusicXML file copied into the library folder is ignored by the index, and nothing on screen says why** — A MIDI or MusicXML file copied into the library folder is imported once and filed as a score beside it, so a folder of downloads becomes a library.
 - ✅ **PI98** **The empty library tells people to ask Claude Code and never says that a MIDI file of their own can go in** — The empty library names both ways in and offers the second as a door: ask Claude Code for a piece, or open a file already on the disk.
 - ✅ **PI99** **A file the library folder cannot take in stays there unlisted, and only the log says why** — The Library panel names every file the folder would not take in and why, and offers to open the ones whose only problem is a name already used.
+- ✅ **PI100** **A piece's title, composer, level and tags can be set only as it is filed, never corrected afterwards** — A row in the library opens the filing form filled in, and saving it writes the corrected title, composer, level, difficulty and tags back into the same file, leaving the notes alone.
 
 ## Block H — Sheet music view
 

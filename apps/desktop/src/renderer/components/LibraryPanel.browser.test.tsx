@@ -49,6 +49,7 @@ async function open(): Promise<void> {
       onOpenFile={() => undefined}
       leftBehind={() => Promise.resolve([])}
       onOpenLeft={() => undefined}
+      onCorrect={() => Promise.reject(new Error('not used'))}
     />,
   )
   fireEvent.click(screen.getByRole('button', { name: 'Library' }))

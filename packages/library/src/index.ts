@@ -5,6 +5,7 @@ export {
   INDEX_FILE,
   libraryId,
   SEEDED_FILE,
+  type Correction,
   type Library,
   type LibraryEntry,
   type Order,

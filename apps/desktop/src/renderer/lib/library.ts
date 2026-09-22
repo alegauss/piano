@@ -1,4 +1,4 @@
-import type { LibrarySaveResult } from '@piano/ipc'
+import type { LibraryCorrection, LibrarySaveResult } from '@piano/ipc'
 import type { Level, Score } from '@piano/score-format'
 
 /** Everything filing can answer except the question it asks back. */
@@ -29,17 +29,40 @@ export type Filing = {
   readonly title: string
   readonly composer: string
   readonly level: Level | null
+  /**
+   * One to ten as a field holds it, which is text: empty for a piece nobody
+   * has graded. Carried even where the form does not show it, so filing a
+   * piece an importer graded does not quietly ungrade it.
+   */
+  readonly difficulty: string
   /** Free words, separated by commas, which is how anybody types a handful of tags. */
   readonly tags: string
 }
 
 /** The form as the open score would fill it, which is the prefill. */
 export function filingFor(score: Score): Filing {
+  return filingOf(score.metadata)
+}
+
+/**
+ * The form as anything that describes a piece would fill it: the open score's
+ * metadata, or a library row, which says all five and nothing else. A row is
+ * enough, so correcting one opens a filled form without reading the piece off
+ * the disk first.
+ */
+export function filingOf(described: {
+  readonly title: string
+  readonly composer?: string
+  readonly level?: Level
+  readonly difficulty?: number
+  readonly tags?: readonly string[]
+}): Filing {
   return {
-    title: score.metadata.title,
-    composer: score.metadata.composer ?? '',
-    level: score.metadata.level ?? null,
-    tags: (score.metadata.tags ?? []).join(', '),
+    title: described.title,
+    composer: described.composer ?? '',
+    level: described.level ?? null,
+    difficulty: described.difficulty === undefined ? '' : String(described.difficulty),
+    tags: (described.tags ?? []).join(', '),
   }
 }
 
@@ -52,30 +75,68 @@ export function tagsOf(written: string): string[] {
   return [...new Set(words)]
 }
 
+/** Minutes and seconds, as a list says how long something lasts. */
+export function clock(seconds: number): string {
+  const whole = Math.round(seconds)
+  return `${String(Math.floor(whole / 60))}:${String(whole % 60).padStart(2, '0')}`
+}
+
+/** One to ten as the field holds it, or null for a piece nobody has graded. */
+export function difficultyOf(written: string): number | null {
+  const number = Number(written.trim())
+  return written.trim() !== '' && Number.isInteger(number) && number >= 1 && number <= 10
+    ? number
+    : null
+}
+
 /**
- * The score as the form describes it.
+ * What a filled-in form says the piece is, in the words the library keeps it
+ * in. The one conversion: filing a piece and correcting one already filed ask
+ * the same questions, so they must not answer them differently.
  *
- * The three fields the form owns are replaced rather than merged: a composer
- * cleared out is a composer removed, or there would be no way to take back
- * what a MIDI file's track name claimed. Everything else the score carries —
- * its key, its arrangements, where it came from — is left exactly as it is.
+ * A field left blank is left out, and leaving it out is what removes it: a
+ * composer cleared is a composer taken back, or there would be no undoing what
+ * a MIDI file's track name claimed.
+ */
+export function correctionOf(filing: Filing): LibraryCorrection {
+  const composer = filing.composer.trim()
+  const difficulty = difficultyOf(filing.difficulty)
+  const tags = tagsOf(filing.tags)
+  return {
+    title: filing.title.trim(),
+    ...(composer === '' ? {} : { composer }),
+    ...(filing.level === null ? {} : { level: filing.level }),
+    ...(difficulty === null ? {} : { difficulty }),
+    ...(tags.length === 0 ? {} : { tags }),
+  }
+}
+
+/**
+ * The score as the form describes it, for the piece on its way in.
+ *
+ * Everything else the score carries — its key, its arrangements, where it came
+ * from — is left exactly as it is; the fields the form owns are replaced, and
+ * that is `correctionOf`'s doing.
  *
  * An empty title keeps the one the score had: a score with no title is one the
  * format refuses, and the form is not the place to find that out.
  */
 export function withMetadata(score: Score, filing: Filing): Score {
-  const { composer: _composer, level: _level, tags: _tags, ...rest } = score.metadata
-  const title = filing.title.trim()
-  const composer = filing.composer.trim()
-  const tags = tagsOf(filing.tags)
+  const {
+    composer: _composer,
+    difficulty: _difficulty,
+    level: _level,
+    tags: _tags,
+    ...rest
+  } = score.metadata
+  const correction = correctionOf(filing)
   return {
     ...score,
     metadata: {
       ...rest,
-      title: title === '' ? score.metadata.title : title,
-      ...(composer === '' ? {} : { composer }),
-      ...(filing.level === null ? {} : { level: filing.level }),
-      ...(tags.length === 0 ? {} : { tags }),
+      ...correction,
+      ...(correction.tags === undefined ? {} : { tags: [...correction.tags] }),
+      title: correction.title === '' ? score.metadata.title : correction.title,
     },
   }
 }

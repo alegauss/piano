@@ -297,6 +297,52 @@ export const librarySave = {
   ]),
 } as const satisfies Channel<'library:save', z.ZodType, z.ZodType>
 
+/**
+ * What a piece says about itself, as the form that asks fills it in.
+ *
+ * The same five fields a row shows and the list filters by, and nothing that
+ * would change the music. A field left out is a field cleared: the form is
+ * where a composer a MIDI track name invented gets taken back, so silence has
+ * to mean removed rather than unchanged.
+ */
+export const libraryCorrectionSchema = z.object({
+  title: z.string().min(1).max(200),
+  composer: z.string().min(1).max(200).optional(),
+  level: LEVEL.optional(),
+  /** One to ten, as the format's own metadata bounds it. */
+  difficulty: z.number().min(1).max(10).optional(),
+  tags: z.array(z.string().min(1).max(100)).max(20).optional(),
+})
+
+/**
+ * Correct what a filed piece says about itself, without opening it.
+ *
+ * An id and five fields cross, never a score and never a path: the piece is
+ * read, corrected and written by the library, which is the one thing that
+ * knows where a piece lives. So this cannot become a way to rewrite a score's
+ * notes from the page, and the notes are not in the payload to begin with.
+ *
+ * The corrected score comes back because a window showing that piece is
+ * showing what was just corrected. It arrives as unknown and is validated by
+ * the renderer like any other score.
+ */
+export const libraryCorrect = {
+  channel: CHANNEL_NAMES.libraryCorrect,
+  // Strict, so a request that tries to say where the piece goes, or what its
+  // notes are, is refused rather than quietly trimmed.
+  request: z.object({ id: z.string().min(1).max(200), metadata: libraryCorrectionSchema }).strict(),
+  response: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('corrected'),
+      /** Still the id it was filed under: a correction never moves a piece. */
+      id: z.string(),
+      title: z.string(),
+      score: z.unknown(),
+    }),
+    z.object({ kind: z.literal('refused'), message: z.string() }),
+  ]),
+} as const satisfies Channel<'library:correct', z.ZodType, z.ZodType>
+
 /** One file the library folder holds and could not take in, as the panel says it. */
 export const libraryLeftSchema = z.object({
   name: z.string(),
@@ -493,6 +539,7 @@ export const allChannels = [
   scoreRecent,
   libraryList,
   librarySave,
+  libraryCorrect,
   libraryLeft,
   settingsRead,
   settingsWrite,
@@ -525,6 +572,9 @@ export type LibraryItem = z.infer<typeof libraryItemSchema>
 export type LibraryLeft = z.infer<typeof libraryLeftSchema>
 export type LibrarySaveRequest = z.infer<typeof librarySave.request>
 export type LibrarySaveResult = z.infer<typeof librarySave.response>
+export type LibraryCorrection = z.infer<typeof libraryCorrectionSchema>
+export type LibraryCorrectRequest = z.infer<typeof libraryCorrect.request>
+export type LibraryCorrectResult = z.infer<typeof libraryCorrect.response>
 export type SettingsReadResponse = z.infer<typeof settingsRead.response>
 export type HistoryReadResponse = z.infer<typeof historyRead.response>
 export type HistoryWriteRequest = z.infer<typeof historyWrite.request>

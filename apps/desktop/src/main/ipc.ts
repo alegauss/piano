@@ -6,6 +6,7 @@ import {
   historyRead,
   historySave,
   historyWrite,
+  libraryCorrect,
   libraryLeft,
   libraryList,
   librarySave,
@@ -31,6 +32,8 @@ import {
   type HistorySaveResult,
   type KeepRequest,
   type KeepResult,
+  type LibraryCorrectRequest,
+  type LibraryCorrectResult,
   type LibraryItem,
   type LibraryLeft,
   type LibraryQuery,
@@ -110,6 +113,8 @@ export function registerIpcHandlers(options: {
   readonly libraryLeftBehind: () => LibraryLeft[]
   /** Put the score a window sent into the library, under the id its metadata gives it. */
   readonly fileInLibrary: (request: LibrarySaveRequest) => Promise<LibrarySaveResult>
+  /** Correct what a filed piece says about itself, leaving its notes alone. */
+  readonly correctInLibrary: (request: LibraryCorrectRequest) => Promise<LibraryCorrectResult>
   readonly settings: SettingsStore
   readonly history: HistoryStore
   /** Save the history main holds as a file, asking where in front of that window. */
@@ -161,6 +166,8 @@ export function registerIpcHandlers(options: {
   handle(libraryList, (query) => options.libraryScores(query))
 
   handle(librarySave, (request) => options.fileInLibrary(request))
+
+  handle(libraryCorrect, (request) => options.correctInLibrary(request))
 
   handle(libraryLeft, () => options.libraryLeftBehind())
 

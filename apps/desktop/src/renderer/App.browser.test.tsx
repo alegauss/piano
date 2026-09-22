@@ -202,7 +202,17 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
         listener = null
       }
     },
-    libraryScores: () => Promise.resolve([]),
+    libraryScores: () =>
+      Promise.resolve(
+        [...library].map(([id, one]) => ({
+          id,
+          title: one.title,
+          ...(one.composer === undefined ? {} : { composer: one.composer }),
+          tags: [],
+          seconds: 95,
+          added: 1,
+        })),
+      ),
     libraryLeftBehind: () => Promise.resolve(left),
     // A library of titles by id, which is enough for the one thing the window
     // decides about filing: what to do when the id is already somebody's.
@@ -221,6 +231,24 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
         ...(metadata?.composer === undefined ? {} : { composer: metadata.composer }),
       })
       return Promise.resolve({ kind: 'filed', id: under, title })
+    },
+    // A correction never moves a piece, so the id stays and only what it says
+    // about itself changes. The score comes back as main would have written it.
+    correctInLibrary: ({ id, metadata }) => {
+      const there = library.get(id)
+      if (there === undefined) {
+        return Promise.resolve({
+          kind: 'refused' as const,
+          message: `nothing is filed as ${id} any more`,
+        })
+      }
+      library.set(id, {
+        title: metadata.title,
+        ...(metadata.composer === undefined ? {} : { composer: metadata.composer }),
+      })
+      const score: Score = { ...(held ?? { formatVersion: 1, notes: [] }), metadata }
+      held = score
+      return Promise.resolve({ kind: 'corrected' as const, id, title: metadata.title, score })
     },
     onLibraryChanged: () => () => {},
     readSettings: () => Promise.resolve({ settings: DEFAULT_SETTINGS, notice: null, fresh: false }),
@@ -255,6 +283,7 @@ function fakeMain(launch: OpenResult = { kind: 'none' }) {
     kept,
     filed,
     left,
+    library,
     push: async (result: OpenResult) => {
       if (result.kind === 'opened') {
         held = result.score as Score
@@ -437,6 +466,52 @@ describe('putting the open piece in the library', () => {
 
     expect(main.filed).toHaveLength(2)
     expect(screen.getByText(/Added Aria to the library, as aria-2\./)).toBeTruthy()
+  })
+})
+
+describe('correcting a piece the window has open', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'piano')
+  })
+
+  /** Open the library and the correction form on the one row it holds. */
+  async function correctTheRow() {
+    await press('Library')
+    await press('Correct Aria')
+  }
+
+  it('shows the open piece again from what was written, rather than what it was', async () => {
+    const main = fakeMain()
+    main.library.set('aria', { title: 'Aria', composer: 'Somebody' })
+    render(<App />)
+    // Opened from the library, so the window's file is the one that id names.
+    await main.push({ kind: 'opened', name: 'aria.piano', score: aria, notices: [] })
+    expect(heading()).toContain('Aria')
+
+    await correctTheRow()
+    type('Title', 'Aria in C')
+    await press('Save it')
+
+    expect(heading()).toContain('Aria in C')
+  })
+
+  it('leaves a piece it does not have open alone', async () => {
+    const main = fakeMain()
+    main.library.set('aria', { title: 'Aria', composer: 'Somebody' })
+    render(<App />)
+    // A different piece is open: correcting a row must not replace it.
+    await main.push({
+      kind: 'opened',
+      name: 'prelude.piano',
+      score: { ...aria, metadata: { title: 'Prelude' } },
+      notices: [],
+    })
+
+    await correctTheRow()
+    type('Title', 'Aria in C')
+    await press('Save it')
+
+    expect(heading()).toContain('Prelude')
   })
 })
 

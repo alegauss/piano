@@ -16,6 +16,7 @@ import {
   ticksToSeconds,
   timingOf,
   type LibraryFilter,
+  type Level,
   type Score,
   type ScoreMetadata,
 } from '@piano/score-format'
@@ -63,6 +64,24 @@ export type LibraryEntry = {
 /** A score that has just been filed, with the score as the format resolved it. */
 export type Saved = Omit<LibraryEntry, 'seconds' | 'added'> & { readonly score: Score }
 
+/**
+ * What a piece says about itself, as the one form that asks says it.
+ *
+ * These five and no others: they are the fields a listing reads, and the only
+ * ones somebody can be wrong about without being wrong about the music. Each
+ * is replaced rather than merged — a composer left out is a composer removed,
+ * or there would be no taking back what a MIDI track name claimed. Everything
+ * else the score carries, its notes and its arrangements and where it came
+ * from, is not this function's business.
+ */
+export type Correction = {
+  readonly title: string
+  readonly composer?: string
+  readonly level?: Level
+  readonly difficulty?: number
+  readonly tags?: readonly string[]
+}
+
 /** Easiest first, which is where somebody starting looks; or newest first, where a piece just written is. */
 export type Order = 'easiest' | 'newest'
 
@@ -84,6 +103,16 @@ export type Library = {
   readonly held: (id: string) => Promise<LibraryEntry | null>
   /** The nearest id to this one that nothing holds: the id itself, or it numbered. */
   readonly free: (id: string) => Promise<string>
+  /**
+   * Correct what a filed piece says about itself, leaving its notes alone.
+   *
+   * Under the id it is already filed as, whatever the new title says: the id
+   * is the handle a chat, a shortcut and a practice record all hold, and
+   * moving the file because somebody fixed a spelling would break all three
+   * at once. Null where nothing is filed under that id, which is the answer
+   * for a row somebody deleted while the form was open.
+   */
+  readonly correct: (id: string, correction: Correction) => Promise<Saved | null>
   readonly read: (id: string) => Promise<Score>
   readonly list: (order?: Order) => Promise<LibraryEntry[]>
   readonly search: (filter: LibraryFilter, order?: Order) => Promise<LibraryEntry[]>
@@ -323,6 +352,36 @@ export function createLibrary(root: string, files: Files): Library {
         }
       }
       throw new Error(`the library already holds a thousand pieces called ${base}`)
+    },
+    correct: async (id, correction) => {
+      const path = await foundFor(id)
+      if (path === null) {
+        return null
+      }
+      const held = await readScore(path)
+      // Spread the correction over what is left of the metadata rather than
+      // over the metadata itself: the five fields it owns go even where it
+      // says nothing about them, and the rest of the score is untouched.
+      const {
+        composer: _composer,
+        difficulty: _difficulty,
+        level: _level,
+        tags: _tags,
+        ...rest
+      } = held.metadata
+      const parsed = parseScore({
+        ...held,
+        metadata: {
+          ...rest,
+          ...correction,
+          ...(correction.tags === undefined ? {} : { tags: [...correction.tags] }),
+        },
+      })
+      if (!parsed.ok) {
+        throw new Error(parsed.message)
+      }
+      const file = await keep(id, parsed.score)
+      return { id, file, metadata: parsed.score.metadata, score: parsed.score }
     },
     read: async (id) => readScore((await foundFor(id)) ?? pathFor(id)),
     seed: async (scores) => {

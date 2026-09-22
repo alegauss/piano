@@ -1,10 +1,12 @@
-import type {
-  AppInfoResponse,
-  LibraryItem,
-  LibraryLeft,
-  LibraryQuery,
-  OpenRequest,
-  OpenResult,
+import {
+  libraryFileNames,
+  type AppInfoResponse,
+  type LibraryCorrectResult,
+  type LibraryItem,
+  type LibraryLeft,
+  type LibraryQuery,
+  type OpenRequest,
+  type OpenResult,
 } from '@piano/ipc'
 import {
   arrangementForLevel,
@@ -83,7 +85,7 @@ import {
 import { playLive } from './lib/live-play'
 import { appMidi } from './lib/midi-input'
 import { describeExport, exportedScore } from './lib/export'
-import { describeFiling, withMetadata, type Filing } from './lib/library'
+import { correctionOf, describeFiling, filingFor, withMetadata, type Filing } from './lib/library'
 import { outcomeOf, type Opened } from './lib/open'
 import { appPackDownload } from './lib/pack-download'
 import { appSettings } from './lib/settings'
@@ -722,6 +724,34 @@ export function App() {
   }
 
   /**
+   * Put right what a filed piece says about itself, from a row in the panel.
+   *
+   * The id and the five fields go; the score does not, because the notes are
+   * not in question and main reads the piece it is correcting itself. What
+   * comes back is the score as now kept, and where that is the piece this
+   * window is showing it is shown again from what was written — otherwise the
+   * header would go on naming a composer somebody has just taken back.
+   *
+   * The file it was opened from is what says whether it is the same piece:
+   * a correction never moves a piece, so the names an id may be kept under
+   * are the whole answer.
+   */
+  async function correctInLibrary(id: string, described: Filing): Promise<LibraryCorrectResult> {
+    const bridge = readBridge()
+    if (bridge === null) {
+      return { kind: 'refused', message: 'this window has no way to write the library' }
+    }
+    const result = await bridge.correctInLibrary({ id, metadata: correctionOf(described) })
+    if (result.kind === 'corrected' && file !== null && libraryFileNames(id).includes(file)) {
+      const parsed = parseScore(result.score)
+      if (parsed.ok) {
+        setScore(parsed.score)
+      }
+    }
+    return result
+  }
+
+  /**
    * Keep the worked-out version in the score's file, so it can be read and
    * corrected there. The score main wrote is the one shown after, as the same
    * piece rather than a new one: what is being practised stays as it was.
@@ -843,6 +873,7 @@ export function App() {
                 onOpenLeft={(name) => {
                   openFrom({ from: 'folder', name })
                 }}
+                onCorrect={correctInLibrary}
               />
               {/*
                 Nothing to file until something is open: the placeholder is
@@ -876,7 +907,8 @@ export function App() {
 
       {filing ? (
         <LibraryFiling
-          score={score}
+          start={filingFor(score)}
+          purpose="filing"
           clash={clash}
           onFile={addToLibrary}
           onClose={() => {
