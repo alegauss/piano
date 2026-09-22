@@ -13,6 +13,7 @@ import {
 } from '../lib/parts'
 import type { CanvasToken } from '../lib/theme'
 import { Button } from './ui/button'
+import { Hint } from './ui/tooltip'
 
 /**
  * The panel that turns a recording into something that can be taken apart.
@@ -131,42 +132,55 @@ function Row({
       >
         {name}
       </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7"
-        aria-label={`${muted ? 'Hear' : 'Silence'} ${name}`}
-        aria-pressed={muted}
-        onClick={onMute}
-      >
-        {muted ? <VolumeX /> : <Volume2 />}
-      </Button>
-      {onSolo === undefined ? null : (
+      {/*
+        A speaker and an eye side by side are the pair somebody has to guess
+        between, and this is the panel that keeps silencing and hiding apart
+        on purpose. Each button already carries the sentence that settles it —
+        "Silence Melody", "Hide Bass" — so the hint reads it off the button
+        rather than being handed a second copy.
+      */}
+      <Hint>
         <Button
-          variant={soloed === true ? 'secondary' : 'ghost'}
+          variant="ghost"
           size="icon"
-          className="size-7 text-xs"
-          aria-label={`Solo ${name}`}
-          aria-pressed={soloed === true}
-          onClick={(event) => {
-            // The modifier every audio tool uses to add to a solo rather
-            // than replace it.
-            onSolo(event.shiftKey || event.metaKey || event.ctrlKey)
-          }}
+          className="size-7"
+          aria-label={`${muted ? 'Hear' : 'Silence'} ${name}`}
+          aria-pressed={muted}
+          onClick={onMute}
         >
-          S
+          {muted ? <VolumeX /> : <Volume2 />}
         </Button>
+      </Hint>
+      {onSolo === undefined ? null : (
+        <Hint>
+          <Button
+            variant={soloed === true ? 'secondary' : 'ghost'}
+            size="icon"
+            className="size-7 text-xs"
+            aria-label={`Solo ${name}`}
+            aria-pressed={soloed === true}
+            onClick={(event) => {
+              // The modifier every audio tool uses to add to a solo rather
+              // than replace it.
+              onSolo(event.shiftKey || event.metaKey || event.ctrlKey)
+            }}
+          >
+            S
+          </Button>
+        </Hint>
       )}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7"
-        aria-label={`${hidden ? 'Show' : 'Hide'} ${name}`}
-        aria-pressed={hidden}
-        onClick={onHide}
-      >
-        {hidden ? <EyeOff /> : <Eye />}
-      </Button>
+      <Hint>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          aria-label={`${hidden ? 'Show' : 'Hide'} ${name}`}
+          aria-pressed={hidden}
+          onClick={onHide}
+        >
+          {hidden ? <EyeOff /> : <Eye />}
+        </Button>
+      </Hint>
     </div>
   )
 }

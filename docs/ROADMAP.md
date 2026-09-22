@@ -20,7 +20,7 @@
 
 ## Block H — Sheet music view
 
-- 📋 **PI87** (deps: —) **A parts row shows a speaker, an S and an eye, and nothing says which of them silences and which hides** — The row names the part and not what its buttons do, and muting and hiding are kept apart on purpose. → §PI87
+- 📋 **PI91** (deps: —) **The transport bar's first button is wrapped in two hints, and the outer one can never open** — A Hint hands no props to its child, so the outer trigger's handlers are dropped and a provider and a tooltip render for nobody. → §PI91
 
 ## Done when — Block A
 

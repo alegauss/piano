@@ -75,26 +75,27 @@ exists for them or does not.
 
 ## Block H — Sheet music view
 
-### §PI87 The same hint, on the parts rows
+### §PI91 The doubled hint on Back to the start
 
-Each row of the parts panel carries the part's name in words and then three icon
-buttons: a speaker, an S and an eye. PI86 put hints on the transport bar and left this
-alone, on the grounds that the rows are labelled — but the label names the part, not
-what the buttons do to it.
+PI86 put a `Hint` around each icon on the transport bar, and the first one — "Back to
+the start (Home)" — came out wrapped twice: a `Hint` holding a `Hint` holding the
+button.
 
-Which matters here more than most places, because the two eyes of the thing are
-deliberately different: parts.ts keeps muting and hiding apart on purpose, since
-following one hand on the roll while hearing both is a real way to practise. A speaker
-and an eye side by side are exactly the pair somebody has to guess between, and the
-names that would settle it — "Silence Melody", "Hide Bass", "Solo Melody" — are already
-written as accessible names and already say which part they are about.
+It is not merely redundant, it is inert. `Hint` takes `children` and nothing else, and
+renders `TooltipTrigger asChild` around it. `asChild` works by cloning the child element
+with the trigger's own props: the pointer and focus handlers, the ref, the
+`aria-describedby` that ties the button to the bubble. The outer trigger's child is the
+inner `Hint`, a function component whose signature accepts one prop and drops every
+other on the floor. So the outer tooltip has a trigger nothing can ever open, and what
+renders for it is a second provider and a second `Tooltip` that no reader will ever see.
 
-So the same Hint, around the same buttons. It reads the name off the child, so there is
-nothing to write twice and nothing to keep in step.
+Nothing looks wrong, which is why it survived a review: the inner hint works, the button
+stays clickable, and the outer one is silent rather than noisy.
 
-Check the row does not become noisy: three hints in a row, each following the pointer
-along, is the case the delay exists for, and this panel is where a reader's pointer
-travels furthest. If it reads badly, the honest answer is hints on the speaker and the
-eye and none on the S, whose letter is at least a word.
+The fix is the outer wrapper's deletion and nothing else. `PartsPanel` and
+`TransportBar` between them wrap fifteen buttons, and this is the only one doubled.
 
-The test is the bar's: focus a button, assert a tooltip with that button's own name.
+Leave `Hint` itself alone. Forwarding props to the child so a nested pair composes would
+be building a meaning for nesting, and a hint inside a hint has none. The bar's existing
+tooltip test covers the button underneath; whether a case that renders nothing is worth
+a test of its own is the one open call here.

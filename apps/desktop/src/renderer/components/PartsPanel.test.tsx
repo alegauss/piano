@@ -1,5 +1,5 @@
 import type { Hand, Part } from '@piano/score-format'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { NOTHING_TOUCHED, type PartsView } from '../lib/parts'
@@ -73,5 +73,35 @@ describe('PartsPanel', () => {
   it('does not offer solo on a hand, which is not a mixer channel', () => {
     setup()
     expect(screen.queryByLabelText('Solo Left hand')).toBeNull()
+  })
+
+  it.each([['Silence Bass'], ['Solo Bass'], ['Hide Bass']])(
+    'says on focus that a row’s button will %s',
+    async (label) => {
+      setup()
+      expect(screen.queryByRole('tooltip')).toBeNull()
+
+      // Focus rather than hover: it is the half a keyboard reader needs, and
+      // it is the half jsdom can drive without a pointer.
+      act(() => {
+        screen.getByLabelText(label).focus()
+      })
+      const tip = await screen.findByRole('tooltip')
+      // The button's own name, which already says which part it is about.
+      expect(tip.textContent).toBe(label)
+    },
+  )
+
+  it('leaves a row’s button clickable underneath its hint', async () => {
+    const { onView } = setup()
+    const button = screen.getByLabelText('Hide Bass')
+    act(() => {
+      button.focus()
+    })
+    await screen.findByRole('tooltip')
+
+    // A trigger placed around the button rather than onto it would take this.
+    fireEvent.click(button)
+    expect(onView).toHaveBeenCalledWith(expect.objectContaining({ hidden: ['left'] }))
   })
 })
