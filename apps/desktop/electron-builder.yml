@@ -119,6 +119,9 @@ linux:
     - target: AppImage
       arch: [x64]
   icon: ../../build/icon.png
+  # Otherwise it is taken from the workspace's package name, @piano/desktop,
+  # which is not a file name and stops the AppImage from being built at all.
+  executableName: piano
   category: Audio
   synopsis: Play scores, watch them fall, learn to play them.
   fileAssociations:

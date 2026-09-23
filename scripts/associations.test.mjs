@@ -307,6 +307,19 @@ describe('what Launch Services knows', () => {
     ])
   })
 
+  it('finds the bundle where a recent system labels it identifier, with its number', () => {
+    const recent = dump.replace(
+      '\tbundle id:             com.alegauss.piano\n',
+      '\tidentifier:            com.alegauss.piano (0x1f2e)\n',
+    )
+    expect(failed(launchServices(recent, 'com.alegauss.piano'))).toEqual([])
+  })
+
+  it('says how the id appears when no record is named by it', () => {
+    const [finding] = launchServices(dump, 'com.alegauss.piano.score')
+    expect(finding?.detail).toContain('claim   id:            com.alegauss.piano.score')
+  })
+
   it('fails when the app was never registered', () => {
     expect(failed(launchServices(dump, 'com.alegauss.nothing'))).toEqual([
       'Launch Services knows com.alegauss.nothing',

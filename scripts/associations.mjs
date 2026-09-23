@@ -336,16 +336,32 @@ export function claimsIn(record) {
  */
 export function launchServices(dump, bundleId) {
   // The whole value on its own line: `com.alegauss.piano.score` is a claim of
-  // this bundle's and not another bundle whose id starts the same way.
-  const named = new RegExp(`^\\s*bundle\\s+id:\\s*${bundleId.replaceAll('.', '\\.')}\\s*$`, 'im')
+  // this bundle's and not another bundle whose id starts the same way. Recent
+  // systems label it `identifier:` rather than `bundle id:` and may follow it
+  // with the record's number in parentheses.
+  const escaped = bundleId.replaceAll('.', '\\.')
+  const named = new RegExp(
+    `^\\s*(?:bundle\\s+id|identifier):\\s*${escaped}(?:\\s+\\(0x[0-9a-f]+\\))?\\s*$`,
+    'im',
+  )
   const record = dump.split(/^-{10,}$/m).find((one) => named.test(one))
 
   if (record === undefined) {
+    // What the dump does say about the id, so a change of format is readable
+    // from the failure instead of needing a Mac to find out.
+    const mentions = dump
+      .split(/\r?\n/)
+      .filter((line) => line.includes(bundleId))
+      .slice(0, 8)
+      .map((line) => line.trim())
     return [
       {
         ok: false,
         what: `Launch Services knows ${bundleId}`,
-        detail: 'no record for the bundle id in the dump',
+        detail:
+          mentions.length === 0
+            ? 'the dump never mentions the bundle id'
+            : `no record is named by it; it appears as: ${mentions.join(' | ')}`,
       },
     ]
   }

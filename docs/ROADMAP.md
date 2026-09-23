@@ -14,6 +14,8 @@
 
 ## Block G — Score library and distribution
 
+- 🛠 **PI110** (deps: —) **no installer survives the release workflow, so v0.1.0 cannot be published** — Linux cannot name its executable, Windows leaves .piano claimed after uninstall, and the macOS check cannot find the app in a current dump. → §PI110
+
 ## Block H — Sheet music view
 
 ## Done when — Block A

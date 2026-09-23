@@ -33,5 +33,14 @@
   DeleteRegValue SHELL_CONTEXT "Software\Classes\.musicxml\OpenWithProgids" "Piano.musicxml"
   DeleteRegValue SHELL_CONTEXT "Software\Classes\.mxl\OpenWithProgids" "Piano.musicxml"
   DeleteRegKey SHELL_CONTEXT "Software\Classes\Piano.musicxml"
+  ; electron-builder's own unassociate takes the "Piano score" program id away
+  ; and leaves .piano naming it, a claim on a program that is no longer there.
+  ; The extension is the piano's own, so it goes too, unless something else has
+  ; taken it since.
+  Push $0
+  ReadRegStr $0 SHELL_CONTEXT "Software\Classes\.piano" ""
+  StrCmp $0 "Piano score" 0 +2
+  DeleteRegKey SHELL_CONTEXT "Software\Classes\.piano"
+  Pop $0
   System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
 !macroend
