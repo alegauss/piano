@@ -32,27 +32,6 @@ publisher's signing accounts, and nobody who plays the piano ever has one.
 
 ## Block G — Score library and distribution
 
-### §PI110 Installers that survive the release workflow
-
-The release workflow builds an installer on each system and runs the association check
-against it, and the CI job that does the same has failed on all three systems for weeks,
-so the first tag would have produced a draft that never published.
-
-Linux never got as far as the check: electron-builder takes the executable name from the
-workspace package, `@piano/desktop`, and refuses to build an AppImage from it. The Linux
-section now names it `piano`.
-
-Windows installed correctly and failed on the way out. electron-builder's unassociate
-deletes the `Piano score` program id but leaves `.piano` naming it, so an uninstalled
-piano still claims its extension. `customUnInstall` now removes `.piano` when it still
-names that id, and leaves it alone when something else has taken it since.
-
-macOS registered the app, but the check looked for a `bundle id:` line holding the
-identifier, and a current `lsregister -dump` labels it `identifier:` and may follow it
-with the record's number. Both spellings are read now, and a miss reports how the
-identifier does appear in the dump, so a further change of format can be read from the
-CI log without a Mac.
-
 ## Block H — Sheet music view
 
 ## Block I — Public site

@@ -217,6 +217,7 @@
 - ✅ **PI106** **Open recent names a piece by the title it had when it was opened, so a corrected one is listed under its old name** — A corrected piece is offered from Open recent under what it is called now, at the path it moved to, without waiting to be opened again.
 - ✅ **PI107** **Deleting or retitling from chat skips the bin and leaves the practice records behind, where the panel does neither** — With no window a delete says it cannot be undone before doing it, and a correction leaves a note the app applies to the records next launch.
 - ✅ **PI108** **Open recent still offers a deleted piece, and the system's own list still offers one at the path it has moved from** — A deleted piece leaves Open recent with it, and the system's own list is rebuilt from ours whenever ours changes, so neither offers a file that has gone.
+- ✅ **PI110** **no installer survives the release workflow, so v0.1.0 cannot be published** — All three installers now package, install and pass the association check in CI: Linux names its executable, Windows lets go of .piano, macOS reads split claims.
 
 ## Block H — Sheet music view
 
