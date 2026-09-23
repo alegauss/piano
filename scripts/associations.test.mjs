@@ -315,6 +315,50 @@ describe('what Launch Services knows', () => {
     expect(failed(launchServices(recent, 'com.alegauss.piano'))).toEqual([])
   })
 
+  describe('as a current system dumps it, each claim a record of its own', () => {
+    const rule = '--------------------------------------------------------------------------------'
+    const claim = (
+      /** @type {string} */ bundle,
+      /** @type {string} */ rank,
+      /** @type {string} */ bindings,
+    ) =>
+      [
+        rule,
+        'claim id:                   Something (0x2920)',
+        `rank:                       ${rank}`,
+        `bundle:                     ${bundle}`,
+        'roles:                      Viewer (0000000000000002)',
+        `bindings:                   ${bindings}`,
+      ].join('\n')
+    const current = [
+      rule,
+      'bundle id:                  Piano (0xb88)',
+      'path:                       /private/tmp/Piano.app (0x1ac4)',
+      'identifier:                 com.alegauss.piano',
+      claim('Piano (0xb88)', 'Owner', '.piano'),
+      claim('Piano (0xb88)', 'Alternate', '.mid, .midi'),
+      claim('Piano (0xb88)', 'Alternate', '.musicxml'),
+      claim('Piano (0xb88)', 'Alternate', '.mxl'),
+      // Another bundle's claim on MIDI, as its owner, is not the piano's.
+      claim('Music (0xc10)', 'Owner', '.mid, .midi'),
+      rule,
+    ].join('\n')
+
+    it('gathers the claims that point back at the bundle', () => {
+      expect(failed(launchServices(current, 'com.alegauss.piano'))).toEqual([])
+    })
+
+    it('still fails when the piano takes MIDI over', () => {
+      const taken = current.replace(
+        'Alternate\nbundle:                     Piano (0xb88)\nroles:                      Viewer (0000000000000002)\nbindings:                   .mid',
+        'Owner\nbundle:                     Piano (0xb88)\nroles:                      Viewer (0000000000000002)\nbindings:                   .mid',
+      )
+      expect(failed(launchServices(taken, 'com.alegauss.piano'))).toEqual([
+        'MIDI is bound as an alternative and not taken over',
+      ])
+    })
+  })
+
   it('says how the id appears when no record is named by it', () => {
     const [finding] = launchServices(dump, 'com.alegauss.piano.score')
     expect(finding?.detail).toContain('claim   id:            com.alegauss.piano.score')

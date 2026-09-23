@@ -323,6 +323,39 @@ export function claimsIn(record) {
 }
 
 /**
+ * The handle a bundle's record is known by elsewhere in the dump, such as
+ * `Piano (0xb88)`, or null where its first line does not carry one.
+ *
+ * @param {string} record
+ * @returns {string | null}
+ */
+export function bundleHandle(record) {
+  const match = /^\s*bundle\s+id:\s*(.+?\(0x[0-9a-f]+\))\s*$/im.exec(record)
+  return match === null ? null : (match[1] ?? null)
+}
+
+/**
+ * The claims kept as records of their own, which is how a current system
+ * lists them: each points back at its bundle with a `bundle:` line naming the
+ * bundle's handle, and the bundle's own record holds none.
+ *
+ * @param {string[]} records
+ * @param {string} record the bundle's own record
+ * @returns {{ id: string, rank: string, bindings: string[] }[]}
+ */
+export function claimsOf(records, record) {
+  const handle = bundleHandle(record)
+  if (handle === null) {
+    return []
+  }
+  const pointsBack = (/** @type {string} */ one) =>
+    one.split(/\r?\n/).some((line) => /^\s*bundle:\s*(.+?)\s*$/.exec(line)?.[1] === handle)
+  return records
+    .filter((one) => one !== record && /^\s*claim\s+id:/m.test(one) && pointsBack(one))
+    .flatMap((one) => claimsIn(one))
+}
+
+/**
  * What Launch Services knows about the app it has just been shown.
  *
  * The dump is a debugging output and not an interface, so what is asked of it
@@ -344,7 +377,8 @@ export function launchServices(dump, bundleId) {
     `^\\s*(?:bundle\\s+id|identifier):\\s*${escaped}(?:\\s+\\(0x[0-9a-f]+\\))?\\s*$`,
     'im',
   )
-  const record = dump.split(/^-{10,}$/m).find((one) => named.test(one))
+  const records = dump.split(/^-{10,}$/m)
+  const record = records.find((one) => named.test(one))
 
   if (record === undefined) {
     // What the dump does say about the id, so a change of format is readable
@@ -366,7 +400,7 @@ export function launchServices(dump, bundleId) {
     ]
   }
 
-  const claims = claimsIn(record)
+  const claims = [...claimsIn(record), ...claimsOf(records, record)]
   const bound = (/** @type {string[]} */ extensions) =>
     claims.filter((claim) =>
       claim.bindings.some((binding) => extensions.includes(binding.toLowerCase())),

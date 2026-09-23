@@ -272,7 +272,7 @@ async function onMac() {
       // matter of the log rather than of finding a Mac.
       const mentions = stdout
         .split(/^-{10,}$/m)
-        .filter((record) => record.includes(BUNDLE_ID) || /\.piano\b/.test(record))
+        .filter((record) => record.includes(BUNDLE_ID) || /^\s*bundle:\s*Piano\b/m.test(record))
         .join('\n----\n')
         .split(/\r?\n/)
         .slice(0, 300)
