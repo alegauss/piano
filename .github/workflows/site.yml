@@ -1,0 +1,57 @@
+name: Site
+
+# The public site (site/), built and tested on every push and pull request so a
+# change that breaks it is found by whoever pushed it rather than by whoever
+# next publishes.
+#
+# This deploys nothing. Pages serves the site and the sample pack as one
+# artefact, so pages.yml and release.yml deploy them together; run the Sample
+# pack workflow by hand to publish a change to the site.
+#
+# There is no separate typecheck or lint step: `npm run build` already
+# generates the product facts, type-checks, builds, rasterises the social card
+# and prerenders every route, and the prerender's replace-or-throw is the head
+# and route gate. A gate that runs twice can be satisfied by the copy nobody
+# kept current.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build and test the site
+    runs-on: ubuntu-latest
+    steps:
+      # Tags included: the install section says whether there is a release.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: a font for the social card
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: build
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+
+      # The site's claims: the generated facts against their sources, the route
+      # pair, a twin per route, the sitemap and the social card.
+      - name: test
+        working-directory: site
+        run: npm test

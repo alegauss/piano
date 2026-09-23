@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Piano: a piano Claude Code writes for, plays and teaches">
+  <defs>
+    <linearGradient id="pn-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0e1217"/>
+      <stop offset="1" stop-color="#0b0d12"/>
+    </linearGradient>
+    <radialGradient id="pn-glow" cx="0.82" cy="0.05" r="0.7">
+      <stop offset="0" stop-color="#00b4f0" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#00b4f0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pn-accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#45e8e8"/>
+      <stop offset="0.55" stop-color="#00b4f0"/>
+      <stop offset="1" stop-color="#7e72e7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#pn-bg)"/>
+  <rect width="1200" height="630" fill="url(#pn-glow)"/>
+  <rect x="0" y="0" width="1200" height="8" fill="#00b4f0"/>
+
+  <!-- The mark. og-image.mjs splices public/logo.svg in here, positioned and scaled by the
+       constants it holds, so the card carries no copy of the artwork to fall behind it. -->
+  {{mark}}
+
+  <text x="252" y="170" font-family="DejaVu Sans, sans-serif" font-size="52" font-weight="bold" fill="#f0f2f5">Piano</text>
+  <text x="254" y="206" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#8e929a">part of alegauss</text>
+
+  <text x="90" y="340" font-family="DejaVu Sans, sans-serif" font-size="62" font-weight="bold" fill="#f0f2f5">A piano Claude Code</text>
+  <text x="90" y="414" font-family="DejaVu Sans, sans-serif" font-size="62" font-weight="bold" fill="url(#pn-accent)">writes for, plays and teaches.</text>
+
+  <text x="92" y="478" font-family="DejaVu Sans, sans-serif" font-size="25" fill="#b0b4bb">Notes falling onto a keyboard, and a grade per bar, not a percentage.</text>
+
+  <!-- The chip has no width of its own: og-image.mjs measures the text and fits it. -->
+  <rect x="90" y="530" width="{{chip-width}}" height="46" rx="23" fill="#171b21" stroke="#292e36"/>
+  <circle cx="118" cy="553" r="6" fill="#00b4f0"/>
+  <text id="chip" x="136" y="561" font-family="DejaVu Sans, sans-serif" font-size="20" fill="#b0b4bb">Windows · macOS · Linux · Claude Code plugin</text>
+
+  <text x="1110" y="561" text-anchor="end" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#8e929a">alegauss.github.io/piano</text>
+</svg>

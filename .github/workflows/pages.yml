@@ -1,7 +1,14 @@
 name: Sample pack
 
 # The sample pack, served from GitHub Pages at the address the app downloads
-# it from, without waiting for a release.
+# it from, without waiting for a release, and the public site beside it.
+#
+# Pages serves one artefact, so the two are always deployed together: a
+# deployment of the site alone would take down the pack the app downloads,
+# and a deployment of the pack alone would take down the site. This is also
+# how a change to the site is published: run this workflow by hand. The pack
+# comes out of the cache, so that is quick. site.yml builds and tests the site
+# on every push and deploys nothing.
 #
 # A release publishes the pack too (see release.yml), because the pack a
 # release points at must go up with it. This workflow is for the times there
@@ -37,17 +44,25 @@ jobs:
     name: build the pack
     runs-on: ubuntu-latest
     steps:
+      # The whole history, tags included: the site reads the tags to say
+      # whether there is a release to download.
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            site/package-lock.json
 
       - run: npm ci
 
-      - name: ffmpeg, with libopus
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # DejaVu is what the site's social card is rasterised with.
+      - name: ffmpeg, with libopus, and a font for the social card
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
 
       # Hundreds of megabytes of FLAC, pinned by commit and checksum, so a copy
       # from an earlier run is as good as a fresh download.
@@ -59,15 +74,24 @@ jobs:
       - name: build the pack
         run: npm run pack:samples
 
+      # The site's own tests run before anything is deployed.
+      - name: build the site
+        working-directory: site
+        run: |
+          npm ci
+          npm run build
+          npm test
+
       - name: lay out the site
         run: |
-          mkdir -p site/pack
-          cp -R packages/sample-pack/out/*/. site/pack/
-          test -f site/pack/manifest.json
+          mkdir -p site/dist/pack
+          cp -R packages/sample-pack/out/*/. site/dist/pack/
+          test -f site/dist/pack/manifest.json
+          test -f site/dist/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/dist
 
   deploy:
     name: serve it

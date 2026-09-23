@@ -21,3 +21,7 @@ packages/score-format/schema/
 
 # The plugin's bundled server; npm run plugin writes it and check:plugin guards it.
 plugin/server/
+
+# The site's build output and the facts its generator writes on every build.
+site/dist-server/
+site/src/lib/product.generated.ts

@@ -18,6 +18,8 @@
 
 ## Block H — Sheet music view
 
+## Block I — Public site
+
 ## Done when — Block A
 
 - **The app runs, is typed end to end, and ships as an installer** A clean clone builds,

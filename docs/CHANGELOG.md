@@ -236,3 +236,7 @@
 - ✅ **PI86** **The transport bar is a row of icons, and a pointer resting on one is told nothing** — Every icon in the bar says its own name on hover and on focus, read off the button so there is one string to keep right (design superseded: a hint carries its own provider: panels mount alone).
 - ✅ **PI87** **A parts row shows a speaker, an S and an eye, and nothing says which of them silences and which hides** — Hovering or focusing a parts row's speaker, S or eye now says which part it silences, solos or hides, in the button's own words.
 - ✅ **PI91** **The transport bar's first button is wrapped in two hints, and the outer one can never open** — The transport bar's first button carries one hint instead of two, and a test now covers its tooltip beside the loop button's.
+
+## Block I — Public site
+
+- ✅ **PI111** **Piano has no public page, README or LICENSE, so nobody finds it and the MIT claim points at no file** — Piano has a public site at /piano/ on freewilly's model, its facts generated from the repo, deployed with the sample pack, plus LICENSE, README and CONTRIBUTING (design recorded in `site/README.md`).

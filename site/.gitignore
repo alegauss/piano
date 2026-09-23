@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-server
+*.local
+.vite
+# written by scripts/product.mjs on every build and dev server
+src/lib/product.generated.ts

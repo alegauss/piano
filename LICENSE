@@ -1,0 +1,34 @@
+MIT License
+
+Copyright (c) 2026 Alexandre Oliveira
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------------
+
+This licence covers the source code in this repository. Two things it
+distributes or downloads carry their own terms, recorded where they live:
+
+- The recorded piano the app offers to download is the Salamander Grand Piano
+  V3 by Alexander Holm, under the Creative Commons Attribution 3.0 licence
+  (CC-BY-3.0). It is not part of this repository; its source, down to the
+  checksum of its own LICENSE file, is pinned in
+  packages/sample-pack/sources.lock.json.
+- Each score states its own provenance and licence in its metadata. The scores
+  the app bundles are public domain; the two in scores/ are original and CC0.

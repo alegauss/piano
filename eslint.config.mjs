@@ -49,6 +49,9 @@ export default tseslint.config(
       '.roadkeep/**',
       // The plugin's bundled server: built from apps/mcp-server, which is linted.
       'plugin/server/**',
+      // The public site: a standalone workspace with its own dependencies, whose gate is
+      // its own build (tsc -b, the prerender) and its own tests, run by site.yml.
+      'site/**',
     ],
   },
 

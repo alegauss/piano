@@ -54,3 +54,5 @@ identifier does appear in the dump, so a further change of format can be read fr
 CI log without a Mac.
 
 ## Block H — Sheet music view
+
+## Block I — Public site

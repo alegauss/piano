@@ -1,0 +1,54 @@
+# Piano
+
+> A free desktop piano for Windows, macOS and Linux (Electron, React, Web Audio) that plays
+> scores as notes falling onto an on-screen keyboard or as sheet music, and teaches them: a
+> wait mode, grading per note gathered by bar and section rather than a percentage, and a
+> drill whose tempo climbs after a clean repetition. It ships with a Claude Code plugin: an
+> MCP server whose tools write a score in the piano score format, validate it, keep it in a
+> local library and play or practise it in the open window. No account, no telemetry; the
+> library, practice history and settings are local files.
+
+## For agents
+
+Every route has a Markdown twin beside it, the same page converted from the same render with
+the navigation, the footer and the calls to action dropped. Read `<route>/index.md` instead of
+the HTML: the landing page is [`/index.md`](https://alegauss.github.io/piano/index.md). The
+routes, their twins and their sizes are in
+[`manifest.json`](https://alegauss.github.io/piano/manifest.json).
+
+The tool and command names on these pages are read out of the plugin's source when the site
+is built, so they are the ones the server registers. The full list, each with the first
+sentence of its own description, is on
+[`/claude-code/index.md`](https://alegauss.github.io/piano/claude-code/index.md).
+
+## Install the plugin
+
+In Claude Code:
+
+```
+/plugin marketplace add alegauss/piano
+/plugin install piano@piano
+```
+
+The server ships inside the plugin and needs only Node. Whether there is an app release to
+download, and for which systems, is stated on the landing page's install section, which is
+derived from the repository's tags when the site is built.
+
+## Pages
+
+- [Landing](https://alegauss.github.io/piano/index.md): what it is, who does what, the rules
+  it is built on, the roll, practice, the library, non-goals, install.
+- [Claude Code](https://alegauss.github.io/piano/claude-code/index.md): the commands, the
+  tools, the loop the score-writing skill follows, what the server refuses.
+- [Falling notes](https://alegauss.github.io/piano/features/falling-notes/index.md)
+- [Sheet music](https://alegauss.github.io/piano/features/sheet-music/index.md)
+- [Practice](https://alegauss.github.io/piano/features/practice/index.md)
+- [The library](https://alegauss.github.io/piano/features/library/index.md)
+- [The score format](https://alegauss.github.io/piano/features/score-format/index.md), with
+  the head of a score the app ships.
+
+## Source
+
+[github.com/alegauss/piano](https://github.com/alegauss/piano), MIT. The backlog is
+[`docs/ROADMAP.md`](https://github.com/alegauss/piano/blob/main/docs/ROADMAP.md) and what has
+shipped is [`docs/CHANGELOG.md`](https://github.com/alegauss/piano/blob/main/docs/CHANGELOG.md).
