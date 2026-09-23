@@ -266,6 +266,19 @@ async function onMac() {
     await run(lsregister, ['-f', copied])
     const { stdout } = await run(lsregister, ['-dump'], { maxBuffer: 64 * 1024 * 1024 })
     let ok = report('macos', launchServices(stdout, BUNDLE_ID), say)
+    if (!ok) {
+      // The dump is not an interface and has changed shape before, so a miss
+      // prints the records that mention the piano: the next reading is then a
+      // matter of the log rather than of finding a Mac.
+      const mentions = stdout
+        .split(/^-{10,}$/m)
+        .filter((record) => record.includes(BUNDLE_ID) || /\.piano\b/.test(record))
+        .join('\n----\n')
+        .split(/\r?\n/)
+        .slice(0, 300)
+        .join('\n')
+      say(`what the dump says about the piano:\n${mentions}\n`)
+    }
     await run(lsregister, ['-u', copied])
 
     const binary = join(copied, 'Contents', 'MacOS', 'Piano')

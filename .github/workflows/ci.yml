@@ -52,6 +52,13 @@ jobs:
 
       - run: npm ci
 
+      # Ubuntu 24.04 keeps unprivileged user namespaces from anything AppArmor
+      # has no profile for, so Electron falls back to a setuid sandbox helper
+      # that a checkout cannot make root's, and aborts. Lifting the restriction
+      # keeps the sandbox on rather than starting Electron without one.
+      - name: let Electron sandbox itself
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: install the browser the layout tests run in
         run: npx playwright install --with-deps chromium
 
@@ -91,8 +98,19 @@ jobs:
 
       - run: npm ci
 
+      # As in the live job: Electron's sandbox on Ubuntu 24.04.
+      - name: let Electron sandbox itself
+        if: runner.os == 'Linux'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: package
+        if: runner.os != 'Linux'
         run: npm run package
+
+      # `npm run package` ends by starting what it made, which needs a display.
+      - name: package
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run package
 
       # The installer existing is not the claim; the app starting is. This runs
       # the unpacked binary in smoke mode, which loads the renderer once and

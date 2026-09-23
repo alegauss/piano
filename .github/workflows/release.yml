@@ -77,6 +77,14 @@ jobs:
 
       - run: npm ci
 
+      # Ubuntu 24.04 keeps unprivileged user namespaces from anything AppArmor
+      # has no profile for, so Electron falls back to a setuid sandbox helper
+      # that a checkout cannot make root's, and aborts. Lifting the restriction
+      # keeps the sandbox on rather than starting Electron without one.
+      - name: let Electron sandbox itself
+        if: runner.os == 'Linux'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: package
         if: runner.os != 'Linux'
         run: npm run package
