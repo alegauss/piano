@@ -52,9 +52,21 @@ the server registers, read out of its source.
 
 ## Installing the app
 
-Installers for Windows, macOS and Linux are published on the
-[releases page](https://github.com/alegauss/piano/releases) with each tagged version. Until
-the first tag there is nothing to download, and the app runs from a clone:
+Download the file for your computer from the
+[latest release](https://github.com/alegauss/piano/releases/latest):
+
+| Your computer                         | The file that ends in |
+| ------------------------------------- | --------------------- |
+| Windows 10 or 11                      | `-win-x64.exe`        |
+| Mac with Apple silicon (M1 and later) | `-mac-arm64.dmg`      |
+| Mac with an Intel processor           | `-mac-x64.dmg`        |
+| Linux                                 | `.AppImage`           |
+
+The builds are not signed yet, so the system warns the first time you open Piano; the release
+notes show what each system says and how to get past it. On Windows it installs for your
+account only.
+
+To run it from source instead, with Node 20.11 or later:
 
 ```
 git clone https://github.com/alegauss/piano.git
@@ -63,8 +75,7 @@ npm ci
 npm run dev
 ```
 
-Node 20.11 or later. [CONTRIBUTING.md](CONTRIBUTING.md) has the rest: the layout, the checks
-and the tests.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the rest: the layout, the checks and the tests.
 
 ## Nothing leaves the machine
 
