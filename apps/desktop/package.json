@@ -44,7 +44,7 @@
     "electron": "44.4.3",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.25.10",
-    "vite": "^7.1.9"
+    "vite": "^7.3.7"
   },
   "author": {
     "name": "Alexandre Oliveira"
