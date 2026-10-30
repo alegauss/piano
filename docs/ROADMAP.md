@@ -2,7 +2,8 @@
 
 ## Block A — Foundation: Electron, TypeScript, React and shadcn
 
-- 📋 **PI57** (deps: PI6 ✅) (requires: accounts) **An unsigned build trips SmartScreen and Gatekeeper, so a new user meets a warning before the app** — Signing needs a purchased Windows certificate and an Apple developer account, which is a decision with a price rather than a line of configuration. → §PI57
+- 📋 **PI57** (deps: visibility VS58, PI6 ✅) **An unsigned Windows build trips SmartScreen, so a new user meets a warning before the app** — The Store signs the MSIX itself in place of a certificate, and claude-tray tests that path first, so this follows what it learns. → §PI57
+- 💭 **PI114** (deps: —) (requires: accounts) **An unsigned macOS build is stopped by Gatekeeper until the user right-clicks and confirms** — Notarisation needs a paid Apple developer account, a decision with a price that the Store does not answer for macOS. → §PI114
 
 ## Block B — Score JSON format
 
@@ -17,6 +18,9 @@
 ## Block H — Sheet music view
 
 ## Block I — Public site
+
+- 📋 **PI112** (deps: —) **Someone learning the piano reads first about Claude Code, a tool they do not use, on both the README and the site** — The author confirmed the main audience is the learner, and the two audiences barely overlap, so the first line has to choose. → §PI112
+- 📋 **PI113** (deps: —) **GitHub shows the licence as Other, so directories and readers cannot tell the project is MIT** — Third-party notes appended to LICENSE stop GitHub from matching the MIT text, on a project whose selling point is being free. → §PI113
 
 ## Done when — Block A
 
@@ -56,14 +60,20 @@
 
 ## Done when — PI57
 
-- **A fresh Windows install shows no unknown-publisher warning** Installing the signed
-  build on a machine that has never seen it opens the app without SmartScreen
+- **A fresh Windows install shows no unknown-publisher warning** Installing from the
+  Store on a machine that has never seen the app opens it without SmartScreen
   interrupting, checked on a clean virtual machine rather than on the build host.
+- **A MIDI keyboard plays in the Store build** The packaged app still reaches a
+  connected keyboard through Web MIDI and reads the library in ~/.piano/library, which
+  is what a learner installs it for.
+
+## Done when — PI114
+
 - **The macOS build opens without a right-click** A notarised and stapled dmg opens by
   double-clicking on a machine that downloaded it, with Gatekeeper satisfied offline.
-- **CI signs without a certificate in the repository** The signing material reaches the
-  runner through secrets or a signing service, and nothing secret is committed, which is
-  what makes this safe to automate at all.
+- **CI signs without a secret in the repository** The Apple credentials reach the runner
+  through secrets, and nothing secret is committed, which is what makes this safe to
+  automate at all.
 
 ## Non-goals
 
