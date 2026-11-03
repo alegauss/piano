@@ -17,6 +17,6 @@
     "@piano/ipc": "*",
     "@piano/library": "*",
     "@piano/score-format": "*",
-    "zod": "^4.1.12"
+    "zod": "^4.6.7"
   }
 }
