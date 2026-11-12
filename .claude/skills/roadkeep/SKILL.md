@@ -8,7 +8,7 @@ description: "Call the roadkeep CLI instead of editing a project's governed ROAD
 The line format is a schema at the point of insertion, not a convention to remember. Every
 field is validated before a sentence exists, so a refusal costs a retry and never a
 deletion. Read `roadkeep.toml` for this project's prefix, id shape, paths, markers and
-limits (L6); nothing below hardcodes them. `python ".roadkeep/scripts/roadkeep.py"` is this project's entry point — `install` wired it to a checkout, so the package is not installed here and `roadkeep` is on no PATH.
+limits (L6); nothing below hardcodes them. `python ".claude/hooks/roadkeep-launch.py"` is this project's entry point — the package is not installed here and `roadkeep` is on no PATH, and that launcher is committed to this repository so it finds an engine wherever this environment has one.
 
 ## The loop, in four calls
 
@@ -68,13 +68,15 @@ forgives the standing debt by name.
 
 ## Where the rest is
 
-Two pages sit beside this file, and they are read when a turn needs them and not before:
+Three pages sit beside this file, and they are read when a turn needs them and not before:
 
 * **`writing.md`** — the write path whole: every flag on `add`, `status`, `amend`,
   `restate`, `ship`, `retire`, `record`, `section`, `non-goal`, `defer`, `resume`, `dismiss`
   and `reopen`, what
   each transaction refuses and how the refusal is answered, the wiring verbs (`init`,
   `adopt`, `install`, `declare`, `engines`, `merge`), and every code the gate reports.
+* **`filing.md`** — filing a line into another project `[projects]` declares, from a
+  checkout or from its git remote alone, and the dep the line here takes after.
 * **`asking.md`** — the query surface whole: what each read answers and in which units,
   what git answers about the ledger, the projections that go stale, and what a project may
   declare in `roadkeep.toml`.

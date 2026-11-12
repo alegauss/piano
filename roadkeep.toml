@@ -50,4 +50,4 @@ held = 60
 declared = ["accounts"]
 
 [install]
-wired = "0.2.480"
+wired = "0.2.576"

@@ -2,7 +2,10 @@
   "mcpServers": {
     "roadkeep": {
       "command": "python",
-      "args": ["${CLAUDE_PROJECT_DIR:-.}/.roadkeep/scripts/roadkeep.py", "mcp"]
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/roadkeep-launch.py",
+        "mcp"
+      ]
     }
   }
 }
