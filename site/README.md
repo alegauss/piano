@@ -1,6 +1,6 @@
 # Piano site
 
-The public site at <https://alegauss.github.io/piano/>: a self-contained Vite + React 19 +
+The public site at <https://alegauss.com/piano/>: a self-contained Vite + React 19 +
 TypeScript + Tailwind v4 workspace. It is standalone: the root `npm ci` does not install it
 and the root build does not need it. It builds to `site/dist/` and never writes into `docs/`,
 which is roadkeep's.

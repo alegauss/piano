@@ -35,7 +35,7 @@ import { replace } from './replace'
  * downloads from exactly this address before the release is published, so an
  * installer never points at nothing. PIANO_PACK_URL names another folder.
  */
-export const PUBLISHED_PACK = 'https://alegauss.github.io/piano/pack/'
+export const PUBLISHED_PACK = 'https://alegauss.com/piano/pack/'
 
 /** Where to download the pack from: PIANO_PACK_URL, or where releases publish it. */
 export function packSourceUrl(env: NodeJS.ProcessEnv = process.env): string {

@@ -12,14 +12,14 @@
 
 Every route has a Markdown twin beside it, the same page converted from the same render with
 the navigation, the footer and the calls to action dropped. Read `<route>/index.md` instead of
-the HTML: the landing page is [`/index.md`](https://alegauss.github.io/piano/index.md). The
+the HTML: the landing page is [`/index.md`](https://alegauss.com/piano/index.md). The
 routes, their twins and their sizes are in
-[`manifest.json`](https://alegauss.github.io/piano/manifest.json).
+[`manifest.json`](https://alegauss.com/piano/manifest.json).
 
 The tool and command names on these pages are read out of the plugin's source when the site
 is built, so they are the ones the server registers. The full list, each with the first
 sentence of its own description, is on
-[`/claude-code/index.md`](https://alegauss.github.io/piano/claude-code/index.md).
+[`/claude-code/index.md`](https://alegauss.com/piano/claude-code/index.md).
 
 ## Install the plugin
 
@@ -36,15 +36,15 @@ derived from the repository's tags when the site is built.
 
 ## Pages
 
-- [Landing](https://alegauss.github.io/piano/index.md): what it is, who does what, the rules
+- [Landing](https://alegauss.com/piano/index.md): what it is, who does what, the rules
   it is built on, the roll, practice, the library, non-goals, install.
-- [Claude Code](https://alegauss.github.io/piano/claude-code/index.md): the commands, the
+- [Claude Code](https://alegauss.com/piano/claude-code/index.md): the commands, the
   tools, the loop the score-writing skill follows, what the server refuses.
-- [Falling notes](https://alegauss.github.io/piano/features/falling-notes/index.md)
-- [Sheet music](https://alegauss.github.io/piano/features/sheet-music/index.md)
-- [Practice](https://alegauss.github.io/piano/features/practice/index.md)
-- [The library](https://alegauss.github.io/piano/features/library/index.md)
-- [The score format](https://alegauss.github.io/piano/features/score-format/index.md), with
+- [Falling notes](https://alegauss.com/piano/features/falling-notes/index.md)
+- [Sheet music](https://alegauss.com/piano/features/sheet-music/index.md)
+- [Practice](https://alegauss.com/piano/features/practice/index.md)
+- [The library](https://alegauss.com/piano/features/library/index.md)
+- [The score format](https://alegauss.com/piano/features/score-format/index.md), with
   the head of a score the app ships.
 
 ## Source

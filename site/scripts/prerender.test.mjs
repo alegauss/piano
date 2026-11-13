@@ -86,7 +86,7 @@ test('the sitemap lists every route exactly once, with the base prefix', () => {
     assert.ok(locs.includes(r.url), `sitemap missing ${r.url}`)
   }
   for (const loc of locs) {
-    assert.ok(loc.startsWith(`https://alegauss.github.io${manifest.base}`), `${loc} lost the base`)
+    assert.ok(loc.startsWith(`https://alegauss.com${manifest.base}`), `${loc} lost the base`)
   }
 })
 
@@ -96,7 +96,7 @@ test('robots allows everything and names the sitemap beside it', () => {
   assert.match(robots, /^Allow: \/$/m)
   const named = robots.match(/^Sitemap: (\S+)$/m)
   assert.ok(named, 'robots.txt names no sitemap')
-  assert.equal(named[1], `https://alegauss.github.io${manifest.base}sitemap.xml`)
+  assert.equal(named[1], `https://alegauss.com${manifest.base}sitemap.xml`)
 })
 
 test('the social card is a 1200x630 PNG', () => {

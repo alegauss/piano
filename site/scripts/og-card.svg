@@ -36,5 +36,5 @@
   <circle cx="118" cy="553" r="6" fill="#00b4f0"/>
   <text id="chip" x="136" y="561" font-family="DejaVu Sans, sans-serif" font-size="20" fill="#b0b4bb">Windows · macOS · Linux · Claude Code plugin</text>
 
-  <text x="1110" y="561" text-anchor="end" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#8e929a">alegauss.github.io/piano</text>
+  <text x="1110" y="561" text-anchor="end" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#8e929a">alegauss.com/piano</text>
 </svg>

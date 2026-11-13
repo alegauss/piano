@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // GitHub Pages derives this from the repository name, so it is not a preference: the site
-// is served at https://alegauss.github.io/piano/ and every canonical, asset path and sitemap
+// is served at https://alegauss.com/piano/ and every canonical, asset path and sitemap
 // entry carries the prefix. Renaming the repository moves all of them at once, and moves
 // the sample pack the app downloads from /piano/pack/ with them.
 export const BASE = '/piano/'

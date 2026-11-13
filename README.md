@@ -6,7 +6,7 @@ for you, tells you which bars went wrong, and raises the tempo each time you get
 right. Its Claude Code plugin writes the piece you asked for, checks it, keeps it in your
 library and plays it in the window in front of you.
 
-The site is at <https://alegauss.github.io/piano/>.
+The site is at <https://alegauss.com/piano/>.
 
 ## What it is
 
@@ -47,7 +47,7 @@ In Claude Code:
 
 The plugin brings the MCP server and four commands: `/piano:compose`, `/piano:play`,
 `/piano:practise` and `/piano:level`. [plugin/README.md](plugin/README.md) has the details, and
-the site's [Claude Code page](https://alegauss.github.io/piano/claude-code/) lists every tool
+the site's [Claude Code page](https://alegauss.com/piano/claude-code/) lists every tool
 the server registers, read out of its source.
 
 ## Installing the app

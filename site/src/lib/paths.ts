@@ -1,9 +1,9 @@
 // GitHub Pages derives the base from the repository name: the site is served at
-// https://alegauss.github.io/piano/, so the canonical, og:url, the sitemap and every link
+// https://alegauss.com/piano/, so the canonical, og:url, the sitemap and every link
 // carry it. Written here and in vite.config.ts, and nowhere else. A module of its own, because
 // the content, the chrome and the route table all need it and the route table imports the
 // other two.
-export const SITE_ORIGIN = 'https://alegauss.github.io'
+export const SITE_ORIGIN = 'https://alegauss.com'
 export const BASE = '/piano/'
 
 /** A link to a route from any other route: base-absolute, with the trailing slash the static

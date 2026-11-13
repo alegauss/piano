@@ -32,7 +32,7 @@ export const meta = {
   },
 } as const
 
-export const parentUrl = 'https://alegauss.github.io/'
+export const parentUrl = 'https://alegauss.com/'
 
 // Section anchors act on the landing page; href() makes them resolve the same from every route.
 export const navLinks = [
@@ -58,7 +58,7 @@ export const footer = {
 
 /* --------------------------------------------------------------- sponsor */
 
-// Mirrors alegauss.github.io/sponsor.json, the sponsor declaration for these projects.
+// Mirrors alegauss.com/sponsor.json, the sponsor declaration for these projects.
 // Transcribed rather than fetched at runtime: the site is prerendered, and the point of naming
 // a sponsor is that crawlers and agents read it in the served HTML.
 export const sponsor = {
