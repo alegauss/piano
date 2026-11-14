@@ -40,6 +40,26 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;')
 }
 
+// Each route's breadcrumb trail, as JSON-LD. Without it Google builds the trail from the URL
+// and can drop the middle, showing a product page as if it were the hub's.
+const crumbName = (path) => {
+  const slug = path.replace(/\/$/, '').split('/').pop()
+  return slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+function breadcrumbTag(path, canonical) {
+  const items = [
+    { name: 'alegauss.com', item: 'https://alegauss.com/' },
+    { name: 'piano', item: canonicalUrl('/') },
+  ]
+  if (path !== '/') items.push({ name: crumbName(path), item: canonical })
+  const json = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((one, i) => ({ '@type': 'ListItem', position: i + 1, ...one })),
+  }).replace(/</g, '\\u003c')
+  return `<script type="application/ld+json">${json}</script>`
+}
+
 if (ROUTE_META.length === 0) {
   throw new Error('prerender: ROUTE_META is empty, so there is nothing to render')
 }
@@ -69,6 +89,7 @@ for (const meta of ROUTE_META) {
 
   const headBlock = [
     `<link rel="canonical" href="${escapeHtml(canonical)}" />`,
+    breadcrumbTag(meta.path, canonical),
     `<meta property="og:type" content="website" />`,
     `<meta property="og:title" content="${escapeHtml(meta.ogTitle)}" />`,
     `<meta property="og:description" content="${escapeHtml(meta.ogDescription)}" />`,
